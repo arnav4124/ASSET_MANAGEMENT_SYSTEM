@@ -7,7 +7,7 @@ const Project_add = () => {
   const [users, setUsers] = useState([
     { id: 1, name: "Jane Smith", email: "jane.smith@example.com", role: "Developer" },
     { id: 2, name: "John Doe", email: "john.doe@example.com", role: "Designer" },
-    { id: 3, name: "Alice Johnson", email: "alice.johnson@example.com", role: "Project Manager" },
+    { id: 3, name: "Alice Johnson", email: "alice.johnson@example.com", role: "lead" },
     { id: 4, name: "Bob Wilson", email: "bob.wilson@example.com", role: "Developer" },
     { id: 5, name: "Carol White", email: "carol.white@example.com", role: "QA Engineer" },
     { id: 6, name: "Dave Brown", email: "dave.brown@example.com", role: "Business Analyst" },
@@ -136,58 +136,84 @@ const Project_add = () => {
         </div>
         
         {/* Project Manager */}
-        <div>
-          <label className="block font-semibold text-lg mb-1">Project Manager</label>
-          <input
-            type="text"
-            className="w-full p-2 border rounded-md"
-            placeholder="Search manager by email"
-            value={managerSearchTerm}
-            onChange={(e) => setManagerSearchTerm(e.target.value)}
-          />
-          {managerSearchTerm && !selectedManager && (
-            <div className="mt-2 border rounded-md shadow-sm">
-              {users
-                .filter(user => 
-                  user.email.toLowerCase().includes(managerSearchTerm.toLowerCase())
-                )
-                .map((user, index) => (
-                  <div
-                    key={index}
-                    className="p-2 hover:bg-gray-100 cursor-pointer"
-                    onClick={() => {
-                      setSelectedManager(user);
-                      setManagerSearchTerm('');
-                      register("projectManager").onChange({
-                        target: { value: user.email }
-                      });
-                    }}
-                  >
-                    <div>{user.name}</div>
-                    <div className="text-sm text-gray-600">{user.email}</div>
-                  </div>
-                ))}
-            </div>
-          )}
-          {selectedManager && (
-            <div className="mt-2 bg-blue-100 p-2 rounded-md">
-              <div>{selectedManager.name}</div>
-              <div className="text-sm text-gray-600">{selectedManager.email}</div>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedManager(null);
-                  register("projectManager").onChange({
-                    target: { value: '' }
-                  });
-                }}
-                className="text-red-500 hover:text-red-700 text-sm mt-1"
-              >
-                Remove
-              </button>
-            </div>
-          )}
-        </div>
+{/* Project Manager */}
+<div>
+  <label className="block font-semibold text-lg mb-1">Project Manager</label>
+  <input
+    type="text"
+    className="w-full p-2 border rounded-md"
+    placeholder="Search manager by email"
+    value={managerSearchTerm}
+    onChange={(e) => setManagerSearchTerm(e.target.value)}
+  />
+  {managerSearchTerm && !selectedManager && (
+    <div className="mt-2 border rounded-md shadow-sm">
+      {users
+        .filter(user => 
+          user.email.toLowerCase().includes(managerSearchTerm.toLowerCase())
+        )
+        .map((user, index) => (
+          <div
+            key={index}
+            className="p-2 hover:bg-gray-100 cursor-pointer"
+            onClick={() => {
+              setSelectedManager(user);
+              setManagerSearchTerm('');
+
+              // Modify role to include "(Project Manager)"
+              const updatedManager = { ...user, role: `${user.role} (Project Manager)` };
+
+              setSelectedParticipants(prevParticipants => {
+                const exists = prevParticipants.some(p => p.email === user.email);
+                if (exists) {
+                  // Update existing participant's role
+                  return prevParticipants.map(p =>
+                    p.email === user.email ? updatedManager : p
+                  );
+                } else {
+                  // Add new participant
+                  return [...prevParticipants, updatedManager];
+                }
+              });
+
+              register("projectManager").onChange({
+                target: { value: user.email }
+              });
+            }}
+          >
+            <div>{user.name}</div>
+            <div className="text-sm text-gray-600">{user.email}</div>
+          </div>
+        ))}
+    </div>
+  )}
+  {selectedManager && (
+    <div className="mt-2 bg-blue-100 p-2 rounded-md">
+      <div>{selectedManager.name}</div>
+      <div className="text-sm text-gray-600">{selectedManager.email}</div>
+      <button
+        type="button"
+        onClick={() => {
+          setSelectedManager(null);
+          register("projectManager").onChange({ target: { value: '' } });
+
+          // Restore original role without removing from participants
+          setSelectedParticipants(prevParticipants =>
+            prevParticipants.map(p =>
+              p.email === selectedManager.email
+                ? { ...p, role: p.role.replace(" (Project Manager)", "") }
+                : p
+            )
+          );
+        }}
+        className="text-red-500 hover:text-red-700 text-sm mt-1"
+      >
+        Remove
+      </button>
+    </div>
+  )}
+</div>
+
 
         <div>
           <label className="block font-semibold text-lg mb-1">Add Participants</label>
