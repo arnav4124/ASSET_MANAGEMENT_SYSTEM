@@ -8,6 +8,7 @@ import Project_add from './components/Project/Project_add.jsx'
 import Add_user from './components/Add_user/Add_user.jsx'
 import Add_progrmme from './components/Programme/Add_programme.jsx'
 import Add_location from './components/Location/Add_location.jsx'
+import AssignAdmin from './components/Add_admin.jsx'
 function App() {
   const [isAdmin, setIsAdmin] = useState(false); 
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/admin/add_user" element={<Add_user />} />
         <Route path="/superuser/add_programme" element={<Add_progrmme />} />
         <Route path="/superuser/add_location" element={<Add_location />} />
+        <Route path="/superuser/assign_admin" element={<AssignAdmin />} />
       </Routes>
       {/* <button
   class="inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-center text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900">

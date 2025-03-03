@@ -27,14 +27,7 @@ const AddProgramme = () => {
       {/* Page Title - Centered alignment */}
       <div className="flex flex-col items-center mb-8">
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Add Programme</h1>
-        <button
-          type="button"
-          className="text-gray-500 hover:text-gray-700 flex items-center gap-2"
-          onClick={() => window.history.back()}
-        >
-          <ChevronLeft size={16} />
-          <span className="text-sm">Back to Programmes List</span>
-        </button>
+        
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-3xl mx-auto space-y-6 bg-gray-50 p-6 rounded-lg border">
