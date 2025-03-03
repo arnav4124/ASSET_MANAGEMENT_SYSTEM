@@ -22,6 +22,7 @@ const Project_add = () => {
   const [selectedManager, setSelectedManager] = useState(null);
   const [participantSearchTerm, setParticipantSearchTerm] = useState('');
   const [selectedParticipants, setSelectedParticipants] = useState([]);
+  const [selectedLocations, setSelectedLocations] = useState([]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const participantsPerPage = 10;
@@ -35,6 +36,8 @@ const Project_add = () => {
         indexOfFirstParticipant: 0
       };
     }
+
+    
 
     const indexOfLastParticipant = currentPage * participantsPerPage;
     const indexOfFirstParticipant = indexOfLastParticipant - participantsPerPage;
@@ -73,6 +76,13 @@ const Project_add = () => {
       updatedList.splice(index, 1);
       return updatedList;
     });
+  };
+
+  const handleLocationChange = (event) => {
+    const { value, checked } = event.target;
+    setSelectedLocations((prev) =>
+      checked ? [...prev, value] : prev.filter((loc) => loc !== value)
+    );
   };
 
   return (
@@ -124,6 +134,8 @@ const Project_add = () => {
                   type="checkbox"
                   value={location}
                   {...register("location", { required: "Location is required" })}
+                  checked={selectedLocations.includes(location)}
+                  onChange={handleLocationChange}
                   className="checkbox"
                 />
                 {location}
@@ -322,6 +334,9 @@ const Project_add = () => {
                         <p className="text-red-500 text-sm mt-1">{errors.projectDescription.message}</p>
                     )}
                 </div>
+                <div>
+                    
+                </div>  
         {/* Submit Button */}
         <div className="text-center">
           <button type="submit" className="btn btn-primary px-6 py-2">Submit</button>
