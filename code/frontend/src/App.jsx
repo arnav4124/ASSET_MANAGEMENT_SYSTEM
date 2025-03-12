@@ -9,6 +9,7 @@ import Add_user from './components/Add_user/Add_user.jsx'
 import Add_progrmme from './components/Programme/Add_programme.jsx'
 import Add_location from './components/Location/Add_location.jsx'
 import AssignAdmin from './components/Add_admin.jsx'
+import AddAsset from './components/Asset/Asset_Add.jsx'
 import ViewAsset from './components/Asset/View_asset.jsx'
 import AssetDetails from './components/Asset/Asset_details.jsx'
 
@@ -27,6 +28,7 @@ function App() {
         <Route path="/superuser/add_programme" element={<Add_progrmme />} />
         <Route path="/superuser/add_location" element={<Add_location />} />
         <Route path="/superuser/assign_admin" element={<AssignAdmin />} />
+        <Route path="/admin/asset/add" element={<AddAsset />} />
         <Route path="/asset/view" element={<ViewAsset />} />
         <Route path="/assets/view/:id" element={<AssetDetails/>}/>
       </Routes>
