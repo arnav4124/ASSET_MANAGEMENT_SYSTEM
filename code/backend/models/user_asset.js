@@ -7,11 +7,12 @@ const userAssetSchema = new Schema({
     required:true
    },
     user_email:{
-        type:String,
+        type: Schema.Types.ObjectId,
+        ref:'User',
         required:true
     },
     project_id:{
-        type:mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref:'Project',
         required:true
     }

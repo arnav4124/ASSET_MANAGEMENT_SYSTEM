@@ -28,6 +28,10 @@ mongoose.connect(MONGO_URI)
     });
 const User = require("./models/user");
 const Location = require("./models/location"); // Location model is exported as Itemmodel, not Location
+const Asset = require("./models/asset");
+const Programme = require("./models/programme");
+const Invoice = require("./models/invoice");
+const Project = require("./models/project");    
 
 
 
