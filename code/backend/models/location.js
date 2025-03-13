@@ -16,10 +16,15 @@ const locationSchema = new Schema({
         type:String,
         required:true
     },
-    location_detail:{
+    address:{
+        //this will store the address complete adress has to be put up here
         type:String,
         required:true
-    }   
+    },   
+    pincode:{
+        type:Number,
+        required:true
+    }
 })
 
 const Itemmodel = model('location',locationSchema); 
