@@ -25,19 +25,15 @@ const SignUp = () => {
       <h2 className="title">Sign Up</h2>
       <form onSubmit={handleSubmit}>
         <div className="input-group">
-          <label>First Name</label>
+          <label>Name</label>
           <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} required />
         </div>
         <div className="input-group">
-          <label>Last Name</label>
-          <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} required />
-        </div>
-        <div className="input-group">
-          <label>City</label>
+          <label>Location</label>
           <input type="text" name="city" value={formData.city} onChange={handleChange} required />
         </div>
         <div className="input-group">
-          <label>Supervisor</label>
+          <label>Co-ordinator</label>
           <input type="text" name="supervisor" value={formData.supervisor} onChange={handleChange} required />
         </div>
         <div className="input-group">
@@ -50,10 +46,6 @@ const SignUp = () => {
         </div>
         <button type="submit" className="btn">Sign Up</button>
       </form>
-      <div className='login-link'>
-        <p>Already have an account?</p>
-        <a href='/login'>Login</a>
-      </div>
     </div>
   );
 };
