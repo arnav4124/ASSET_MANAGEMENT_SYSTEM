@@ -4,18 +4,17 @@ import axios from 'axios';
 
 
 const Asset_add = () => {
-  // Hardcoded lists (Projects, their heads, and users)
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const usersRes = await axios.get("http://localhost:3487/api/users", {withCredentials: true});
+        const usersRes = await axios.get("http://localhost:3487/api/users", { withCredentials: true });
         console.log("Users response:", usersRes.data);
         setUsers(usersRes.data);
 
-        const projectsRes = await axios.get("http://localhost:3487/api/projects", {withCredentials: true});
+        const projectsRes = await axios.get("http://localhost:3487/api/projects", { withCredentials: true });
         setProjects(projectsRes.data);
       } catch (error) {
         console.error("Error fetching users and projects:", error);
@@ -26,11 +25,10 @@ const Asset_add = () => {
     console.log("Users:", users);
   }, []);
 
+  const adminUsers = users.filter((u) => u.role === "Admin");
+
+
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
-
-  console.log(users);
-  console.log(projects);
-
   // Track whether the asset is Physical or Virtual
   const [assetType, setAssetType] = useState("physical");
 
@@ -53,12 +51,20 @@ const Asset_add = () => {
     formData.append("Invoice_id", data.invoiceId);
     formData.append("Issued_by", data.issuedBy);
     // For simplicity, just insert the user/project ID or name:
-    formData.append("Issued_to", data.issuedToProject || data.issuedToIndividual || "");
+    formData.append("Issued_to", data.assignedToUser || "");
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ': ' + pair[1]);
+    }
 
     try {
-      const response = await axios.p("http://localhost:3487/add-asset", {formData}, {withCredentials: true});
-      const result = await response.json();
-      console.log("Added asset:", result);
+      const response = await axios.post("http://localhost:3487/add-asset", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        withCredentials: true
+      });
+      if (response.status === 200) {
+        alert("Asset added successfully");
+      }
+
     } catch (error) {
       console.error("Error adding asset:", error);
     }
@@ -145,14 +151,18 @@ const Asset_add = () => {
         {/* Issued By */}
         <div>
           <label className="block font-semibold text-lg mb-1">Issued By</label>
-          <input
+          <select
             {...register("issuedBy", { required: "Issued By is required" })}
-            type="text"
-            className="input input-bordered w-full"
-          />
-          {errors.issuedBy && (
-            <p className="text-red-500 text-sm mt-1">{errors.issuedBy.message}</p>
-          )}
+            className="select select-bordered w-full"
+          >
+            <option value="">Select Admin</option>
+            {adminUsers.map((admin) => (
+              <option key={admin._id} value={admin._id}>
+                {admin.first_name} {admin.last_name} ({admin.email})
+              </option>
+            ))}
+          </select>
+          {errors.issuedBy && <p className="text-red-500 text-sm mt-1">{errors.issuedBy.message}</p>}
         </div>
 
         {/* Price */}
@@ -175,64 +185,27 @@ const Asset_add = () => {
           <input {...register("imageFile")} type="file" className="file-input file-input-bordered w-full" />
         </div>
 
-        {/* Upload Invoice */}
+        {/* Upload Invoice
         <div>
           <label className="block font-semibold text-lg mb-1">Upload Invoice</label>
           <input {...register("invoiceFile")} type="file" className="file-input file-input-bordered w-full" />
-        </div>
+        </div> */}
 
         {/* Assigned To */}
         <div>
-          <label className="block font-semibold text-lg mb-1">Assign Asset To</label>
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                value="project"
-                {...register("assignedTo", { required: true })}
-                checked={assignedTo === "project"}
-                onChange={() => setAssignedTo("project")}
-              />
-              Project
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                value="individual"
-                {...register("assignedTo", { required: true })}
-                checked={assignedTo === "individual"}
-                onChange={() => setAssignedTo("individual")}
-              />
-              Individual
-            </label>
-          </div>
-          {errors.assignedTo && <p className="text-red-500 text-sm mt-1">Please select an assignment.</p>}
-        </div>
-
-        {/* Issued To (Project or Individual) */}
-        <div>
-          <label className="block font-semibold text-lg mb-1">Issued To</label>
-          {assignedTo === "project" ? (
-            <select
-              {...register("issuedToProject", { required: assignedTo === "project" })}
-              className="select select-bordered w-full"
-            >
-              <option value="">Select a project</option>
-              {projects.map((proj) => (
-                <option key={proj._id} value={proj.name}>{proj.name} (Head: {proj.head})</option>
-              ))}
-            </select>
-          ) : (
-            <select
-              {...register("issuedToIndividual", { required: assignedTo === "individual" })}
-              className="select select-bordered w-full"
-            >
-              <option value="">Select a user</option>
-              {users.map((u) => (
-                <option key={u._id} value={u.first_name}>{u.first_name} {u.last_name} {u.email}</option>
-              ))}
-            </select>
-          )}
+          <label className="block font-semibold text-lg mb-1">Assign Asset To (User)</label>
+          <select
+            {...register("assignedToUser", { required: "Please select a user" })}
+            className="select select-bordered w-full"
+          >
+            <option value="">Select a user</option>
+            {users.map((u) => (
+              <option key={u._id} value={u._id}>
+                {u.first_name} {u.last_name} ({u.email})
+              </option>
+            ))}
+          </select>
+          {errors.assignedToUser && <p className="text-red-500">{errors.assignedToUser.message}</p>}
         </div>
 
         {/* Category */}
@@ -281,7 +254,7 @@ const Asset_add = () => {
         <div>
           <label className="block font-semibold text-lg mb-1">Invoice ID</label>
           <input
-            {...register("invoiceId", { required: "Invoice ID is required" })}
+            {...register("invoiceId")}
             type="text"
             className="input input-bordered w-full"
           />
