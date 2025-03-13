@@ -26,7 +26,7 @@ const Programme = require("./models/programme");
 const Invoice = require("./models/invoice");
 const Project = require("./models/project");    
 
-app.use(cors());
+app.use(cors({ origin: process.env.FRONTEND, credentials: true }));
 app.use(bodyParser.json());
 
 
@@ -45,6 +45,7 @@ app.get("/", (req, res) => {
 app.get("/api/users", async (req, res) => {
     try {
         const allUsers = await User.find({});
+        console.log(allUsers);
         res.json(allUsers);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -63,6 +64,7 @@ try {
 
 app.post("/add-asset", upload.single("Img"), async (req, res) => {
     try {
+        console.log(req.body);
         const {
         name,
         Serial_number,

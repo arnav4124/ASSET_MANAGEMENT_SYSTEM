@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import axios from 'axios';
+
 
 const Asset_add = () => {
   // Hardcoded lists (Projects, their heads, and users)
@@ -9,21 +11,25 @@ const Asset_add = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const usersRes = await fetch("http://localhost:3487/api/users");
-        const fetchedUsers = await usersRes.json();
-        setUsers(fetchedUsers);
+        const usersRes = await axios.get("http://localhost:3487/api/users", {withCredentials: true});
+        console.log("Users response:", usersRes.data);
+        setUsers(usersRes.data);
 
-        const projectsRes = await fetch("http://localhost:3487/api/projects");
-        const fetchedProjects = await projectsRes.json();
-        setProjects(fetchedProjects);
+        const projectsRes = await axios.get("http://localhost:3487/api/projects", {withCredentials: true});
+        setProjects(projectsRes.data);
       } catch (error) {
         console.error("Error fetching users and projects:", error);
       }
     };
     fetchData();
+    console.log("Projects:", projects);
+    console.log("Users:", users);
   }, []);
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
+
+  console.log(users);
+  console.log(projects);
 
   // Track whether the asset is Physical or Virtual
   const [assetType, setAssetType] = useState("physical");
@@ -50,10 +56,7 @@ const Asset_add = () => {
     formData.append("Issued_to", data.issuedToProject || data.issuedToIndividual || "");
 
     try {
-      const response = await fetch("http://localhost:5000/addAsset", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await axios.p("http://localhost:3487/add-asset", {formData}, {withCredentials: true});
       const result = await response.json();
       console.log("Added asset:", result);
     } catch (error) {
@@ -216,7 +219,7 @@ const Asset_add = () => {
             >
               <option value="">Select a project</option>
               {projects.map((proj) => (
-                <option key={proj.id} value={proj.name}>{proj.name} (Head: {proj.head})</option>
+                <option key={proj._id} value={proj.name}>{proj.name} (Head: {proj.head})</option>
               ))}
             </select>
           ) : (
@@ -226,7 +229,7 @@ const Asset_add = () => {
             >
               <option value="">Select a user</option>
               {users.map((u) => (
-                <option key={u.id} value={u.name}>{u.name}</option>
+                <option key={u._id} value={u.first_name}>{u.first_name} {u.last_name} {u.email}</option>
               ))}
             </select>
           )}
