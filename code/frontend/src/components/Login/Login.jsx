@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    firstName: '',
     email: '',
     password: ''
   });
@@ -23,10 +22,6 @@ const Login = () => {
       <h2 className="title">Login</h2>
       <form onSubmit={handleSubmit}>
         <div className="input-group">
-          <label>First Name</label>
-          <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} required />
-        </div>
-        <div className="input-group">
           <label>Email</label>
           <input type="email" name="email" value={formData.email} onChange={handleChange} required />
         </div>
@@ -36,10 +31,6 @@ const Login = () => {
         </div>
         <button type="submit" className="btn">Login</button>
       </form>
-      <div className='signup-link'>
-                <p>Create a new account?</p>
-                <Link to='/signup'>Sign Up</Link>
-            </div>
     </div>
   );
 };
