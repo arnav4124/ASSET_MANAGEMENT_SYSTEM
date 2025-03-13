@@ -13,7 +13,7 @@ const xml2js = require("xml2js");
 require("dotenv").config({ path: ".env" });
 const MONGO_URI = process.env.MONGO_URI;
 const PORT = process.env.PORT || 5000;
-
+const JWT_SECRET = process.env.JWT_SECRET;
 const app = express();
 
 app.use(cors());
