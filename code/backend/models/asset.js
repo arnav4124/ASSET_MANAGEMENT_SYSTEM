@@ -39,7 +39,17 @@ const assetSchema = new Schema({
     Invoice_id:{
         type:String,
         required:true
-    }
+    },
+
+    Issued_by:{
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    },
+
+    Issued_to:{
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    },
 })
 
 const Asset = model('Programme',assetSchema);
