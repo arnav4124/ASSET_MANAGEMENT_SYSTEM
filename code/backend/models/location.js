@@ -27,5 +27,5 @@ const locationSchema = new Schema({
     }
 })
 
-const Itemmodel = model('location',locationSchema); 
-module.exports = Itemmodel;
+const Location = model('location',locationSchema); 
+module.exports = Location;
