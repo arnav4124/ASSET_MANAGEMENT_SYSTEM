@@ -18,16 +18,42 @@ const app = express();
 
 app.use(cors());
 app.use(bodyParser.json());
-
-
+const programmeRoutes = require("./routes/programme");
+app.use("/api/programmes", programmeRoutes);
 mongoose.connect(MONGO_URI)
     .then(() => console.log("Connected to MongoDB"))
     .catch((err) => {
         console.error("MongoDB connection error:", err);
         process.exit(1);
     });
+
 const User = require("./models/user");
 const Location = require("./models/location"); // Location model is exported as Itemmodel, not Location
+const Programme = require("./models/programme");
+
+// Import routes
+const programmeRoutes = require("./routes/programme");
+
+// Use routes
+app.use("/api/programmes", programmeRoutes);
+
+// Programme routes
+app.post("/api/programmes", async (req, res) => {
+    try {
+        const { name, programme_type, programmes_description } = req.body;
+
+        const programme = new Programme({
+            name,
+            programme_type,
+            programmes_description
+        });
+
+        await programme.save();
+        res.status(201).json({ message: "Programme created successfully", programme });
+    } catch (error) {
+        res.status(500).json({ message: "Error creating programme", error: error.message });
+    }
+});
 
 
 
