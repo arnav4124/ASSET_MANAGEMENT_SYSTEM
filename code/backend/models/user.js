@@ -14,8 +14,6 @@ const userSchema = new Schema({
         required:true,
         unique:true
     },
-    // set a auto incremented id
-
     password:{
         type:String,
         required:true,

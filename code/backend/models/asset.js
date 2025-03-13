@@ -52,6 +52,6 @@ const assetSchema = new Schema({
     },
 })
 
-const Asset = model('Programme',assetSchema);
+const Asset = model('Asset',assetSchema);
 
 module.exports = Asset;
