@@ -1,21 +1,27 @@
-//// filepath: /home/mrudani/dass-spring-2025-project-team-3/code/frontend/src/components/Asset/Asset_add.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 const Asset_add = () => {
   // Hardcoded lists (Projects, their heads, and users)
-  const [projects] = useState([
-    { id: 1, name: "Project Alpha", head: "Alice Johnson" },
-    { id: 2, name: "Project Beta", head: "Bob Smith" },
-    { id: 3, name: "Project Gamma", head: "Charlie Davis" },
-  ]);
+  const [projects, setProjects] = useState([]);
+  const [users, setUsers] = useState([]);
 
-  const [users] = useState([
-    { id: 1, name: "Jane Smith" },
-    { id: 2, name: "John Doe" },
-    { id: 3, name: "Alice Johnson" },
-    { id: 4, name: "Bob Wilson" },
-  ]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const usersRes = await fetch("http://localhost:3487/api/users");
+        const fetchedUsers = await usersRes.json();
+        setUsers(fetchedUsers);
+
+        const projectsRes = await fetch("http://localhost:3487/api/projects");
+        const fetchedProjects = await projectsRes.json();
+        setProjects(fetchedProjects);
+      } catch (error) {
+        console.error("Error fetching users and projects:", error);
+      }
+    };
+    fetchData();
+  }, []);
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
 
@@ -25,9 +31,34 @@ const Asset_add = () => {
   // Track whether asset is assigned to a Project or Individual
   const [assignedTo, setAssignedTo] = useState("project");
 
-  const onSubmit = (data) => {
-    console.log("Form data:", data);
-    // Handle form logic here
+  const onSubmit = async (data) => {
+    const formData = new FormData();
+    formData.append("name", data.assetName);
+    formData.append("Serial_number", data.serialNumber);
+    formData.append("asset_type", data.assetType);
+    formData.append("status", data.status);
+    formData.append("Office", data.office);
+    formData.append("assignment_status", data.assignmentStatus ? "true" : "false");
+    formData.append("Sticker_seq", data.stickerSeq);
+    if (data.imageFile && data.imageFile.length > 0) {
+      formData.append("Img", data.imageFile[0]);
+    }
+    formData.append("description", data.description);
+    formData.append("Invoice_id", data.invoiceId);
+    formData.append("Issued_by", data.issuedBy);
+    // For simplicity, just insert the user/project ID or name:
+    formData.append("Issued_to", data.issuedToProject || data.issuedToIndividual || "");
+
+    try {
+      const response = await fetch("http://localhost:5000/addAsset", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json();
+      console.log("Added asset:", result);
+    } catch (error) {
+      console.error("Error adding asset:", error);
+    }
   };
 
   return (
@@ -73,6 +104,39 @@ const Asset_add = () => {
           {errors.assetName && (
             <p className="text-red-500 text-sm mt-1">{errors.assetName.message}</p>
           )}
+        </div>
+
+        {/* Serial Number */}
+        <div>
+          <label className="block font-semibold text-lg mb-1">Serial Number</label>
+          <input
+            {...register("serialNumber", { required: "Serial number is required" })}
+            type="text"
+            className="input input-bordered w-full"
+          />
+          {errors.serialNumber && <p className="text-red-500 text-sm mt-1">{errors.serialNumber.message}</p>}
+        </div>
+
+        {/* Status */}
+        <div>
+          <label className="block font-semibold text-lg mb-1">Status</label>
+          <input
+            {...register("status", { required: "Status is required" })}
+            type="text"
+            className="input input-bordered w-full"
+          />
+          {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
+        </div>
+
+        {/* Office */}
+        <div>
+          <label className="block font-semibold text-lg mb-1">Office</label>
+          <input
+            {...register("office", { required: "Office is required" })}
+            type="text"
+            className="input input-bordered w-full"
+          />
+          {errors.office && <p className="text-red-500 text-sm mt-1">{errors.office.message}</p>}
         </div>
 
         {/* Issued By */}
@@ -177,6 +241,48 @@ const Asset_add = () => {
             className="input input-bordered w-full"
           />
           {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category.message}</p>}
+        </div>
+
+        {/* Assignment Status */}
+        <div>
+          <label className="block font-semibold text-lg mb-1">Assignment Status</label>
+          <input
+            {...register("assignmentStatus")}
+            type="checkbox"
+            className="checkbox"
+          />
+        </div>
+
+        {/* Sticker Sequence */}
+        <div>
+          <label className="block font-semibold text-lg mb-1">Sticker Sequence</label>
+          <input
+            {...register("stickerSeq", { required: "Sticker sequence is required" })}
+            type="text"
+            className="input input-bordered w-full"
+          />
+          {errors.stickerSeq && <p className="text-red-500 text-sm mt-1">{errors.stickerSeq.message}</p>}
+        </div>
+
+        {/* Description */}
+        <div>
+          <label className="block font-semibold text-lg mb-1">Description</label>
+          <textarea
+            {...register("description", { required: "Description is required" })}
+            className="textarea textarea-bordered w-full"
+          />
+          {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
+        </div>
+
+        {/* Invoice ID */}
+        <div>
+          <label className="block font-semibold text-lg mb-1">Invoice ID</label>
+          <input
+            {...register("invoiceId", { required: "Invoice ID is required" })}
+            type="text"
+            className="input input-bordered w-full"
+          />
+          {errors.invoiceId && <p className="text-red-500 text-sm mt-1">{errors.invoiceId.message}</p>}
         </div>
 
         {/* Submit Button */}
