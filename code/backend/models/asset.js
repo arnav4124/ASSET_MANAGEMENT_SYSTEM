@@ -37,13 +37,15 @@ const assetSchema = new Schema({
         required:true
     },
     Invoice_id:{
-        type:String,
-        required:true
+        type: Schema.Types.ObjectId,
+        ref: 'Invoice',
+        //required:true
     },
 
     Issued_by:{
-        type: Schema.Types.ObjectId,
-        ref: 'User',
+        type:Schema.Types.ObjectId,
+        ref:'User',
+        required:true
     },
 
     Issued_to:{
