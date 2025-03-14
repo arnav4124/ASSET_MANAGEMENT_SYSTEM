@@ -31,6 +31,10 @@
         try {
           console.log("SENDING");
           const response = await axios.get("http://localhost:3487/api/locations/get_cities");
+          if(response.data.success === false){
+            alert("unauthorized_access")
+            navigate("/login")
+          }
           console.log(response);
           setCities(response.data);
         } catch (error) {
