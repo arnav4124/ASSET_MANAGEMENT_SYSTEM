@@ -6,7 +6,7 @@ const ViewAsset = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/assets")
+    fetch("http://localhost:3487/api/assets")
       .then((res) => res.json())
       .then((data) => setAssets(data))
       .catch((err) => console.error(err));
