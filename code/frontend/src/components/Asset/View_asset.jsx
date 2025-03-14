@@ -1,19 +1,18 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const ViewAsset = () => {
+  const [assets, setAssets] = useState([]);
   const navigate = useNavigate();
 
-  const dummyAssets = [
-    { id: 1, name: "Asset One", issuedFrom: "Warehouse A", issuedTo: "User Alpha", category: "Electronics" },
-    { id: 2, name: "Asset Two", issuedFrom: "Warehouse B", issuedTo: "User Beta", category: "Furniture" },
-    { id: 3, name: "Asset Three", issuedFrom: "Warehouse C", issuedTo: "User Gamma", category: "Stationary" },
-    { id: 4, name: "Asset Four", issuedFrom: "Warehouse A", issuedTo: "User Delta", category: "Tools" },
-    { id: 5, name: "Asset Five", issuedFrom: "Warehouse B", issuedTo: "User Epsilon", category: "Electronics" },
-  ];
+  useEffect(() => {
+    fetch("http://localhost:5000/api/assets")
+      .then((res) => res.json())
+      .then((data) => setAssets(data))
+      .catch((err) => console.error(err));
+  }, []);
 
   const handleRowClick = (id) => {
-    // Navigate to the asset details page using the asset ID
     navigate(`/assets/view/${id}`);
   };
 
@@ -31,16 +30,16 @@ const ViewAsset = () => {
             </tr>
           </thead>
           <tbody>
-            {dummyAssets.map((asset) => (
+            {assets.map((asset) => (
               <tr 
-                key={asset.id} 
+                key={asset._id} 
                 className="border-b hover:bg-gray-100 cursor-pointer"
-                onClick={() => handleRowClick(asset.id)}
+                onClick={() => handleRowClick(asset._id)}
               >
                 <td className="px-4 py-2 text-sm text-gray-800">{asset.name}</td>
-                <td className="px-4 py-2 text-sm text-gray-800">{asset.issuedFrom}</td>
-                <td className="px-4 py-2 text-sm text-gray-800">{asset.issuedTo}</td>
-                <td className="px-4 py-2 text-sm text-gray-800">{asset.category}</td>
+                <td className="px-4 py-2 text-sm text-gray-800">{asset.Issued_by}</td>
+                <td className="px-4 py-2 text-sm text-gray-800">{asset.Issued_to}</td>
+                <td className="px-4 py-2 text-sm text-gray-800">{asset.asset_type}</td>
               </tr>
             ))}
           </tbody>

@@ -1,27 +1,19 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
 const AssetDetails = () => {
   const { id } = useParams();
+  const [asset, setAsset] = useState(null);
   const navigate = useNavigate();
 
-  // Dummy asset details for now
-  const asset = {
-    id,
-    name: `Asset ${id}`,
-    issuedTo: "User Alpha",
-    issuedToType: "Individual", // Binary: Individual / Project
-    issuedBy: "Warehouse A",
-    status: "Issued", // Could be "Issued", "In Maintenance", "Unassigned"
-    office: "Main Office",
-    price: "$1000",
-    category: "Electronics",
-    warranty: "2 years",
-    feedback: "No issues reported",
-    img: "Image blob placeholder",
-    report: "Report reference placeholder",
-    invoice: "Invoice reference placeholder",
-  };
+  useEffect(() => {
+    fetch(`http://localhost:5000/api/assets/${id}`)
+      .then((res) => res.json())
+      .then((data) => setAsset(data))
+      .catch((err) => console.error(err));
+  }, [id]);
+
+  if (!asset) return <div>Loading...</div>;
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -38,15 +30,15 @@ const AssetDetails = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <span className="font-semibold text-gray-600">Issued To:</span>
-            <p className="text-gray-800">{asset.issuedTo}</p>
-          </div>
-          <div>
-            <span className="font-semibold text-gray-600">Issued To Type:</span>
-            <p className="text-gray-800">{asset.issuedToType}</p>
+            <p className="text-gray-800">{asset.Issued_to}</p>
           </div>
           <div>
             <span className="font-semibold text-gray-600">Issued By:</span>
-            <p className="text-gray-800">{asset.issuedBy}</p>
+            <p className="text-gray-800">{asset.Issued_by}</p>
+          </div>
+          <div>
+            <span className="font-semibold text-gray-600">Asset Type:</span>
+            <p className="text-gray-800">{asset.asset_type}</p>
           </div>
           <div>
             <span className="font-semibold text-gray-600">Status:</span>
@@ -54,35 +46,23 @@ const AssetDetails = () => {
           </div>
           <div>
             <span className="font-semibold text-gray-600">Office:</span>
-            <p className="text-gray-800">{asset.office}</p>
+            <p className="text-gray-800">{asset.Office}</p>
           </div>
           <div>
-            <span className="font-semibold text-gray-600">Price:</span>
-            <p className="text-gray-800">{asset.price}</p>
-          </div>
-          <div>
-            <span className="font-semibold text-gray-600">Category:</span>
-            <p className="text-gray-800">{asset.category}</p>
-          </div>
-          <div>
-            <span className="font-semibold text-gray-600">Warranty:</span>
-            <p className="text-gray-800">{asset.warranty}</p>
+            <span className="font-semibold text-gray-600">Serial Number:</span>
+            <p className="text-gray-800">{asset.Serial_number}</p>
           </div>
           <div className="sm:col-span-2">
-            <span className="font-semibold text-gray-600">Feedback:</span>
-            <p className="text-gray-800">{asset.feedback}</p>
+            <span className="font-semibold text-gray-600">Sticker Sequence:</span>
+            <p className="text-gray-800">{asset.Sticker_seq}</p>
           </div>
           <div className="sm:col-span-2">
-            <span className="font-semibold text-gray-600">Image:</span>
-            <p className="text-gray-800">{asset.img}</p>
+            <span className="font-semibold text-gray-600">Description:</span>
+            <p className="text-gray-800">{asset.description}</p>
           </div>
-          <div>
-            <span className="font-semibold text-gray-600">Report:</span>
-            <p className="text-gray-800">{asset.report}</p>
-          </div>
-          <div>
-            <span className="font-semibold text-gray-600">Invoice:</span>
-            <p className="text-gray-800">{asset.invoice}</p>
+          <div className="sm:col-span-2">
+            <span className="font-semibold text-gray-600">Invoice ID:</span>
+            <p className="text-gray-800">{asset.Invoice_id}</p>
           </div>
         </div>
       </div>

@@ -1,33 +1,73 @@
-//// filepath: /home/mrudani/dass-spring-2025-project-team-3/code/frontend/src/components/Asset/Asset_add.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import axios from 'axios';
+
 
 const Asset_add = () => {
-  // Hardcoded lists (Projects, their heads, and users)
-  const [projects] = useState([
-    { id: 1, name: "Project Alpha", head: "Alice Johnson" },
-    { id: 2, name: "Project Beta", head: "Bob Smith" },
-    { id: 3, name: "Project Gamma", head: "Charlie Davis" },
-  ]);
+  const [projects, setProjects] = useState([]);
+  const [users, setUsers] = useState([]);
 
-  const [users] = useState([
-    { id: 1, name: "Jane Smith" },
-    { id: 2, name: "John Doe" },
-    { id: 3, name: "Alice Johnson" },
-    { id: 4, name: "Bob Wilson" },
-  ]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const usersRes = await axios.get("http://localhost:3487/api/users", { withCredentials: true });
+        console.log("Users response:", usersRes.data);
+        setUsers(usersRes.data);
+
+        const projectsRes = await axios.get("http://localhost:3487/api/projects", { withCredentials: true });
+        setProjects(projectsRes.data);
+      } catch (error) {
+        console.error("Error fetching users and projects:", error);
+      }
+    };
+    fetchData();
+    console.log("Projects:", projects);
+    console.log("Users:", users);
+  }, []);
+
+  const adminUsers = users.filter((u) => u.role === "Admin");
+
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
-
   // Track whether the asset is Physical or Virtual
   const [assetType, setAssetType] = useState("physical");
 
   // Track whether asset is assigned to a Project or Individual
   const [assignedTo, setAssignedTo] = useState("project");
 
-  const onSubmit = (data) => {
-    console.log("Form data:", data);
-    // Handle form logic here
+  const onSubmit = async (data) => {
+    const formData = new FormData();
+    formData.append("name", data.assetName);
+    formData.append("Serial_number", data.serialNumber);
+    formData.append("asset_type", data.assetType);
+    formData.append("status", data.status);
+    formData.append("Office", data.office);
+    formData.append("assignment_status", data.assignmentStatus ? "true" : "false");
+    formData.append("Sticker_seq", data.stickerSeq);
+    if (data.imageFile && data.imageFile.length > 0) {
+      formData.append("Img", data.imageFile[0]);
+    }
+    formData.append("description", data.description);
+    formData.append("Invoice_id", data.invoiceId);
+    formData.append("Issued_by", data.issuedBy);
+    // For simplicity, just insert the user/project ID or name:
+    formData.append("Issued_to", data.assignedToUser || "");
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ': ' + pair[1]);
+    }
+
+    try {
+      const response = await axios.post("http://localhost:3487/add-asset", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        withCredentials: true
+      });
+      if (response.status === 200) {
+        alert("Asset added successfully");
+      }
+
+    } catch (error) {
+      console.error("Error adding asset:", error);
+    }
   };
 
   return (
@@ -75,17 +115,54 @@ const Asset_add = () => {
           )}
         </div>
 
-        {/* Issued By */}
+        {/* Serial Number */}
         <div>
-          <label className="block font-semibold text-lg mb-1">Issued By</label>
+          <label className="block font-semibold text-lg mb-1">Serial Number</label>
           <input
-            {...register("issuedBy", { required: "Issued By is required" })}
+            {...register("serialNumber", { required: "Serial number is required" })}
             type="text"
             className="input input-bordered w-full"
           />
-          {errors.issuedBy && (
-            <p className="text-red-500 text-sm mt-1">{errors.issuedBy.message}</p>
-          )}
+          {errors.serialNumber && <p className="text-red-500 text-sm mt-1">{errors.serialNumber.message}</p>}
+        </div>
+
+        {/* Status */}
+        <div>
+          <label className="block font-semibold text-lg mb-1">Status</label>
+          <input
+            {...register("status", { required: "Status is required" })}
+            type="text"
+            className="input input-bordered w-full"
+          />
+          {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
+        </div>
+
+        {/* Office */}
+        <div>
+          <label className="block font-semibold text-lg mb-1">Office</label>
+          <input
+            {...register("office", { required: "Office is required" })}
+            type="text"
+            className="input input-bordered w-full"
+          />
+          {errors.office && <p className="text-red-500 text-sm mt-1">{errors.office.message}</p>}
+        </div>
+
+        {/* Issued By */}
+        <div>
+          <label className="block font-semibold text-lg mb-1">Issued By</label>
+          <select
+            {...register("issuedBy", { required: "Issued By is required" })}
+            className="select select-bordered w-full"
+          >
+            <option value="">Select Admin</option>
+            {adminUsers.map((admin) => (
+              <option key={admin._id} value={admin._id}>
+                {admin.first_name} {admin.last_name} ({admin.email})
+              </option>
+            ))}
+          </select>
+          {errors.issuedBy && <p className="text-red-500 text-sm mt-1">{errors.issuedBy.message}</p>}
         </div>
 
         {/* Price */}
@@ -108,64 +185,27 @@ const Asset_add = () => {
           <input {...register("imageFile")} type="file" className="file-input file-input-bordered w-full" />
         </div>
 
-        {/* Upload Invoice */}
+        {/* Upload Invoice
         <div>
           <label className="block font-semibold text-lg mb-1">Upload Invoice</label>
           <input {...register("invoiceFile")} type="file" className="file-input file-input-bordered w-full" />
-        </div>
+        </div> */}
 
         {/* Assigned To */}
         <div>
-          <label className="block font-semibold text-lg mb-1">Assign Asset To</label>
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                value="project"
-                {...register("assignedTo", { required: true })}
-                checked={assignedTo === "project"}
-                onChange={() => setAssignedTo("project")}
-              />
-              Project
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                value="individual"
-                {...register("assignedTo", { required: true })}
-                checked={assignedTo === "individual"}
-                onChange={() => setAssignedTo("individual")}
-              />
-              Individual
-            </label>
-          </div>
-          {errors.assignedTo && <p className="text-red-500 text-sm mt-1">Please select an assignment.</p>}
-        </div>
-
-        {/* Issued To (Project or Individual) */}
-        <div>
-          <label className="block font-semibold text-lg mb-1">Issued To</label>
-          {assignedTo === "project" ? (
-            <select
-              {...register("issuedToProject", { required: assignedTo === "project" })}
-              className="select select-bordered w-full"
-            >
-              <option value="">Select a project</option>
-              {projects.map((proj) => (
-                <option key={proj.id} value={proj.name}>{proj.name} (Head: {proj.head})</option>
-              ))}
-            </select>
-          ) : (
-            <select
-              {...register("issuedToIndividual", { required: assignedTo === "individual" })}
-              className="select select-bordered w-full"
-            >
-              <option value="">Select a user</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.name}>{u.name}</option>
-              ))}
-            </select>
-          )}
+          <label className="block font-semibold text-lg mb-1">Assign Asset To (User)</label>
+          <select
+            {...register("assignedToUser", { required: "Please select a user" })}
+            className="select select-bordered w-full"
+          >
+            <option value="">Select a user</option>
+            {users.map((u) => (
+              <option key={u._id} value={u._id}>
+                {u.first_name} {u.last_name} ({u.email})
+              </option>
+            ))}
+          </select>
+          {errors.assignedToUser && <p className="text-red-500">{errors.assignedToUser.message}</p>}
         </div>
 
         {/* Category */}
@@ -177,6 +217,48 @@ const Asset_add = () => {
             className="input input-bordered w-full"
           />
           {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category.message}</p>}
+        </div>
+
+        {/* Assignment Status */}
+        <div>
+          <label className="block font-semibold text-lg mb-1">Assignment Status</label>
+          <input
+            {...register("assignmentStatus")}
+            type="checkbox"
+            className="checkbox"
+          />
+        </div>
+
+        {/* Sticker Sequence */}
+        <div>
+          <label className="block font-semibold text-lg mb-1">Sticker Sequence</label>
+          <input
+            {...register("stickerSeq", { required: "Sticker sequence is required" })}
+            type="text"
+            className="input input-bordered w-full"
+          />
+          {errors.stickerSeq && <p className="text-red-500 text-sm mt-1">{errors.stickerSeq.message}</p>}
+        </div>
+
+        {/* Description */}
+        <div>
+          <label className="block font-semibold text-lg mb-1">Description</label>
+          <textarea
+            {...register("description", { required: "Description is required" })}
+            className="textarea textarea-bordered w-full"
+          />
+          {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
+        </div>
+
+        {/* Invoice ID */}
+        <div>
+          <label className="block font-semibold text-lg mb-1">Invoice ID</label>
+          <input
+            {...register("invoiceId")}
+            type="text"
+            className="input input-bordered w-full"
+          />
+          {errors.invoiceId && <p className="text-red-500 text-sm mt-1">{errors.invoiceId.message}</p>}
         </div>
 
         {/* Submit Button */}

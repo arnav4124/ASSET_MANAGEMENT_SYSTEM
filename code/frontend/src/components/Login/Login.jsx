@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import './Login.css';
-import { Link } from 'react-router-dom';
-
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 const Login = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -12,10 +13,28 @@ const Login = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('User Logged In:', formData);
+    try {
+      const response = await axios.post('http://localhost:3487/api/user/login', formData);
+      console.log(response.data);
+      if (response.data.success) {
+        localStorage.setItem('token', response.data.token);
+        alert(`Login successful`);
+      } else {
+        alert(response.data.message); 
+      }
+    } catch (err) {
+      if (err.response && err.response.status === 401) {
+        alert('Invalid username or password. Please try again.');
+      } else {
+        console.log(err);
+        alert('Something went wrong. Please try again later.');
+      }
+    }
   };
+  
+
 
   return (
     <div className="container">
