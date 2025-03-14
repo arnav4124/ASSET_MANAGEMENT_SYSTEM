@@ -8,7 +8,7 @@ const locationSchema = new Schema({
         unique:true
     },
     parent_location:{
-        type: Schema.Types.ObjectId,
+        type: Schema.Types.Mixed,
         ref:'Location',
         default:"ROOT"
     },
