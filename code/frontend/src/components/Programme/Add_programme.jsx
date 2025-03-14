@@ -1,9 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { ChevronLeft, Clipboard, Check } from "lucide-react";
 import axios from "axios";
 
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: 'http://localhost:5000',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  withCredentials: true
+});
+
 const AddProgramme = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -19,19 +32,41 @@ const AddProgramme = () => {
 
   const onSubmit = async (data) => {
     try {
-      const response = await axios.post("http://localhost:5000/api/programmes", {
+      setLoading(true);
+      setError(null);
+      setSuccess(false);
+
+      const response = await api.post("http://localhost:3487/api/programmes", {
         name: data.programmeName,
         programme_type: data.type,
         programmes_description: data.description
       });
 
       if (response.status === 201) {
+        setSuccess(true);
         alert("Programme added successfully!");
         reset();
       }
     } catch (error) {
       console.error("Error adding programme:", error);
-      alert("Failed to add programme. Please try again.");
+      let errorMessage = "Failed to add programme. ";
+
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        errorMessage += error.response.data.message || error.response.data.error || '';
+      } else if (error.request) {
+        // The request was made but no response was received
+        errorMessage += "No response from server. Please check if the server is running.";
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        errorMessage += error.message;
+      }
+
+      setError(errorMessage);
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,7 +75,16 @@ const AddProgramme = () => {
       {/* Page Title - Centered alignment */}
       <div className="flex flex-col items-center mb-8">
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Add Programme</h1>
-
+        {error && (
+          <div className="text-red-500 text-sm mt-2 p-2 bg-red-50 rounded-md">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="text-green-500 text-sm mt-2 p-2 bg-green-50 rounded-md">
+            Programme added successfully!
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-3xl mx-auto space-y-6 bg-gray-50 p-6 rounded-lg border">
@@ -55,6 +99,7 @@ const AddProgramme = () => {
             type="text"
             className="w-full p-2 border border-gray-300 rounded"
             placeholder="Enter programme name"
+            disabled={loading}
           />
           {errors.programmeName && (
             <p className="text-red-500 text-sm mt-1">{errors.programmeName.message}</p>
@@ -72,6 +117,7 @@ const AddProgramme = () => {
             className="w-full p-2 border border-gray-300 rounded"
             rows="6"
             placeholder="Enter programme description and details..."
+            disabled={loading}
           />
           {errors.description && (
             <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
