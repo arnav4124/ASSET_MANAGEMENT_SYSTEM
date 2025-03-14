@@ -8,8 +8,8 @@ const locationSchema = new Schema({
         unique:true
     },
     parent_location:{
-        type:String,
-        ref:'location',
+        type: Schema.Types.ObjectId,
+        ref:'Location',
         default:"ROOT"
     },
     location_type:{
@@ -27,5 +27,5 @@ const locationSchema = new Schema({
     }
 })
 
-const Location = model('location',locationSchema); 
+const Location = model('Location',locationSchema); 
 module.exports = Location;

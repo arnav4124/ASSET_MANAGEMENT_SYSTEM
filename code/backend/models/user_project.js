@@ -2,11 +2,11 @@ const {Schema,model} = require('mongoose');
 
 const userProjectSchema = new Schema({
     user_email:{
-        type:String,
+        type: Schema.Types.ObjectId,
         required:true
     },
     project_id:{
-        type:mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref:'Project',
         required:true
     }
