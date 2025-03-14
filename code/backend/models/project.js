@@ -16,7 +16,7 @@ const projectSchema = new Schema({
         
     },
     location: {
-        type: String,
+        type: Array,
         required: true
     },
     deadline: {
