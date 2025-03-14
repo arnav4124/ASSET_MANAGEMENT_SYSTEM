@@ -39,7 +39,8 @@ const AddProgramme = () => {
       const response = await api.post("http://localhost:3487/api/programmes", {
         name: data.programmeName,
         programme_type: data.type,
-        programmes_description: data.description
+        programmes_description: data.description,
+        token: localStorage.getItem('token')
       });
 
       if (response.status === 201) {
