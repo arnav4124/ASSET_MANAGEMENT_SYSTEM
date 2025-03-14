@@ -5,31 +5,25 @@ import { UserPlus, ChevronLeft, Check, Loader2 } from "lucide-react";
 const AddEmployee = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredManagers, setFilteredManagers] = useState([]);
+  const [selectedManager, setSelectedManager] = useState(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   
-  // Sample data for managers and roles dropdowns
+  // Sample data for managers dropdown - added email field
   const managers = [
-    { id: 1, name: "Jane Smith" },
-    { id: 2, name: "John Doe" },
-    { id: 3, name: "Alice Johnson" },
-    { id: 4, name: "Bob Wilson" },
-  ];
-
-  const roles = [
-    "Developer",
-    "Designer",
-    "Project Manager",
-    "QA Engineer",
-    "Business Analyst",
-    "UX Designer",
-    "DevOps Engineer",
-    "Data Scientist",
+    { id: 1, name: "Jane Smith", email: "jane.smith@company.com" },
+    { id: 2, name: "John Doe", email: "john.doe@company.com" },
+    { id: 3, name: "Alice Johnson", email: "alice.johnson@company.com" },
+    { id: 4, name: "Bob Wilson", email: "bob.wilson@company.com" },
   ];
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    reset
+    reset,
+    setValue
   } = useForm({
     defaultValues: {
       firstName: "",
@@ -37,7 +31,6 @@ const AddEmployee = () => {
       email: "",
       phoneNumber: "",
       manager: "",
-      role: "",
       notes: ""
     }
   });
@@ -55,10 +48,37 @@ const AddEmployee = () => {
       setTimeout(() => {
         setShowSuccess(false);
         reset(); // Reset the form after submission
+        setSelectedManager(null);
+        setSearchTerm("");
       }, 3000);
     }, 1500);
   };
 
+  const handleSearch = (e) => {
+    const query = e.target.value.toLowerCase();
+    setSearchTerm(query);
+    setShowSuggestions(true);
+
+    if (query.trim() === "") {
+      setFilteredManagers([]);
+      return;
+    }
+
+    const filtered = managers.filter((manager) => 
+      manager.name.toLowerCase().includes(query) || 
+      manager.email.toLowerCase().includes(query)
+    );
+
+    setFilteredManagers(filtered);
+  };
+
+  const selectManager = (manager) => {
+    setSelectedManager(manager);
+    setSearchTerm(`${manager.name} (${manager.email})`);
+    setValue("manager", manager.id.toString());
+    setShowSuggestions(false);
+  };
+  
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
@@ -178,65 +198,72 @@ const AddEmployee = () => {
               </div>
             </div>
 
-            <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2 pt-2">Role Information</h2>
+            <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2 pt-2">Management</h2>
             
-            {/* Manager & Role */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {/* Manager Dropdown */}
-              <div className="transition-all duration-200">
-                <label className="block font-medium text-sm mb-1 text-gray-700">Manager</label>
-                <div className="relative">
-                  <select
-                    {...register("manager", { 
-                      required: "Please select a manager" 
-                    })}
-                    className="w-full p-3 border border-gray-300 rounded-md appearance-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                  >
-                    <option value="">Select a manager</option>
-                    {managers.map((manager) => (
-                      <option key={manager.id} value={manager.id}>
-                        {manager.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-                {errors.manager && (
-                  <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.manager.message}</p>
-                )}
-              </div>
+            {/* Manager - Autocomplete */}
+            <div className="mb-6 relative">
+              <label className="block font-medium text-sm mb-1 text-gray-700">
+                Manager (Search by name or email)
+              </label>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={handleSearch}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                placeholder="Start typing to search for a manager"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+              />
+              <input
+                type="hidden"
+                {...register("manager", { required: "Please select a manager" })}
+              />
               
-              {/* Role Dropdown */}
-              <div className="transition-all duration-200">
-                <label className="block font-medium text-sm mb-1 text-gray-700">Role</label>
-                <div className="relative">
-                  <select
-                    {...register("role", { 
-                      required: "Please select a role" 
-                    })}
-                    className="w-full p-3 border border-gray-300 rounded-md appearance-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                  >
-                    <option value="">Select a role</option>
-                    {roles.map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
+              {/* Suggestions list */}
+              {showSuggestions && filteredManagers.length > 0 && (
+                <div className="absolute z-10 bg-white mt-1 w-full border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                  {filteredManagers.map((manager) => (
+                    <div 
+                      key={manager.id}
+                      className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 transition-colors duration-150"
+                      onClick={() => selectManager(manager)}
+                    >
+                      <div className="font-medium">{manager.name}</div>
+                      <div className="text-sm text-gray-500">{manager.email}</div>
+                    </div>
+                  ))}
                 </div>
-                {errors.role && (
-                  <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.role.message}</p>
-                )}
-              </div>
+              )}
+              
+              {/* No results message */}
+              {showSuggestions && searchTerm && filteredManagers.length === 0 && (
+                <div className="absolute z-10 bg-white mt-1 w-full border border-gray-300 rounded-md shadow-lg p-3">
+                  <p className="text-gray-500">No managers found. Try a different search term.</p>
+                </div>
+              )}
+              
+              {errors.manager && <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.manager.message}</p>}
+              
+              {/* Selected manager display */}
+              {selectedManager && (
+                <div className="mt-2 p-2 bg-blue-50 border border-blue-100 rounded-md flex justify-between items-center">
+                  <div>
+                    <span className="text-sm font-medium">Selected: </span>
+                    <span className="text-blue-700">{selectedManager.name}</span>
+                  </div>
+                  <button 
+                    type="button"
+                    className="text-sm text-gray-500 hover:text-red-500"
+                    onClick={() => {
+                      setSelectedManager(null);
+                      setSearchTerm("");
+                      setValue("manager", "");
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Additional Notes (Optional) */}
@@ -255,7 +282,11 @@ const AddEmployee = () => {
           <div className="bg-gray-50 p-6 flex justify-end border-t">
             <button
               type="button"
-              onClick={() => reset()}
+              onClick={() => {
+                reset();
+                setSelectedManager(null);
+                setSearchTerm("");
+              }}
               className="px-4 py-2 mr-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition-all duration-200"
             >
               Reset
