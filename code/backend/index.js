@@ -13,9 +13,14 @@ const upload = multer({ storage });
 
 // Import routes
 const userRouter = require("./routes/userRoute.js");
+<<<<<<< HEAD
 const programmeRoutes = require("./routes/programme.js");
 const projectRoutes = require("./routes/project.js");
 
+=======
+const programmeRoutes = require("./routes/programme");
+const locationRoutes = require("./routes/location");
+>>>>>>> 71b4c1b6f8ed5f9391df31bb813fd21077737e17
 // require("dotenv").config();
 require("dotenv").config({ path: ".env" });
 const MONGO_URI = process.env.MONGO_URI;
@@ -54,8 +59,12 @@ mongoose.connect(MONGO_URI)
 // Routes
 app.use('/api/user', userRouter);
 app.use("/api/programmes", programmeRoutes);
+<<<<<<< HEAD
 app.use("/api/projects", projectRoutes);
 
+=======
+app.use("/api/locations", locationRoutes);
+>>>>>>> 71b4c1b6f8ed5f9391df31bb813fd21077737e17
 
 // test route
 app.get("/", (req, res) => {

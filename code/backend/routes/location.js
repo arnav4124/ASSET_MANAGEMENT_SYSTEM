@@ -4,6 +4,7 @@ const Location = require('../models/location')
 const authMiddleware = require('../middleware/auth')   
 
 location_router.get('/get_cities',authMiddleware,async(req,res)=>{
+    console.log("CHECKKK")  
     try {
         const locations = await Location.find({parent_location:"ROOT"})
         const response = [
