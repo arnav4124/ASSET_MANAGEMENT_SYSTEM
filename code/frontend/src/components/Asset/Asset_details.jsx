@@ -7,7 +7,7 @@ const AssetDetails = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/assets/${id}`)
+    fetch(`http://localhost:3487/api/assets/${id}`)
       .then((res) => res.json())
       .then((data) => setAsset(data))
       .catch((err) => console.error(err));

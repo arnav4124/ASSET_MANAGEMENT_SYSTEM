@@ -29,7 +29,7 @@ function App() {
         <Route path="/superuser/add_location" element={<Add_location />} />
         <Route path="/superuser/assign_admin" element={<AssignAdmin />} />
         <Route path="/admin/asset/add" element={<AddAsset />} />
-        <Route path="/asset/view" element={<ViewAsset />} />
+        <Route path="/admin/asset/view" element={<ViewAsset />} />
         <Route path="/assets/view/:id" element={<AssetDetails/>}/>
       </Routes>
       {/* <button
