@@ -122,6 +122,29 @@ app.post("/add-asset", upload.single("Img"), async (req, res) => {
   }
 });
 
+// GET all assets
+app.get("/api/assets", async (req, res) => {
+  try {
+    const assets = await Asset.find({});
+    res.json(assets);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET asset by id
+app.get("/api/assets/:id", async (req, res) => {
+  try {
+    const asset = await Asset.findById(req.params.id);
+    if (!asset) {
+      return res.status(404).json({ error: "Asset not found" });
+    }
+    res.json(asset);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // app use port
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
