@@ -15,8 +15,7 @@ const upload = multer({ storage });
 const userRouter = require("./routes/userRoute.js");
 const programmeRoutes = require("./routes/programme.js");
 const projectRoutes = require("./routes/project.js");
-
-
+const adminRoutes = require("./routes/assign_admin.js");
 const locationRoutes = require("./routes/location");
 // require("dotenv").config();
 require("dotenv").config({ path: ".env" });
@@ -57,7 +56,7 @@ mongoose.connect(MONGO_URI)
 app.use('/api/user', userRouter);
 app.use("/api/programmes", programmeRoutes);
 app.use("/api/projects", projectRoutes);
-
+app.use("/api/admin", adminRoutes);
 app.use("/api/locations", locationRoutes);
 
 // test route
