@@ -5,33 +5,47 @@ const assetSchema = new Schema({
         type:String,
         required:true
     },
+
     Serial_number:{
         type:String,
         required:true
     },
+
     asset_type:{
         type:String,
         required:true
     },
+
+    category:{
+        type:Schema.Types.ObjectId,
+        ref:'Category',
+        //required:true
+    },
+
     status:{
         type:String,
         required:true
     },
+
     Office:{
         type:String,
         required:true
     },
+
     assignment_status:{
         type:Boolean,
         required:true
     },
+
     Sticker_seq:{
         type:String,
         required:true
     },
+
     Img:{
         type:Buffer,
     },
+
     description:{
         type:String,
         required:true

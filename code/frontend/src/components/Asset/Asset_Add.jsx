@@ -57,7 +57,7 @@ const Asset_add = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:3487/add-asset", formData, {
+      const response = await axios.post("http://localhost:3487/api/assets/add-asset", formData, {
         headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true
       });

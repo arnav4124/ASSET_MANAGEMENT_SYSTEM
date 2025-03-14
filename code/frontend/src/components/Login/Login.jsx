@@ -21,6 +21,7 @@ const Login = () => {
       if (response.data.success) {
         localStorage.setItem('token', response.data.token);
         alert(`Login successful`);
+        navigate('/dashboard');
       } else {
         alert(response.data.message); 
       }

@@ -39,6 +39,9 @@ app.use(cors({
 }));
 app.use(bodyParser.json());
 
+const assetRouter = require("./routes/assetRoute");
+app.use("/api/assets", assetRouter);
+
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)
     .then(() => console.log("Connected to MongoDB"))
@@ -67,92 +70,93 @@ app.get("/api/users", async (req, res) => {
     }
 });
 
+
+// app.post("/add-asset", upload.single("Img"), async (req, res) => {
+//   try {
+//     const {
+//       name,
+//       Serial_number,
+//       asset_type,
+//       status,
+//       Office,
+//       assignment_status,
+//       Sticker_seq,
+//       description,
+//       Invoice_id, // could be empty
+//       Issued_by,  // must be a valid user _id
+//       Issued_to,
+//     } = req.body;
+
+//     const assignmentStatusBoolean = assignment_status === "true";
+//     let imgBuffer = null;
+//     if (req.file) {
+//       imgBuffer = req.file.buffer;
+//     }
+
+//     const newAsset = new Asset({
+//       name,
+//       Serial_number,
+//       asset_type,
+//       status,
+//       Office,
+//       assignment_status: assignmentStatusBoolean,
+//       Sticker_seq,
+//       Img: imgBuffer,
+//       description,
+//     });
+
+//     newAsset.Issued_by = Issued_by;
+
+//     // Only set Invoice_id if it contains a valid id
+//     if (Invoice_id) {
+//       newAsset.Invoice_id = Invoice_id;
+//     }
+
+//     // Only set Issued_by if it’s a valid user _id
+//     // if (Issued_by && Issued_by.length === 24) {
+//     //   newAsset.Issued_by = Issued_by;
+//     // }
+
+//     // Same for Issued_to if you’re using it
+//     if (Issued_to && Issued_to.length === 24) {
+//       newAsset.Issued_to = Issued_to;
+//     }
+
+//     await newAsset.save();
+//     return res.status(201).json({ success: true, asset: newAsset });
+//   } catch (error) {
+//     console.error("Error saving asset:", error);
+//     return res.status(500).json({ success: false, error: error.message });
+//   }
+// });
+
+// // GET all assets
+// app.get("/api/assets", async (req, res) => {
+//   try {
+//     const assets = await Asset.find({});
+//     res.json(assets);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+// // GET asset by id
+// app.get("/api/assets/:id", async (req, res) => {
+//   try {
+//     const asset = await Asset.findById(req.params.id);
+//     if (!asset) {
+//       return res.status(404).json({ error: "Asset not found" });
+//     }
+//     res.json(asset);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
 app.get("/api/projects", async (req, res) => {
     try {
         const allProjects = await Project.find({});
         res.json(allProjects);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.post("/add-asset", upload.single("Img"), async (req, res) => {
-    try {
-        const {
-            name,
-            Serial_number,
-            asset_type,
-            status,
-            Office,
-            assignment_status,
-            Sticker_seq,
-            description,
-            Invoice_id, // could be empty
-            Issued_by,  // must be a valid user _id
-            Issued_to,
-        } = req.body;
-
-        const assignmentStatusBoolean = assignment_status === "true";
-        let imgBuffer = null;
-        if (req.file) {
-            imgBuffer = req.file.buffer;
-        }
-
-        const newAsset = new Asset({
-            name,
-            Serial_number,
-            asset_type,
-            status,
-            Office,
-            assignment_status: assignmentStatusBoolean,
-            Sticker_seq,
-            Img: imgBuffer,
-            description,
-        });
-
-        newAsset.Issued_by = Issued_by;
-
-        // Only set Invoice_id if it contains a valid id
-        if (Invoice_id) {
-            newAsset.Invoice_id = Invoice_id;
-        }
-
-        // Only set Issued_by if it's a valid user _id
-        // if (Issued_by && Issued_by.length === 24) {
-        //   newAsset.Issued_by = Issued_by;
-        // }
-
-        // Same for Issued_to if you're using it
-        if (Issued_to && Issued_to.length === 24) {
-            newAsset.Issued_to = Issued_to;
-        }
-
-        await newAsset.save();
-        return res.status(201).json({ success: true, asset: newAsset });
-    } catch (error) {
-        console.error("Error saving asset:", error);
-        return res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-// GET all assets
-app.get("/api/assets", async (req, res) => {
-    try {
-        const assets = await Asset.find({});
-        res.json(assets);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// GET asset by id
-app.get("/api/assets/:id", async (req, res) => {
-    try {
-        const asset = await Asset.findById(req.params.id);
-        if (!asset) {
-            return res.status(404).json({ error: "Asset not found" });
-        }
-        res.json(asset);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
