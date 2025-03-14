@@ -10,6 +10,7 @@ const axios = require("axios");
 const xml2js = require("xml2js");
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+const userRouter = require("./routes/userRoute.js");
 
 // require("dotenv").config();
 require("dotenv").config({ path: ".env" });
@@ -28,7 +29,7 @@ const Project = require("./models/project");
 
 app.use(cors());
 app.use(bodyParser.json());
-
+app.use('/api/user', userRouter);
 
 mongoose.connect(MONGO_URI)
     .then(() => console.log("Connected to MongoDB"))
