@@ -18,6 +18,7 @@ const projectRoutes = require("./routes/project.js");
 const adminRoutes = require("./routes/admin.js");
 const locationRoutes = require("./routes/location");
 const superuserRoutes = require("./routes/superuser.js");
+const categoryRoutes = require("./routes/category.js");
 // require("dotenv").config();
 require("dotenv").config({ path: ".env" });
 const MONGO_URI = process.env.MONGO_URI;
@@ -32,6 +33,8 @@ const Asset = require("./models/asset");
 const Programme = require("./models/programme");
 const Invoice = require("./models/invoice");
 const Project = require("./models/project");
+const assetRouter = require("./routes/assetRoute");
+
 // Middleware
 app.use(cors({
     origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -41,8 +44,7 @@ app.use(cors({
 }));
 app.use(bodyParser.json());
 
-const assetRouter = require("./routes/assetRoute");
-app.use("/api/assets", assetRouter);
+
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)
@@ -59,6 +61,8 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/superuser", superuserRoutes);
+app.use("/api/assets", assetRouter);
+app.use("/api/categories", categoryRoutes);
 // test route
 app.get("/", (req, res) => {
     res.send("Hello World!");

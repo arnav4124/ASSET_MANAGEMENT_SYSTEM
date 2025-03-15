@@ -6,6 +6,7 @@ const upload = multer({ storage });
 
 // Import necessary models
 const Asset = require('../models/asset');
+const UserAsset = require('../models/user_asset');
 
 // Example: POST add-asset
 router.post('/add-asset', upload.single('Img'), async (req, res) => {
@@ -79,6 +80,33 @@ router.get('/:id', async (req, res) => {
     res.json(asset);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+
+router.post("/assign_asset/:assetId", async (req, res) => {
+  try {
+    const { assetId } = req.params;       // from URL
+    const { assignType, assignId } = req.body; // from request body
+
+    if (assignType === "user") {
+      // Entry in user_asset
+      const newUserAsset = await UserAsset.create({
+        asset_id: assetId,
+        user_email: assignId
+      });
+      return res.status(200).json(newUserAsset);
+    } else {
+      // Entry in asset_project
+      const newAssetProject = await AssetProject.create({
+        asset_id: assetId,
+        project_id: assignId
+      });
+      return res.status(200).json(newAssetProject);
+    }
+  } catch (error) {
+    console.error("Asset assign error:", error);
+    return res.status(500).json({ message: "Error assigning asset" });
   }
 });
 

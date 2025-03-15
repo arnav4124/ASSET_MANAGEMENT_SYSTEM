@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from 'axios';
-import { Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 
 const Asset_add = () => {
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [offices, setOffices] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,6 +42,20 @@ const Asset_add = () => {
         });
         console.log("Projects response:", projectsRes.data);
         setProjects(projectsRes.data);
+
+        const categoriesRes = await axios.get("http://localhost:3487/api/categories", {
+          withCredentials: true,
+          headers: { token: localStorage.getItem("token") }
+        });
+        setCategories(categoriesRes.data);
+        console.log("Categories:", categories);
+
+        const officesRes = await axios.get("http://localhost:3487/api/locations?type=office", {
+          withCredentials: true,
+          headers: { token: localStorage.getItem("token") }
+        });
+        setOffices(officesRes.data);
+
       } catch (error) {
         console.error("Error fetching users and projects:", error);
       }
@@ -153,22 +169,32 @@ const Asset_add = () => {
         {/* Status */}
         <div>
           <label className="block font-semibold text-lg mb-1">Status</label>
-          <input
+          <select
             {...register("status", { required: "Status is required" })}
-            type="text"
-            className="input input-bordered w-full"
-          />
+            className="select select-bordered w-full"
+          >
+            <option value="">Select Status</option>
+            <option value="Available">Available</option>
+            <option value="Unavailable">Unavailable</option>
+            <option value="Maintenance">Maintenance</option>
+          </select>
           {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
         </div>
 
         {/* Office */}
         <div>
           <label className="block font-semibold text-lg mb-1">Office</label>
-          <input
+          <select
             {...register("office", { required: "Office is required" })}
-            type="text"
-            className="input input-bordered w-full"
-          />
+            className="select select-bordered w-full"
+          >
+            <option value="">Select Office</option>
+            {offices.map((office) => (
+              <option key={office._id} value={office.location_name}>
+                {office.location_name}
+              </option>
+            ))}
+          </select>
           {errors.office && <p className="text-red-500 text-sm mt-1">{errors.office.message}</p>}
         </div>
 
@@ -216,7 +242,7 @@ const Asset_add = () => {
         </div> */}
 
         {/* Assigned To */}
-        <div>
+        {/* <div>
           <label className="block font-semibold text-lg mb-1">Assign Asset To (User)</label>
           <select
             {...register("assignedToUser", { required: "Please select a user" })}
@@ -230,28 +256,34 @@ const Asset_add = () => {
             ))}
           </select>
           {errors.assignedToUser && <p className="text-red-500">{errors.assignedToUser.message}</p>}
-        </div>
+        </div> */}
 
         {/* Category */}
         <div>
           <label className="block font-semibold text-lg mb-1">Category</label>
-          <input
-            {...register("category", { required: "Category is required" })}
-            type="text"
-            className="input input-bordered w-full"
-          />
+          <select
+            {...register("category")}
+            className="select select-bordered w-full"
+          >
+            <option value="">Select Category</option>
+            {categories.map((cat) => (
+              <option key={cat._id} value={cat.category_name}>
+                {cat.category_name}
+              </option>
+            ))}
+          </select>
           {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category.message}</p>}
         </div>
 
         {/* Assignment Status */}
-        <div>
+        {/* <div>
           <label className="block font-semibold text-lg mb-1">Assignment Status</label>
           <input
             {...register("assignmentStatus")}
             type="checkbox"
             className="checkbox"
           />
-        </div>
+        </div> */}
 
         {/* Sticker Sequence */}
         <div>
