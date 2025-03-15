@@ -12,6 +12,8 @@ import AssignAdmin from './components/Add_admin.jsx'
 import AddAsset from './components/Asset/Asset_Add.jsx'
 import ViewAsset from './components/Asset/View_asset.jsx'
 import AssetDetails from './components/Asset/Asset_details.jsx'
+import AdminDashboard from './components/Dashboard/AdminDashboard.jsx'
+import SuperUserDashboard from './components/Dashboard/SuperUserDashboard.jsx'
 
 
 function App() {
@@ -30,7 +32,9 @@ function App() {
         <Route path="/superuser/assign_admin" element={<AssignAdmin />} />
         <Route path="/admin/asset/add" element={<AddAsset />} />
         <Route path="/admin/asset/view" element={<ViewAsset />} />
-        <Route path="/assets/view/:id" element={<AssetDetails/>}/>
+        <Route path="/admin/assets/view/:id" element={<AssetDetails/>}/>
+        <Route path="/admin/dashboard" element={<AdminDashboard/>} />
+        <Route path='/superuser/dashboard' element={<SuperUserDashboard/>} />
       </Routes>
       {/* <button
   class="inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-center text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900">

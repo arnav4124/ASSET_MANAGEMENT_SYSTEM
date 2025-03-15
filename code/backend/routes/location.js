@@ -45,4 +45,21 @@ location_router.post('/add_location',authMiddleware,async(req,res)=>{
         res.status(500).json({success:false,message:"Error in adding location"})
     }
 })
+
+
+location_router.get('/',authMiddleware,async(req,res)=>{
+    try {
+        const locations = await Location.find({})
+        res.status(200).json(locations)
+    }
+    catch (error) {
+        console.error("Error fetching location:", error);
+        res.status(500).json({
+            message: "Error fetching location",
+            error: error.message
+        });
+    }
+}
+)
+
 module.exports = location_router
