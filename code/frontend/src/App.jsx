@@ -19,6 +19,7 @@ import ViewUsers from './components/Add_user/View_users.jsx'
 import ViewLocation from './components/Location/View_location.jsx'
 import ViewProgramme from './components/Programme/View_programme.jsx'
 import ViewCategory from './components/Category/view_category.jsx'
+import ViewLocationsAdmin from './components/Location/View_Locations_Admin.jsx'
 function App() {
   const [isAdmin, setIsAdmin] = useState(false); 
   return (
@@ -40,6 +41,7 @@ function App() {
         <Route path='/superuser/dashboard' element={<SuperUserDashboard/>} />
         <Route path="/superuser/add_category" element={<AddCategory/>} />
         <Route path="/admin/view_users" element={<ViewUsers/>} />
+        <Route path="/admin/view_locations" element={<ViewLocationsAdmin/>} />
         <Route path="/superuser/view_location" element={<ViewLocation/>} />
         <Route path="/superuser/view_category" element={<ViewCategory/>} />
         <Route path="/superuser/view_programme" element={<ViewProgramme/>} />

@@ -1,20 +1,44 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from 'axios';
+import { Navigate } from "react-router-dom";
 
 
 const Asset_add = () => {
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+    }else{
+      const role = JSON.parse(localStorage.getItem("user")).role;
+      console.log("Role:", role);
+      if (role !== "Admin") {
+        navigate("/login");
+      }
+    }
+      
     const fetchData = async () => {
       try {
-        const usersRes = await axios.get("http://localhost:3487/api/users", { withCredentials: true });
+        const usersRes = await axios.get("http://localhost:3487/api/users", {
+          withCredentials: true,
+          headers: {
+            token: localStorage.getItem("token")
+          }
+        });
         console.log("Users response:", usersRes.data);
         setUsers(usersRes.data);
 
-        const projectsRes = await axios.get("http://localhost:3487/api/projects", { withCredentials: true });
+        const projectsRes = await axios.get("http://localhost:3487/api/projects", { 
+          withCredentials: true,
+          headers: {
+            token: localStorage.getItem("token")
+          }
+        });
+        console.log("Projects response:", projectsRes.data);
         setProjects(projectsRes.data);
       } catch (error) {
         console.error("Error fetching users and projects:", error);
