@@ -17,7 +17,7 @@ import SuperUserDashboard from './components/Dashboard/SuperUserDashboard.jsx'
 import AddCategory from './components/Category/add_category.jsx'
 import ViewUsers from './components/Add_user/View_users.jsx'
 import ViewLocation from './components/Location/View_location.jsx'
-
+import ViewProgramme from './components/Programme/View_programme.jsx'
 import ViewCategory from './components/Category/view_category.jsx'
 function App() {
   const [isAdmin, setIsAdmin] = useState(false); 
@@ -42,6 +42,7 @@ function App() {
         <Route path="/admin/view_users" element={<ViewUsers/>} />
         <Route path="/superuser/view_location" element={<ViewLocation/>} />
         <Route path="/superuser/view_category" element={<ViewCategory/>} />
+        <Route path="/superuser/view_programme" element={<ViewProgramme/>} />
       </Routes>
       {/* <button
   class="inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-center text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900">

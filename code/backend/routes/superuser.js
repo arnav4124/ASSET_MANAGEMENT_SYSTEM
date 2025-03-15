@@ -5,6 +5,8 @@ const Asset = require('../models/asset');
 const authMiddleware = require('../middleware/auth');
 const Location = require('../models/location');
 const User = require('../models/user');
+const Programme = require('../models/programme');
+const Project = require('../models/project');
 
 // Add a new category
 router.post('/add_category', async (req, res) => {
@@ -71,7 +73,7 @@ router.get('/locations', authMiddleware, async (req, res) => {
         // Create a map of location stats
         const locationStats = {};
         locations.forEach(loc => {
-                locationStats[loc.location_name.toLowerCase()] = {
+            locationStats[loc.location_name.toLowerCase()] = {
                 userCount: 0,
                 admin: null
             };
@@ -92,7 +94,7 @@ router.get('/locations', authMiddleware, async (req, res) => {
 
         // Build the hierarchy
         const buildHierarchy = (parentLocation) => {
-            
+
             return locations
                 .filter(loc => loc.parent_location === parentLocation)
                 .map(loc => ({
@@ -119,17 +121,70 @@ router.get('/locations', authMiddleware, async (req, res) => {
         });
     }
 });
-router.get('/get_categories',async(req,res)=>{
+
+// Get all programmes with their projects
+router.get('/programmes', authMiddleware, async (req, res) => {
+    try {
+        // Get all programmes
+        const programmes = await Programme.find({}).lean();
+
+        // Get all projects
+        const projects = await Project.find({})
+            .populate('project_head', 'first_name last_name email')
+            .lean();
+
+        // Group projects by programme
+        const programmeStats = {};
+        programmes.forEach(prog => {
+            programmeStats[prog.name] = {
+                projectCount: 0,
+                projects: []
+            };
+        });
+
+        // Calculate project counts and group projects
+        projects.forEach(project => {
+            if (programmeStats[project.programme_name]) {
+                programmeStats[project.programme_name].projectCount++;
+                programmeStats[project.programme_name].projects.push({
+                    ...project,
+                    project_head_name: `${project.project_head.first_name} ${project.project_head.last_name}`
+                });
+            }
+        });
+
+        // Add stats to programmes
+        const programmesWithProjects = programmes.map(prog => ({
+            ...prog,
+            stats: programmeStats[prog.name] || { projectCount: 0, projects: [] }
+        }));
+
+        res.json({
+            success: true,
+            programmes: programmesWithProjects
+        });
+
+    } catch (error) {
+        console.error('Error fetching programmes:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching programmes',
+            error: error.message
+        });
+    }
+});
+
+router.get('/get_categories', async (req, res) => {
     console.log("GET CATEGORIES")
-    try{
+    try {
         const categories = await Category.find()
         console.log(categories)
         asset_count = []
-        for(let i=0;i<categories.length;i++){
-            asset_count.push(await Asset.countDocuments({category:categories[i]._id}))
+        for (let i = 0; i < categories.length; i++) {
+            asset_count.push(await Asset.countDocuments({ category: categories[i]._id }))
         }
         console.log(asset_count)
-        for (let i=0;i<categories.length;i++){
+        for (let i = 0; i < categories.length; i++) {
             categories[i] = categories[i].toObject()
             categories[i].asset_count = asset_count[i]
         }
@@ -138,7 +193,7 @@ router.get('/get_categories',async(req,res)=>{
             categories: categories
         })
     }
-    catch(err){
+    catch (err) {
         console.error("Error fetching categories:", err);
         res.status(500).json({
             success: false,
