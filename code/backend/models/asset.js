@@ -24,7 +24,8 @@ const assetSchema = new Schema({
 
     status:{
         type:String,
-        required:true
+        required:true,
+        default: 'Available'
     },
 
     Office:{
@@ -34,12 +35,14 @@ const assetSchema = new Schema({
 
     assignment_status:{
         type:Boolean,
-        required:true
+        required:true,
+        default:false
     },
 
     Sticker_seq:{
         type:String,
-        required:true
+        required:true,
+        default:null
     },
 
     Img:{
@@ -53,7 +56,7 @@ const assetSchema = new Schema({
     Invoice_id:{
         type: Schema.Types.ObjectId,
         ref: 'Invoice',
-        //required:true
+        default: null
     },
 
     Issued_by:{
@@ -65,6 +68,7 @@ const assetSchema = new Schema({
     Issued_to:{
         type: Schema.Types.ObjectId,
         ref: 'User',
+        default: null
     },
 })
 

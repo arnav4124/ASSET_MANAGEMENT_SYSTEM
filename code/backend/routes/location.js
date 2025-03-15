@@ -49,24 +49,25 @@ location_router.post('/add_location', authMiddleware, async (req, res) => {
 })
 
 
-location_router.get('/', authMiddleware, async (req, res) => {
+location_router.get("/", authMiddleware, async (req, res) => {
     try {
-        const locations = await Location.find({})
-            .populate({
-                path: 'parent_location',
-                match: { _id: { $ne: "ROOT" } }, // only populate if _id != "ROOT"
-            });
-
-        res.status(200).json(locations);
+      const { type } = req.query;
+      let searchCriteria = {};
+  
+      // If ?type=office, filter on location_type = "office"
+      if (type === "office") {
+        console.log("Fetching office locations");
+        searchCriteria.location_type = "office";
+      }
+  
+      // Otherwise fetch all or modify logic as needed
+      const locations = await Location.find(searchCriteria);
+      res.status(200).json(locations);
     } catch (error) {
-        console.error("Error fetching location:", error);
-        res.status(500).json({
-            message: "Error fetching location",
-            error: error.message
-        });
+      console.error("Error fetching locations:", error);
+      res.status(500).json({ message: "Internal server error", error: error.message });
     }
-}
-)
+  });
 
 
 location_router.get('/get_all_cities', authMiddleware, async (req, res) => {

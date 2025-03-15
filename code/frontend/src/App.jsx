@@ -20,6 +20,7 @@ import ViewLocation from './components/Location/View_location.jsx'
 import ViewProgramme from './components/Programme/View_programme.jsx'
 import ViewCategory from './components/Category/view_category.jsx'
 import ViewLocationsAdmin from './components/Location/View_Locations_Admin.jsx'
+import AssignAsset from './components/Asset/Assign_Asset.jsx'
 function App() {
   const [isAdmin, setIsAdmin] = useState(false); 
   return (
@@ -45,6 +46,7 @@ function App() {
         <Route path="/superuser/view_location" element={<ViewLocation/>} />
         <Route path="/superuser/view_category" element={<ViewCategory/>} />
         <Route path="/superuser/view_programme" element={<ViewProgramme/>} />
+        <Route path="/admin/assets/assign_asset/:id" element={<AssignAsset/>} />
       </Routes>
       {/* <button
   class="inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-center text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900">

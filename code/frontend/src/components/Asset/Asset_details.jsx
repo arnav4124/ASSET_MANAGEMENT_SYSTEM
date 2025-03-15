@@ -27,6 +27,7 @@ const AssetDetails = () => {
       }
     }).then((res) => {
       setAsset(res.data);
+      console.log(res.data);
     }).catch((err) => {
       console.error(err);
     });
@@ -42,6 +43,12 @@ const AssetDetails = () => {
           onClick={() => navigate(-1)}
         >
           &larr; Back
+        </button>
+        <button
+          className="btn btn-primary mb-6 ml-4"
+          onClick={() => navigate(`/admin/assets/assign_asset/${id}`)}
+        >
+          Assign Asset
         </button>
         <h1 className="text-3xl font-bold text-gray-800 mb-6">
           Asset Details - {asset.name}
