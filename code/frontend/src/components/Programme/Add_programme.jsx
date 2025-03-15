@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState , useEffect} from "react";
 import { useForm } from "react-hook-form";
 import { ChevronLeft, Clipboard, Check } from "lucide-react";
 import axios from "axios";
@@ -30,6 +30,20 @@ const AddProgramme = () => {
     }
   });
 
+  useEffect(()=>{
+    const token=localStorage.getItem('token')
+    if(!token){
+        navigate('/login')
+    }
+    else{
+        const role =JSON.parse(localStorage.getItem('user')).role
+        console.log(role)
+
+        if(role!=='Superuser'){
+            navigate('/login')
+        }
+    }
+  })
   const onSubmit = async (data) => {
     try {
       setLoading(true);
