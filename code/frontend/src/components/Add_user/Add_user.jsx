@@ -18,11 +18,29 @@ const AddEmployee = () => {
   const [managers,setManagers]= useState([]);
   const [locations,setLocations]= useState([]);
   useEffect(()=>{
+    const token_st = localStorage.getItem("token")
+    const user_details = localStorage.getItem("")
+    if(!token_st){
+      alert("unauthorized_access")
+      navigate("/login")
+    }
     const fetchManagers = async ()=>{
+
+      console.log(token_st)
+      if(!token){
+        alert("unauthorized_access")
+        navigate("/login")
+        return;
+      }
       setLoading(true)
       try{
         console.log("SENDING REQ FOR MANAGERS")
-        const response = await axios.get("http://localhost:3487/api/admin/get_manager")
+        const response = await axios.get("http://localhost:3487/api/admin/get_manager",{
+          headers:{
+            token:token_st
+          }
+        })
+
         if(response?.data?.success === false){
           alert("unauthorized_access")
           navigate("/login")
@@ -42,7 +60,11 @@ const AddEmployee = () => {
       setLoading(true)
       try{
         console.log("SENDING REQ FOR LOCATIONS")
-        const response = await axios.get("http://localhost:3487/api/locations/get_all_cities")
+        const response = await axios.get("http://localhost:3487/api/locations/get_all_cities",{
+          headers:{
+            token:token_st
+          }
+        })
         if(response?.data?.success === false){
           alert("unauthorized_access")
           navigate("/login")
@@ -95,6 +117,9 @@ const AddEmployee = () => {
       console.log("Submitting data:")
       console.log(data)
       const response = await axios.post("http://localhost:3487/api/admin/add_user",{
+        headers:{
+          token:localStorage.getItem("token")
+        },
         first_name: data.first_name,
         last_name: data.last_name,
         email: data.email,
