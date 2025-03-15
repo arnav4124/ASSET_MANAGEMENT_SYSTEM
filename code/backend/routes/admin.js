@@ -3,6 +3,7 @@ const admin_router = express.Router()
 const User = require('../models/user')
 const Location = require('../models/location')
 const authMiddleware = require('../middleware/auth')
+const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 
 admin_router.get('/get_manager', authMiddleware, async (req, res) => {
@@ -14,11 +15,11 @@ admin_router.get('/get_manager', authMiddleware, async (req, res) => {
         res.status(200).json(manager)
         // res.status(200).json(email_list)
     } catch (err) {
-        console.error("Error fetching manager:", error);
+        console.error("Error fetching manager:", err);
         res.status(500).json({
             success: false,
             message: "Error fetching manager",
-            error: error.message
+            error: err.message
         });
     }
 })
