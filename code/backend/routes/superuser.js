@@ -59,4 +59,93 @@ router.get('/categories', async (req, res) => {
     }
 });
 
+// Get all locations with hierarchy, user counts, and admin details
+router.get('/locations', authMiddleware, async (req, res) => {
+    try {
+        // Get all locations
+        const locations = await Location.find({}).lean();
+
+        // Get all users grouped by location
+        const users = await User.find({}).lean();
+
+        // Create a map of location stats
+        const locationStats = {};
+        locations.forEach(loc => {
+                locationStats[loc.location_name.toLowerCase()] = {
+                userCount: 0,
+                admin: null
+            };
+        });
+
+        // Calculate user counts and find admins for each location
+        users.forEach(user => {
+            if (locationStats[user.location.toLowerCase()]) {
+                locationStats[user.location.toLowerCase()].userCount++;
+                if (user.role === 'Admin') {
+                    locationStats[user.location.toLowerCase()].admin = {
+                        name: `${user.first_name} ${user.last_name}`,
+                        email: user.email
+                    };
+                }
+            }
+        });
+
+        // Build the hierarchy
+        const buildHierarchy = (parentLocation) => {
+            
+            return locations
+                .filter(loc => loc.parent_location === parentLocation)
+                .map(loc => ({
+                    ...loc,
+                    stats: locationStats[loc.location_name],
+                    children: buildHierarchy(loc._id.toString())
+                }));
+        };
+
+        // Get root level locations and build tree
+        const hierarchicalLocations = buildHierarchy("ROOT");
+
+        res.json({
+            success: true,
+            locations: hierarchicalLocations
+        });
+
+    } catch (error) {
+        console.error('Error fetching locations:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching locations',
+            error: error.message
+        });
+    }
+});
+router.get('/get_categories',async(req,res)=>{
+    console.log("GET CATEGORIES")
+    try{
+        const categories = await Category.find()
+        console.log(categories)
+        asset_count = []
+        for(let i=0;i<categories.length;i++){
+            asset_count.push(await Asset.countDocuments({category:categories[i]._id}))
+        }
+        console.log(asset_count)
+        for (let i=0;i<categories.length;i++){
+            categories[i] = categories[i].toObject()
+            categories[i].asset_count = asset_count[i]
+        }
+        res.status(200).json({
+            success: true,
+            categories: categories
+        })
+    }
+    catch(err){
+        console.error("Error fetching categories:", err);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching categories",
+            error: err.message
+        });
+    }
+})
+
 module.exports = router;
