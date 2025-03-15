@@ -1,23 +1,22 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useForm } from "react-hook-form";
+import axios from 'axios';
+
+// Create axios instance
+const api = axios.create({
+  baseURL: 'http://localhost:5000',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  withCredentials: true
+});
 
 const Project_add = () => {
-  const [locations, setLocation] = useState(["bhopal", "Hoshangabad"]);
-  const [programme, setProgramme] = useState(["Programme A", "Programme B", "Programme C"]);
-  const [users, setUsers] = useState([
-    { id: 1, name: "Jane Smith", email: "jane.smith@example.com", role: "Developer" },
-    { id: 2, name: "John Doe", email: "john.doe@example.com", role: "Designer" },
-    { id: 3, name: "Alice Johnson", email: "alice.johnson@example.com", role: "lead" },
-    { id: 4, name: "Bob Wilson", email: "bob.wilson@example.com", role: "Developer" },
-    { id: 5, name: "Carol White", email: "carol.white@example.com", role: "QA Engineer" },
-    { id: 6, name: "Dave Brown", email: "dave.brown@example.com", role: "Business Analyst" },
-    { id: 7, name: "Eve Black", email: "eve.black@example.com", role: "UX Designer" },
-    { id: 8, name: "Frank Green", email: "frank.green@example.com", role: "Backend Developer" },
-    { id: 9, name: "Grace Lee", email: "grace.lee@example.com", role: "Frontend Developer" },
-    { id: 10, name: "Harry Chen", email: "harry.chen@example.com", role: "DevOps Engineer" },
-    { id: 11, name: "Ivy Wong", email: "ivy.wong@example.com", role: "Data Scientist" },
-    { id: 12, name: "Jack Taylor", email: "jack.taylor@example.com", role: "Security Specialist" },
-  ]);
+  const [locations, setLocations] = useState([]);
+  const [programmes, setProgrammes] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [managerSearchTerm, setManagerSearchTerm] = useState('');
   const [selectedManager, setSelectedManager] = useState(null);
   const [participantSearchTerm, setParticipantSearchTerm] = useState('');
@@ -26,6 +25,41 @@ const Project_add = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const participantsPerPage = 10;
+
+  // Fetch initial data
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Fetch users with role 'User'
+        const usersResponse = await api.get('http://localhost:3487/api/projects/users', {
+          headers: { token: localStorage.getItem('token') }
+        });
+        setUsers(usersResponse.data);
+
+        // Fetch locations
+        const locationsResponse = await api.get('http://localhost:3487/api/projects/locations', {
+          headers: { token: localStorage.getItem('token') }
+        });
+        setLocations(locationsResponse.data);
+
+        // Fetch programmes
+        const programmesResponse = await api.get('http://localhost:3487/api/programmes', {
+          headers: { token: localStorage.getItem('token') }
+        });
+        setProgrammes(programmesResponse.data);
+
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to load required data. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Calculate pagination data
   const { currentParticipants, totalPages, indexOfFirstParticipant } = useMemo(() => {
@@ -37,11 +71,9 @@ const Project_add = () => {
       };
     }
 
-    
-
     const indexOfLastParticipant = currentPage * participantsPerPage;
     const indexOfFirstParticipant = indexOfLastParticipant - participantsPerPage;
-    
+
     return {
       currentParticipants: selectedParticipants.slice(
         indexOfFirstParticipant,
@@ -52,24 +84,59 @@ const Project_add = () => {
     };
   }, [selectedParticipants, currentPage]);
 
-  // Reset to first page when participants list changes
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedParticipants.length]);
 
-  const onSubmit = (data) => {
-    console.log(data);
-    // Handle form submission here
-  };
-
-  
   const {
     register,
     handleSubmit,
     formState: { errors },
+    reset
   } = useForm();
 
-  // Function to remove a participant by index
+  const onSubmit = async (data) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (!selectedManager) {
+        throw new Error('Please select a project manager');
+      }
+
+      if (selectedLocations.length === 0) {
+        throw new Error('Please select at least one location');
+      }
+
+      const projectData = {
+        Project_name: data.projectName,
+        programme_name: data.programme,
+        project_head: selectedManager._id,
+        location: selectedLocations,
+        description: data.projectDescription,
+        deadline: data.deadline || null,
+        participants: selectedParticipants.map(p => p._id)
+      };
+
+      const response = await api.post('http://localhost:3487/api/projects', projectData, {
+        headers: { token: localStorage.getItem('token') }
+      });
+
+      if (response.status === 201) {
+        alert('Project created successfully!');
+        reset();
+        setSelectedManager(null);
+        setSelectedParticipants([]);
+        setSelectedLocations([]);
+      }
+    } catch (err) {
+      console.error('Error creating project:', err);
+      setError(err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const removeParticipant = (index) => {
     setSelectedParticipants(prev => {
       const updatedList = [...prev];
@@ -80,14 +147,25 @@ const Project_add = () => {
 
   const handleLocationChange = (event) => {
     const { value, checked } = event.target;
-    setSelectedLocations((prev) =>
-      checked ? [...prev, value] : prev.filter((loc) => loc !== value)
+    setSelectedLocations(prev =>
+      checked ? [...prev, value] : prev.filter(loc => loc !== value)
     );
   };
 
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-500">
+        {error}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-10">
-      {/* Page Title */}
       <h1 className="text-3xl font-bold text-gray-800 text-center mb-6">Add Project</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-6">
         <div className="grid grid-cols-2 gap-6">
@@ -101,6 +179,7 @@ const Project_add = () => {
               })}
               type="text"
               className="input input-bordered w-full"
+              disabled={loading}
             />
             {errors.projectName && (
               <p className="text-red-500 text-sm mt-1">{errors.projectName.message}</p>
@@ -113,10 +192,11 @@ const Project_add = () => {
             <select
               {...register("programme", { required: "Programme is required" })}
               className="select select-bordered w-full"
+              disabled={loading}
             >
               <option value="">Select a programme</option>
-              {programme.map((prog, index) => (
-                <option key={index} value={prog}>{prog}</option>
+              {programmes.map((prog) => (
+                <option key={prog._id} value={prog.name}>{prog.name}</option>
               ))}
             </select>
             {errors.programme && (
@@ -125,107 +205,106 @@ const Project_add = () => {
           </div>
         </div>
 
+        {/* Project Locations */}
         <div>
           <label className="block font-semibold text-lg mb-1">Project Location</label>
-          <div className="flex flex-row gap-10">
+          <div className="flex flex-wrap gap-4">
             {locations.map((location) => (
-              <label key={location} className="flex items-center gap-2">
+              <label key={location._id} className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  value={location}
-                  {...register("location", { required: "Location is required" })}
-                  checked={selectedLocations.includes(location)}
+                  value={location.location_name}
+                  checked={selectedLocations.includes(location.location_name)}
                   onChange={handleLocationChange}
                   className="checkbox"
+                  disabled={loading}
                 />
-                {location}
+                {location.location_name}
               </label>
             ))}
           </div>
-          {errors.location && (
-            <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>
+          {selectedLocations.length === 0 && (
+            <p className="text-red-500 text-sm mt-1">Please select at least one location</p>
           )}
         </div>
-        
+
         {/* Project Manager */}
-{/* Project Manager */}
-<div>
-  <label className="block font-semibold text-lg mb-1">Project Manager</label>
-  <input
-    type="text"
-    className="w-full p-2 border rounded-md"
-    placeholder="Search manager by email"
-    value={managerSearchTerm}
-    onChange={(e) => setManagerSearchTerm(e.target.value)}
-  />
-  {managerSearchTerm && !selectedManager && (
-    <div className="mt-2 border rounded-md shadow-sm">
-      {users
-        .filter(user => 
-          user.email.toLowerCase().includes(managerSearchTerm.toLowerCase())
-        )
-        .map((user, index) => (
-          <div
-            key={index}
-            className="p-2 hover:bg-gray-100 cursor-pointer"
-            onClick={() => {
-              setSelectedManager(user);
-              setManagerSearchTerm('');
+        <div>
+          <label className="block font-semibold text-lg mb-1">Project Manager</label>
+          <input
+            type="text"
+            className="w-full p-2 border rounded-md"
+            placeholder="Search manager by email"
+            value={managerSearchTerm}
+            onChange={(e) => setManagerSearchTerm(e.target.value)}
+          />
+          {managerSearchTerm && !selectedManager && (
+            <div className="mt-2 border rounded-md shadow-sm">
+              {users
+                .filter(user =>
+                  user.email.toLowerCase().includes(managerSearchTerm.toLowerCase())
+                )
+                .map((user, index) => (
+                  <div
+                    key={index}
+                    className="p-2 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => {
+                      setSelectedManager(user);
+                      setManagerSearchTerm('');
 
-              // Modify role to include "(Project Manager)"
-              const updatedManager = { ...user, role: `${user.role} (Project Manager)` };
+                      // Modify role to include "(Project Manager)"
+                      const updatedManager = { ...user, role: `${user.role} (Project Manager)` };
 
-              setSelectedParticipants(prevParticipants => {
-                const exists = prevParticipants.some(p => p.email === user.email);
-                if (exists) {
-                  // Update existing participant's role
-                  return prevParticipants.map(p =>
-                    p.email === user.email ? updatedManager : p
+                      setSelectedParticipants(prevParticipants => {
+                        const exists = prevParticipants.some(p => p.email === user.email);
+                        if (exists) {
+                          // Update existing participant's role
+                          return prevParticipants.map(p =>
+                            p.email === user.email ? updatedManager : p
+                          );
+                        } else {
+                          // Add new participant
+                          return [...prevParticipants, updatedManager];
+                        }
+                      });
+
+                      register("projectManager").onChange({
+                        target: { value: user.email }
+                      });
+                    }}
+                  >
+                    <div>{user.name}</div>
+                    <div className="text-sm text-gray-600">{user.email}</div>
+                  </div>
+                ))}
+            </div>
+          )}
+          {selectedManager && (
+            <div className="mt-2 bg-blue-100 p-2 rounded-md">
+              <div>{selectedManager.name}</div>
+              <div className="text-sm text-gray-600">{selectedManager.email}</div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedManager(null);
+                  register("projectManager").onChange({ target: { value: '' } });
+
+                  // Restore original role without removing from participants
+                  setSelectedParticipants(prevParticipants =>
+                    prevParticipants.map(p =>
+                      p.email === selectedManager.email
+                        ? { ...p, role: p.role.replace(" (Project Manager)", "") }
+                        : p
+                    )
                   );
-                } else {
-                  // Add new participant
-                  return [...prevParticipants, updatedManager];
-                }
-              });
-
-              register("projectManager").onChange({
-                target: { value: user.email }
-              });
-            }}
-          >
-            <div>{user.name}</div>
-            <div className="text-sm text-gray-600">{user.email}</div>
-          </div>
-        ))}
-    </div>
-  )}
-  {selectedManager && (
-    <div className="mt-2 bg-blue-100 p-2 rounded-md">
-      <div>{selectedManager.name}</div>
-      <div className="text-sm text-gray-600">{selectedManager.email}</div>
-      <button
-        type="button"
-        onClick={() => {
-          setSelectedManager(null);
-          register("projectManager").onChange({ target: { value: '' } });
-
-          // Restore original role without removing from participants
-          setSelectedParticipants(prevParticipants =>
-            prevParticipants.map(p =>
-              p.email === selectedManager.email
-                ? { ...p, role: p.role.replace(" (Project Manager)", "") }
-                : p
-            )
-          );
-        }}
-        className="text-red-500 hover:text-red-700 text-sm mt-1"
-      >
-        Remove
-      </button>
-    </div>
-  )}
-</div>
-
+                }}
+                className="text-red-500 hover:text-red-700 text-sm mt-1"
+              >
+                Remove
+              </button>
+            </div>
+          )}
+        </div>
 
         <div>
           <label className="block font-semibold text-lg mb-1">Add Participants</label>
@@ -239,7 +318,7 @@ const Project_add = () => {
           {participantSearchTerm && (
             <div className="mt-2 border rounded-md shadow-sm">
               {users
-                .filter(user => 
+                .filter(user =>
                   user.email.toLowerCase().includes(participantSearchTerm.toLowerCase()) &&
                   !selectedParticipants.some(p => p.email === user.email)
                 )
@@ -258,7 +337,6 @@ const Project_add = () => {
                 ))}
             </div>
           )}
-          
         </div>
 
         {/* Participants Table */}
@@ -321,25 +399,29 @@ const Project_add = () => {
             </div>
           )}
         </div>
-           
-                {/* Project Description */}
-                <div>
-                    <label className="block font-semibold text-lg mb-1">Project Description</label>
-                    <textarea
-                        {...register("projectDescription", { required: "Project description is required" })}
-                        className="w-full p-2 border rounded-md resize-y"
-                        placeholder="Project Description"
-                    ></textarea>
-                    {errors.projectDescription && (
-                        <p className="text-red-500 text-sm mt-1">{errors.projectDescription.message}</p>
-                    )}
-                </div>
-                <div>
-                    
-                </div>  
+
+        {/* Project Description */}
+        <div>
+          <label className="block font-semibold text-lg mb-1">Project Description</label>
+          <textarea
+            {...register("projectDescription", { required: "Project description is required" })}
+            className="w-full p-2 border rounded-md resize-y"
+            placeholder="Project Description"
+          ></textarea>
+          {errors.projectDescription && (
+            <p className="text-red-500 text-sm mt-1">{errors.projectDescription.message}</p>
+          )}
+        </div>
+
         {/* Submit Button */}
         <div className="text-center">
-          <button type="submit" className="btn btn-primary px-6 py-2">Submit</button>
+          <button
+            type="submit"
+            className={`btn btn-primary px-6 py-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={loading}
+          >
+            {loading ? 'Creating...' : 'Create Project'}
+          </button>
         </div>
       </form>
     </div>

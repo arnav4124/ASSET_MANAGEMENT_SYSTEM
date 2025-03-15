@@ -4,6 +4,7 @@ const Location = require('../models/location')
 const authMiddleware = require('../middleware/auth')   
 
 location_router.get('/get_cities',authMiddleware,async(req,res)=>{
+    console.log("CHECKKK")  
     try {
         const locations = await Location.find({parent_location:"ROOT"})
         const response = [
@@ -61,5 +62,20 @@ location_router.get('/',authMiddleware,async(req,res)=>{
     }
 }
 )
+
+
+location_router.get('/get_all_cities',authMiddleware,async(req,res)=>{
+    try{
+        const locations = await Location.find({})
+        location_name_list = []
+        for(i=0;i<locations.length;i++){
+            location_name_list.push(locations[i].location_name)
+        }
+        console.log(location_name_list)
+        res.status(200).json(location_name_list)
+    }catch(err){
+        res.status(500).json({success:false,message:"Error in fetching locations"})
+    }
+})
 
 module.exports = location_router

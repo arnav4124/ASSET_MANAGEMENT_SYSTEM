@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Programme = require('../models/programme');
-const authMiddleware=require('../middleware/auth');
+const authMiddleware = require('../middleware/auth');
+// const programmeRouter=require('../routes/programme');
 // Create a new programme
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/',  async (req, res) => {
     try {
         const { name, programme_type, programmes_description } = req.body;
 
