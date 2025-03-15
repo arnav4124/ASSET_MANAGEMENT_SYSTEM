@@ -28,6 +28,18 @@ const Project_add = () => {
 
   // Fetch initial data
   useEffect(() => {
+    const token=localStorage.getItem('token')
+    if(!token){
+        navigate('/login')
+    }
+    else{
+        const role =JSON.parse(localStorage.getItem('user')).role
+        console.log(role)
+
+        if(role!=='Admin'){
+            navigate('/login')
+        }
+    }
     const fetchData = async () => {
       setLoading(true);
       setError(null);

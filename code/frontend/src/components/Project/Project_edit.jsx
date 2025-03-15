@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState , useEffect} from "react";
 import { Pencil, Trash2, UserPlus, ChevronRight, ChevronLeft, Check, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 
@@ -58,6 +58,20 @@ const ProjectEdit = () => {
       description: "This is a sample project description."
     }
   });
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+    } else {
+      const role = JSON.parse(localStorage.getItem('user')).role;
+      console.log(role);
+
+      if (role !== 'Admin') {
+        navigate('/login');
+      }
+    }
+  }, []);
 
   const onSubmit = (data) => {
     console.log(data);
