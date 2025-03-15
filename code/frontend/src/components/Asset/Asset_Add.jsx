@@ -23,11 +23,22 @@ const Asset_add = () => {
       
     const fetchData = async () => {
       try {
-        const usersRes = await axios.get("http://localhost:3487/api/users", { withCredentials: true });
+        const usersRes = await axios.get("http://localhost:3487/api/users", {
+          withCredentials: true,
+          headers: {
+            token: localStorage.getItem("token")
+          }
+        });
         console.log("Users response:", usersRes.data);
         setUsers(usersRes.data);
 
-        const projectsRes = await axios.get("http://localhost:3487/api/projects", { withCredentials: true });
+        const projectsRes = await axios.get("http://localhost:3487/api/projects", { 
+          withCredentials: true,
+          headers: {
+            token: localStorage.getItem("token")
+          }
+        });
+        console.log("Projects response:", projectsRes.data);
         setProjects(projectsRes.data);
       } catch (error) {
         console.error("Error fetching users and projects:", error);

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import axios from 'axios';
+
 
 const AssetDetails = () => {
   const { id } = useParams();
@@ -17,10 +19,17 @@ const AssetDetails = () => {
         navigate("/login");
       }
     }
-    fetch(`http://localhost:3487/api/assets/${id}`)
-      .then((res) => res.json())
-      .then((data) => setAsset(data))
-      .catch((err) => console.error(err));
+
+    axios.get(`http://localhost:3487/api/assets/${id}`, {
+      withCredentials: true,
+      headers: {
+        token: localStorage.getItem("token")
+      }
+    }).then((res) => {
+      setAsset(res.data);
+    }).catch((err) => {
+      console.error(err);
+    });
   }, [id]);
 
   if (!asset) return <div>Loading...</div>;

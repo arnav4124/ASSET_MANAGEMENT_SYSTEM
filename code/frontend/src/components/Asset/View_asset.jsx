@@ -23,7 +23,7 @@ const ViewAsset = () => {
   }, []);
 
   const handleRowClick = (id) => {
-    navigate(`/assets/view/${id}`);
+    navigate(`/admin/assets/view/${id}`);
   };
 
   return (
