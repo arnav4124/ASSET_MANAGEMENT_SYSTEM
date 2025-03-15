@@ -143,7 +143,7 @@ const AddEmployee = () => {
         setSuccess(true);
         reset();
         alert("user added successfully!");
-        navigate("/superuser/add_location");
+        navigate("/admin/add_user");
       }
     }
     catch(err){
