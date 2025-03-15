@@ -19,7 +19,18 @@ const AddEmployee = () => {
   const [locations,setLocations]= useState([]);
   useEffect(()=>{
     const token_st = localStorage.getItem("token")
-    const user_details = localStorage.getItem("")
+    const token=localStorage.getItem('token')
+         if(!token){
+             navigate('/login')
+         }
+         else{
+             const role =JSON.parse(localStorage.getItem('user')).role
+             console.log(role)
+ 
+             if(role!=='Admin'){
+                 navigate('/login')
+             }
+         }
     if(!token_st){
       alert("unauthorized_access")
       navigate("/login")
@@ -117,16 +128,16 @@ const AddEmployee = () => {
       console.log("Submitting data:")
       console.log(data)
       const response = await axios.post("http://localhost:3487/api/admin/add_user",{
-        headers:{
-          token:localStorage.getItem("token")
-        },
         first_name: data.first_name,
         last_name: data.last_name,
         email: data.email,
         phoneNumber: data.phoneNumber,
         manager: data.manager,
         location : data.location
-      })
+      },{
+      headers:{
+        token:localStorage.getItem("token")
+      }})
       console.log(response)
       if (response.status === 201 || response.status === 200) {
         setSuccess(true);
