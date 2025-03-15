@@ -152,6 +152,17 @@ const Project_add = () => {
     );
   };
 
+  const formatDate = (date) => {
+    if (!date) return 'No deadline';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid date';
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }

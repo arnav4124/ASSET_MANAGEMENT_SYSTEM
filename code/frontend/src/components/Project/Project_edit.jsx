@@ -2,6 +2,17 @@ import React, { useState } from "react";
 import { Pencil, Trash2, UserPlus, ChevronRight, ChevronLeft, Check, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 
+const formatDate = (date) => {
+  if (!date) return 'No deadline';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return 'Invalid date';
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
 const ProjectEdit = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
