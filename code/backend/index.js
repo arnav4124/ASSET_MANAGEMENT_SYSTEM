@@ -12,12 +12,12 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Import routes
-const userRoutes = require("./routes/userRoute.js");
+const userRouter = require("./routes/userRoute.js");
 const programmeRoutes = require("./routes/programme.js");
 const projectRoutes = require("./routes/project.js");
-const add_adminRoutes = require("./routes/assign_admin.js");
+const adminRoutes = require("./routes/assign_admin.js");
 const locationRoutes = require("./routes/location");
-const adminRoutes = require("./routes/admin");
+const superuserRoutes = require("./routes/superuser.js");
 // require("dotenv").config();
 require("dotenv").config({ path: ".env" });
 const MONGO_URI = process.env.MONGO_URI;
@@ -53,12 +53,12 @@ mongoose.connect(MONGO_URI)
     });
 
 // Routes
-app.use('/api/user', userRoutes);
+app.use('/api/user', userRouter);
 app.use("/api/programmes", programmeRoutes);
 app.use("/api/projects", projectRoutes);
-app.use("/api/add_admin", add_adminRoutes);
-app.use("/api/locations", locationRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/locations", locationRoutes);
+app.use("/api/superuser", superuserRoutes);
 // test route
 app.get("/", (req, res) => {
     res.send("Hello World!");
@@ -73,6 +73,7 @@ app.get("/api/users", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
 
 
 // app.post("/add-asset", upload.single("Img"), async (req, res) => {

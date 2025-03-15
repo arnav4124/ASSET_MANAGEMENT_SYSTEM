@@ -6,10 +6,10 @@ const Location = require('../models/location');
 const authMiddleware = require('../middleware/auth');
 const UserProject = require('../models/user_project');
 
-// Get all users with role 'User'
+// Get all users with role 'User' or 'Admin'
 router.get('/users', authMiddleware, async (req, res) => {
     try {
-        const users = await User.find({ role: 'User' });
+        const users = await User.find({ role: { $in: ['User', 'Admin'] } });
         res.status(200).json(users);
     } catch (error) {
         console.error('Error fetching users:', error);

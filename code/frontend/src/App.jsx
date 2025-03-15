@@ -14,7 +14,7 @@ import ViewAsset from './components/Asset/View_asset.jsx'
 import AssetDetails from './components/Asset/Asset_details.jsx'
 import AdminDashboard from './components/Dashboard/AdminDashboard.jsx'
 import SuperUserDashboard from './components/Dashboard/SuperUserDashboard.jsx'
-
+import AddCategory from './components/Category/add_category.jsx'
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(false); 
@@ -35,6 +35,7 @@ function App() {
         <Route path="/admin/assets/view/:id" element={<AssetDetails/>}/>
         <Route path="/admin/dashboard" element={<AdminDashboard/>} />
         <Route path='/superuser/dashboard' element={<SuperUserDashboard/>} />
+        <Route path="/superuser/add_category" element={<AddCategory/>} />
       </Routes>
       {/* <button
   class="inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-center text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900">
