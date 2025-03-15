@@ -382,17 +382,17 @@ const AddEmployee = () => {
             </div>
             <h2 className="text-lg font-medium text-gray-700 mb-4">Select Location</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {locations.map((loc) => (
-                <label key={loc.id} className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    value={loc.name}
-                    {...register("location", { required: "Please select a location" })}
-                    className="form-radio"
-                  />
-                  <span>{loc}</span>
-                </label>
-              ))}
+            {locations.map((loc, index) => (
+  <label key={index} className="flex items-center space-x-2">
+    <input
+      type="radio"
+      value={loc} // Use the location string directly
+      {...register("location", { required: "Please select a location" })}
+      className="form-radio"
+    />
+    <span>{loc}</span> {/* Display the location string */}
+  </label>
+))}
           </div>
             {/* Additional Notes (Optional) */}
           </div>
