@@ -12,7 +12,7 @@ const loginUser = async (req, res) => {
             if (password !== user.password) {
                 return res.status(401).json({ success: false, message: 'Invalid credentials' });
             } else {
-                const token = createToken(user._id);
+                const token = createToken(user);
                 const userData = {
                     _id: user._id,
                     first_name: user.first_name,
@@ -21,11 +21,11 @@ const loginUser = async (req, res) => {
                     location: user.location,
                     role: user.role
                 };
-                
-                res.json({ 
-                    success: true, 
+
+                res.json({
+                    success: true,
                     token,
-                    user: userData 
+                    user: userData
                 });
             }
         }
@@ -35,8 +35,15 @@ const loginUser = async (req, res) => {
     }
 }
 
-const createToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET);
+const createToken = (user) => {
+    return jwt.sign({
+        id: user._id,
+        user: {
+            id: user._id,
+            location: user.location,
+            role: user.role
+        }
+    }, process.env.JWT_SECRET);
 }
 
 module.exports = { loginUser };

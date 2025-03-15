@@ -15,7 +15,7 @@ const upload = multer({ storage });
 const userRouter = require("./routes/userRoute.js");
 const programmeRoutes = require("./routes/programme.js");
 const projectRoutes = require("./routes/project.js");
-const adminRoutes = require("./routes/assign_admin.js");
+const adminRoutes = require("./routes/admin.js");
 const locationRoutes = require("./routes/location");
 const superuserRoutes = require("./routes/superuser.js");
 // require("dotenv").config();
@@ -37,7 +37,7 @@ app.use(cors({
     origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'token']
+    allowedHeaders: ['Content-Type', 'Authorization', 'token', 'user']
 }));
 app.use(bodyParser.json());
 

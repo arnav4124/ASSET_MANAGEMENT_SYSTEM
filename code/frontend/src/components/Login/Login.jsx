@@ -20,6 +20,8 @@ const Login = () => {
       console.log(response.data);
       if (response.data.success) {
         localStorage.setItem('token', response.data.token);
+        console.log(response.data.user)
+        localStorage.setItem('user', JSON.stringify(response.data.user));
         alert(`Login successful`);
         navigate('/dashboard');
       } else {
