@@ -3,6 +3,7 @@ const admin_router = express.Router()
 const User = require('../models/user')
 const Location = require('../models/location')
 const authMiddleware = require('../middleware/auth')
+const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 
 admin_router.get('/get_manager', authMiddleware, async (req, res) => {
