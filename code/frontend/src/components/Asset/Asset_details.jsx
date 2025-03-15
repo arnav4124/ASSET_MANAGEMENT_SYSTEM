@@ -7,6 +7,16 @@ const AssetDetails = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+    } else {
+      const role = JSON.parse(localStorage.getItem("user")).role;
+      console.log("Role:", role);
+      if (role !== "Admin") {
+        navigate("/login");
+      }
+    }
     fetch(`http://localhost:3487/api/assets/${id}`)
       .then((res) => res.json())
       .then((data) => setAsset(data))

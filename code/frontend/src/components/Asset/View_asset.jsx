@@ -6,6 +6,16 @@ const ViewAsset = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+    } else {
+      const role = JSON.parse(localStorage.getItem("user")).role;
+      console.log("Role:", role);
+      if (role !== "Admin") {
+        navigate("/login");
+      }
+    }
     fetch("http://localhost:3487/api/assets")
       .then((res) => res.json())
       .then((data) => setAssets(data))
@@ -31,8 +41,8 @@ const ViewAsset = () => {
           </thead>
           <tbody>
             {assets.map((asset) => (
-              <tr 
-                key={asset._id} 
+              <tr
+                key={asset._id}
                 className="border-b hover:bg-gray-100 cursor-pointer"
                 onClick={() => handleRowClick(asset._id)}
               >

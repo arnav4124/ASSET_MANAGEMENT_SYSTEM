@@ -1,13 +1,26 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from 'axios';
+import { Navigate } from "react-router-dom";
 
 
 const Asset_add = () => {
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+    }else{
+      const role = JSON.parse(localStorage.getItem("user")).role;
+      console.log("Role:", role);
+      if (role !== "Admin") {
+        navigate("/login");
+      }
+    }
+      
     const fetchData = async () => {
       try {
         const usersRes = await axios.get("http://localhost:3487/api/users", { withCredentials: true });
