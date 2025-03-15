@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Category = require('../models/category');
+const Asset = require('../models/asset');
 const authMiddleware = require('../middleware/auth');
 
 // Add a new category
@@ -55,5 +56,34 @@ router.get('/categories',  async (req, res) => {
         });
     }
 });
+
+router.get('/get_categories',async(req,res)=>{
+    console.log("GET CATEGORIES")
+    try{
+        const categories = await Category.find()
+        console.log(categories)
+        asset_count = []
+        for(let i=0;i<categories.length;i++){
+            asset_count.push(await Asset.countDocuments({category:categories[i]._id}))
+        }
+        console.log(asset_count)
+        for (let i=0;i<categories.length;i++){
+            categories[i] = categories[i].toObject()
+            categories[i].asset_count = asset_count[i]
+        }
+        res.status(200).json({
+            success: true,
+            categories: categories
+        })
+    }
+    catch(err){
+        console.error("Error fetching categories:", err);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching categories",
+            error: err.message
+        });
+    }
+})
 
 module.exports = router;
