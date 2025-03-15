@@ -15,9 +15,13 @@ import AssetDetails from './components/Asset/Asset_details.jsx'
 import AdminDashboard from './components/Dashboard/AdminDashboard.jsx'
 import SuperUserDashboard from './components/Dashboard/SuperUserDashboard.jsx'
 import AddCategory from './components/Category/add_category.jsx'
+<<<<<<< HEAD
 import ViewUsers from './components/Add_user/View_users.jsx'
 import ViewLocation from './components/Location/View_location.jsx'
 
+=======
+import ViewCategory from './components/Category/view_category.jsx'
+>>>>>>> 908ad69b2bdc6f60d8e536881572226cec84e662
 function App() {
   const [isAdmin, setIsAdmin] = useState(false); 
   return (
@@ -38,8 +42,12 @@ function App() {
         <Route path="/admin/dashboard" element={<AdminDashboard/>} />
         <Route path='/superuser/dashboard' element={<SuperUserDashboard/>} />
         <Route path="/superuser/add_category" element={<AddCategory/>} />
+<<<<<<< HEAD
         <Route path="/admin/view_users" element={<ViewUsers/>} />
         <Route path="/superuser/view_location" element={<ViewLocation/>} />
+=======
+        <Route path="/superuser/view_category" element={<ViewCategory/>} />
+>>>>>>> 908ad69b2bdc6f60d8e536881572226cec84e662
       </Routes>
       {/* <button
   class="inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-center text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900">
