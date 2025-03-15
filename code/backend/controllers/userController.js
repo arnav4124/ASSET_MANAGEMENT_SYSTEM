@@ -1,8 +1,5 @@
 const userModel = require("../models/user");
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
-
-const bcryptSalt = bcrypt.genSaltSync(10);
 
 //login user
 const loginUser = async (req, res) => {
@@ -16,7 +13,20 @@ const loginUser = async (req, res) => {
                 return res.status(401).json({ success: false, message: 'Invalid credentials' });
             } else {
                 const token = createToken(user._id);
-                res.json({ success: true, token });
+                const userData = {
+                    _id: user._id,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    email: user.email,
+                    location: user.location,
+                    role: user.role
+                };
+                
+                res.json({ 
+                    success: true, 
+                    token,
+                    user: userData 
+                });
             }
         }
     } catch (error) {
