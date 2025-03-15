@@ -8,10 +8,10 @@ const ProjectEdit = () => {
   const [newParticipantEmail, setNewParticipantEmail] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
   const [toBeDeletedParticipants, setToBeDeletedParticipants] = useState([]);
-  
+
   const programmes = ["Programme A", "Programme B", "Programme C"];
   const locations = ["Location A", "Location B", "Location C"];
-  
+
   // Sample participants data
   const [participants, setParticipants] = useState([
     { id: 1, name: "Jane Smith", email: "jane.smith@example.com", role: "Developer" },
@@ -35,11 +35,11 @@ const ProjectEdit = () => {
     (currentPage + 1) * participantsPerPage
   );
 
-  const { 
-    register, 
-    handleSubmit, 
+  const {
+    register,
+    handleSubmit,
     formState: { errors },
-    watch 
+    watch
   } = useForm({
     defaultValues: {
       projectName: "Sample Project",
@@ -97,7 +97,7 @@ const ProjectEdit = () => {
   return (
     <div className="min-h-screen bg-white p-6">
       {/* Navigation Bar */}
-      
+
 
       {/* Page Title - Centered alignment */}
       <div className="flex flex-col items-center mb-8">
@@ -119,7 +119,7 @@ const ProjectEdit = () => {
           <div>
             <label className="block font-medium text-sm mb-1 text-gray-700">Project Name</label>
             <input
-              {...register("projectName", { 
+              {...register("projectName", {
                 required: "Project name is required",
                 minLength: { value: 3, message: "Project name must be at least 3 characters" }
               })}
@@ -171,6 +171,19 @@ const ProjectEdit = () => {
               ))}
             </select>
           </div>
+        </div>
+
+        {/* Project Deadline */}
+        <div className="mb-4">
+          <label className="block font-medium text-sm mb-1 text-gray-700">Project Deadline</label>
+          <input
+            {...register("deadline")}
+            type="date"
+            className="w-full p-2 border border-gray-300 rounded bg-gray-100"
+            disabled={!isEditing}
+            min={new Date().toISOString().split('T')[0]}
+          />
+          <p className="text-sm text-gray-500 mt-1">Optional: Set a deadline for this project</p>
         </div>
 
         {/* Project Location */}
@@ -265,11 +278,10 @@ const ProjectEdit = () => {
               </thead>
               <tbody>
                 {paginatedParticipants.map((participant) => (
-                  <tr 
-                    key={participant.id} 
-                    className={`border-b ${
-                      toBeDeletedParticipants.includes(participant.id) ? "bg-red-50" : "hover:bg-gray-50"
-                    } group`}
+                  <tr
+                    key={participant.id}
+                    className={`border-b ${toBeDeletedParticipants.includes(participant.id) ? "bg-red-50" : "hover:bg-gray-50"
+                      } group`}
                   >
                     <td className="p-2 text-sm">{participant.name}</td>
                     <td className="p-2 text-sm">{participant.email}</td>
@@ -278,11 +290,10 @@ const ProjectEdit = () => {
                       <button
                         type="button"
                         onClick={() => toggleParticipantForDeletion(participant.id)}
-                        className={`${
-                          toBeDeletedParticipants.includes(participant.id)
-                            ? "text-red-500"
-                            : "text-gray-400 opacity-0 group-hover:opacity-100"
-                        } transition-opacity duration-200`}
+                        className={`${toBeDeletedParticipants.includes(participant.id)
+                          ? "text-red-500"
+                          : "text-gray-400 opacity-0 group-hover:opacity-100"
+                          } transition-opacity duration-200`}
                         disabled={!isEditing}
                       >
                         <Trash2 size={14} />
@@ -378,8 +389,8 @@ const ProjectEdit = () => {
 
         {/* Save Button */}
         <div className="text-center mt-6">
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="px-6 py-2 bg-gray-300 text-gray-700 rounded-md w-full"
             disabled={!isEditing}
           >

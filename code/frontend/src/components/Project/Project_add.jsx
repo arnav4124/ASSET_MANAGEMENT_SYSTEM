@@ -205,6 +205,19 @@ const Project_add = () => {
           </div>
         </div>
 
+        {/* Project Deadline */}
+        <div className="mb-6">
+          <label className="block font-semibold text-lg mb-1">Project Deadline</label>
+          <input
+            {...register("deadline")}
+            type="date"
+            className="input input-bordered w-full"
+            min={new Date().toISOString().split('T')[0]} // Set minimum date to today
+            disabled={loading}
+          />
+          <p className="text-sm text-gray-500 mt-1">Optional: Set a deadline for this project</p>
+        </div>
+
         {/* Project Locations */}
         <div>
           <label className="block font-semibold text-lg mb-1">Project Location</label>
