@@ -28,6 +28,18 @@ const Project_add = () => {
 
   // Fetch initial data
   useEffect(() => {
+    const token=localStorage.getItem('token')
+    if(!token){
+        navigate('/login')
+    }
+    else{
+        const role =JSON.parse(localStorage.getItem('user')).role
+        console.log(role)
+
+        if(role!=='Admin'){
+            navigate('/login')
+        }
+    }
     const fetchData = async () => {
       setLoading(true);
       setError(null);
@@ -152,6 +164,17 @@ const Project_add = () => {
     );
   };
 
+  const formatDate = (date) => {
+    if (!date) return 'No deadline';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid date';
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -203,6 +226,19 @@ const Project_add = () => {
               <p className="text-red-500 text-sm mt-1">{errors.programme.message}</p>
             )}
           </div>
+        </div>
+
+        {/* Project Deadline */}
+        <div className="mb-6">
+          <label className="block font-semibold text-lg mb-1">Project Deadline</label>
+          <input
+            {...register("deadline")}
+            type="date"
+            className="input input-bordered w-full"
+            min={new Date().toISOString().split('T')[0]} // Set minimum date to today
+            disabled={loading}
+          />
+          <p className="text-sm text-gray-500 mt-1">Optional: Set a deadline for this project</p>
         </div>
 
         {/* Project Locations */}

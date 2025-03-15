@@ -14,6 +14,18 @@ const ViewCategory = () => {
     const categoriesPerPage = 10;
     
     useEffect(() => {
+        const token=localStorage.getItem('token')
+        if(!token){
+            navigate('/login')
+        }
+        else{
+            const role =JSON.parse(localStorage.getItem('user')).role
+            console.log(role)
+
+            if(role!=='Superuser'){
+                navigate('/login')
+            }
+        }
         fetchCategories();
     }, [navigate]);
     

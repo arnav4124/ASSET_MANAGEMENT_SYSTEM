@@ -19,30 +19,30 @@ const AddEmployee = () => {
   const [locations,setLocations]= useState([]);
   useEffect(()=>{
     const token_st = localStorage.getItem("token")
+    // if(!token_st){
+    //   alert("unauthorized_access")
+    //   navigate("/login")
+    // }\
     const token=localStorage.getItem('token')
-         if(!token){
-             navigate('/login')
-         }
-         else{
-             const role =JSON.parse(localStorage.getItem('user')).role
-             console.log(role)
- 
-             if(role!=='Admin'){
-                 navigate('/login')
-             }
-         }
-    if(!token_st){
-      alert("unauthorized_access")
-      navigate("/login")
-    }
+        if(!token){
+            navigate('/login')
+        }
+        else{
+            const role =JSON.parse(localStorage.getItem('user')).role
+            console.log(role)
+
+            if(role!=='Admin'){
+                navigate('/login')
+            }
+        }
     const fetchManagers = async ()=>{
 
       console.log(token_st)
-      if(!token){
-        alert("unauthorized_access")
-        navigate("/login")
-        return;
-      }
+      // if(!token){
+      //   alert("unauthorized_access")
+      //   navigate("/login")
+      //   return;
+      // }
       setLoading(true)
       try{
         console.log("SENDING REQ FOR MANAGERS")
@@ -143,7 +143,7 @@ const AddEmployee = () => {
         setSuccess(true);
         reset();
         alert("user added successfully!");
-        navigate("/admin/add_user");
+        navigate("/superuser/add_location");
       }
     }
     catch(err){
@@ -382,17 +382,17 @@ const AddEmployee = () => {
             </div>
             <h2 className="text-lg font-medium text-gray-700 mb-4">Select Location</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {locations.map((loc, index) => (
-  <label key={index} className="flex items-center space-x-2">
-    <input
-      type="radio"
-      value={loc} // Use the location string directly
-      {...register("location", { required: "Please select a location" })}
-      className="form-radio"
-    />
-    <span>{loc}</span> {/* Display the location string */}
-  </label>
-))}
+              {locations.map((loc) => (
+                <label key={loc.id} className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    value={loc.name}
+                    {...register("location", { required: "Please select a location" })}
+                    className="form-radio"
+                  />
+                  <span>{loc}</span>
+                </label>
+              ))}
           </div>
             {/* Additional Notes (Optional) */}
           </div>

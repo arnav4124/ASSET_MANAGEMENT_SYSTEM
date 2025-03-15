@@ -11,6 +11,20 @@ const AddCategory = () => {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
 
+    useEffect(()=>{
+        const token=localStorage.getItem('token')
+        if(!token){
+            navigate('/login')
+        }
+        else{
+            const role =JSON.parse(localStorage.getItem('user')).role
+            console.log(role)
+
+            if(role!=='Superuser'){
+                navigate('/login')
+            }
+        }
+    })
     const {
         register,
         handleSubmit,

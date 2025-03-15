@@ -26,11 +26,27 @@
     });
 
     useEffect(() => {
+      const token=localStorage.getItem('token')
+        if(!token){
+            navigate('/login')
+        }
+        else{
+            const role =JSON.parse(localStorage.getItem('user')).role
+            console.log(role)
+
+            if(role!=='Superuser'){
+                navigate('/login')
+            }
+        }
       const fetchCities = async () => {
         setLoading(true);
         try {
           console.log("SENDING");
-          const response = await axios.get("http://localhost:3487/api/locations/get_cities");
+          const response = await axios.get("http://localhost:3487/api/locations/get_cities",{
+            headers: {
+              token: localStorage.getItem('token')
+            }
+          });
           if(response.data.success === false){
             alert("unauthorized_access")
             navigate("/login")

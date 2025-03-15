@@ -48,6 +48,13 @@ router.post('/', authMiddleware, async (req, res) => {
             });
         }
 
+        // Validate deadline format if provided
+        if (deadline && !isValidDate(deadline)) {
+            return res.status(400).json({
+                message: "Invalid deadline date format"
+            });
+        }
+
         // Validate project head exists
         const projectHeadExists = await User.findById(project_head);
         if (!projectHeadExists) {
@@ -166,6 +173,12 @@ router.delete('/:id', authMiddleware, async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
+
+// Add this helper function at the end of the file, before module.exports
+function isValidDate(dateString) {
+    const date = new Date(dateString);
+    return date instanceof Date && !isNaN(date);
+}
 
 module.exports = router;
 

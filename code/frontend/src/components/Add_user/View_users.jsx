@@ -14,6 +14,20 @@ const ViewUsers = () => {
     // Fetch users on component mount
     useEffect(() => {
         const fetchUsers = async () => {
+            const token=localStorage.getItem('token')
+         if(!token){
+             navigate('/login')
+         }
+         else{
+             const role =JSON.parse(localStorage.getItem('user')).role
+             console.log(role)
+ 
+             if(role!=='Admin'){
+                 navigate('/login')
+             }
+         }
+
+
             try {
                 const token_string=localStorage.getItem('token');
                 console.log(token_string)
