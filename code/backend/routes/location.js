@@ -67,14 +67,14 @@ location_router.get('/',authMiddleware,async(req,res)=>{
 location_router.get('/get_all_cities',authMiddleware,async(req,res)=>{
     try{
         const locations = await Location.find({})
-        location_name_list = []
-        for(i=0;i<locations.length;i++){
+        const location_name_list = []  // Use const
+        for(let i = 0; i < locations.length; i++) {  // Use let for i
             location_name_list.push(locations[i].location_name)
         }
         console.log(location_name_list)
-        res.status(200).json(location_name_list)
-    }catch(err){
-        res.status(500).json({success:false,message:"Error in fetching locations"})
+        return res.status(200).json(location_name_list)
+    } catch(err) {
+        return res.status(500).json({success: false, message: "Error in fetching locations"})
     }
 })
 
