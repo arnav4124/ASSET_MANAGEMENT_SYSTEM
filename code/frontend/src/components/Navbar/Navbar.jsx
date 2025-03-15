@@ -21,7 +21,7 @@ const Navbar = ({ isAdmin }) => {
     "People",
     "Licenses",
   ];
-
+   
   const tabsToShow = isAdmin ? [...userTabs, ...adminTabs] : userTabs;
 
   return (

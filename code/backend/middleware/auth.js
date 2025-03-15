@@ -1,29 +1,27 @@
-const jwt = require("jsonwebtoken");    
+const jwt = require("jsonwebtoken");
 
-function authMiddleware(req, res, next){
+function authMiddleware(req, res, next) {
+    const { token } = req.headers;
 
-    // const {token}=req.headers;
-    // if(!token){
-    //     return res.json({success:false,message:'Unauthorized access'});
-    // }
-
-    console.log("BURHUHU")
-    const {token}=req.headers;
-    if(!token){
-        console.log("TOKEN NHI H    ")
-        return res.json({success:false,message:'Unauthorized access'});
+    if (!token) {
+        return res.status(401).json({
+            success: false,
+            message: 'Unauthorized access: No token provided'
+        });
     }
-
 
     try {
-        const tokendecode=jwt.verify(token,process.env.JWT_SECRET);
-        req.body.userId=tokendecode.id;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        // Store the decoded user data in req.user
+        req.user = decoded.user;
         next();
     } catch (error) {
-        console.log(error);
-        return res.json({success:false,message:'Unauthorized access'});
+        console.log("Auth error:", error);
+        return res.status(401).json({
+            success: false,
+            message: 'Unauthorized access: Invalid token'
+        });
     }
-    next();
 }
 
 module.exports = authMiddleware;
