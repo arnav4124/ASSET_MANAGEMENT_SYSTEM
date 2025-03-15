@@ -52,7 +52,7 @@ const AssignAdmin = () => {
       setFadeOut(false);
 
       const response = await axios.post(
-        'http://localhost:3487/api/admin/assign',
+        'http://localhost:3487/api/add_admin/assign',
         data,
         {
           headers: {

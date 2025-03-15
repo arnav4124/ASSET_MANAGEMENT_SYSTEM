@@ -1,23 +1,74 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { UserPlus, ChevronLeft, Check, Loader2 } from "lucide-react";
+import axios from "axios";
+import { useNavigate } from 'react-router-dom';
 
 const AddEmployee = () => {
+  const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredManagers, setFilteredManagers] = useState([]);
   const [selectedManager, setSelectedManager] = useState(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  
-  // Sample data for managers dropdown - added email field
-  const managers = [
-    { id: 1, name: "Jane Smith", email: "jane.smith@company.com" },
-    { id: 2, name: "John Doe", email: "john.doe@company.com" },
-    { id: 3, name: "Alice Johnson", email: "alice.johnson@company.com" },
-    { id: 4, name: "Bob Wilson", email: "bob.wilson@company.com" },
-  ];
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const [managers,setManagers]= useState([]);
+  const [locations,setLocations]= useState([]);
+  useEffect(()=>{
+    const fetchManagers = async ()=>{
+      setLoading(true)
+      try{
+        console.log("SENDING REQ FOR MANAGERS")
+        const response = await axios.get("http://localhost:3487/api/admin/get_manager")
+        if(response?.data?.success === false){
+          alert("unauthorized_access")
+          navigate("/login")
+        }
+        console.log(response)
+        setManagers(response.data)
+      }
+      catch(err){
+        console.log("Error fetching managers:",err)
+        setError("Error fetching managers")
+      }
+      finally{
+        setLoading(false)
+      }
+    } 
+    const fetchLocations = async ()=>{  
+      setLoading(true)
+      try{
+        console.log("SENDING REQ FOR LOCATIONS")
+        const response = await axios.get("http://localhost:3487/api/locations/get_all_cities")
+        if(response?.data?.success === false){
+          alert("unauthorized_access")
+          navigate("/login")
+        }
+        console.log(response)
+        setLocations(response.data)
+      }
+      catch(err){
+        console.log("Error fetching locations:",err)
+        setError("Error fetching locations")
+      }
+      finally{
+        setLoading(false)
+      }
+    }
 
+    fetchManagers()
+    fetchLocations()
+   },[navigate])
+
+  useEffect(() => {
+    console.log("Managers:", managers);
+  }, [managers]);
+  useEffect(()=>{
+    console.log("Locations:",locations)
+  },[locations])
   const {
     register,
     handleSubmit,
@@ -26,59 +77,87 @@ const AddEmployee = () => {
     setValue
   } = useForm({
     defaultValues: {
-      firstName: "",
-      lastName: "",
+      first_name: "",
+      last_name: "",
       email: "",
       phoneNumber: "",
       manager: "",
-      notes: ""
+      location: ""
     }
   });
 
-  const onSubmit = (data) => {
-    setIsSubmitting(true);
-    console.log("Employee data submitted:", data);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setShowSuccess(true);
-      
-      // Hide success message after 3 seconds
-      setTimeout(() => {
-        setShowSuccess(false);
-        reset(); // Reset the form after submission
-        setSelectedManager(null);
-        setSearchTerm("");
-      }, 3000);
-    }, 1500);
-  };
-
+  const onSubmit = async(data) =>{
+    try{
+      setLoading(true)
+      setError(null)
+      setShowSuccess(false)
+      setIsSubmitting(true)
+      console.log("Submitting data:")
+      console.log(data)
+      const response = await axios.post("http://localhost:3487/api/admin/add_user",{
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email,
+        phoneNumber: data.phoneNumber,
+        manager: data.manager,
+        location : data.location
+      })
+      console.log(response)
+      if (response.status === 201 || response.status === 200) {
+        setSuccess(true);
+        reset();
+        alert("user added successfully!");
+        navigate("/superuser/add_location");
+      }
+    }
+    catch(err){
+      console.error("Error adding employee:", err);
+      setError("Error adding employee")
+    }
+    finally{
+      setLoading(false)
+      setIsSubmitting(false)
+    }
+  }
   const handleSearch = (e) => {
     const query = e.target.value.toLowerCase();
     setSearchTerm(query);
     setShowSuggestions(true);
-
+  
     if (query.trim() === "") {
       setFilteredManagers([]);
       return;
     }
-
-    const filtered = managers.filter((manager) => 
-      manager.name.toLowerCase().includes(query) || 
-      manager.email.toLowerCase().includes(query)
-    );
-
+  
+    // Filter the managers based on the search term
+    const filtered = managers.filter((manager) => {
+      // Create a full name from first_name and last_name
+      const fullName = `${manager.first_name} ${manager.last_name}`.toLowerCase();
+      const email = manager.email.toLowerCase();
+      
+      // Check if the search term is in the full name or email
+      return fullName.includes(query) || email.includes(query);
+    });
+  
     setFilteredManagers(filtered);
   };
 
   const selectManager = (manager) => {
-    setSelectedManager(manager);
-    setSearchTerm(`${manager.name} (${manager.email})`);
-    setValue("manager", manager.id.toString());
+    setSelectedManager(`${manager.first_name} ${manager.last_name}`);
+    setSearchTerm(`${manager.first_name} ${manager.last_name} (${manager.email})`);
+    setValue("manager", manager._id.toString());
     setShowSuggestions(false);
   };
-  
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div className="text-white text-xl">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mx-auto mb-4"></div>
+          Loading...
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
@@ -122,7 +201,7 @@ const AddEmployee = () => {
               <div className="transition-all duration-200">
                 <label className="block font-medium text-sm mb-1 text-gray-700">First Name</label>
                 <input
-                  {...register("firstName", { 
+                  {...register("first_name", { 
                     required: "First name is required",
                     minLength: { value: 2, message: "First name must be at least 2 characters" }
                   })}
@@ -130,8 +209,8 @@ const AddEmployee = () => {
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
                   placeholder="Enter first name"
                 />
-                {errors.firstName && (
-                  <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.firstName.message}</p>
+                {errors.first_name && (
+                  <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.first_name.message}</p>
                 )}
               </div>
               
@@ -139,7 +218,7 @@ const AddEmployee = () => {
               <div className="transition-all duration-200">
                 <label className="block font-medium text-sm mb-1 text-gray-700">Last Name</label>
                 <input
-                  {...register("lastName", { 
+                  {...register("last_name", { 
                     required: "Last name is required",
                     minLength: { value: 2, message: "Last name must be at least 2 characters" }
                   })}
@@ -147,8 +226,8 @@ const AddEmployee = () => {
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
                   placeholder="Enter last name"
                 />
-                {errors.lastName && (
-                  <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.lastName.message}</p>
+                {errors.last_name && (
+                  <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.last_name.message}</p>
                 )}
               </div>
             </div>
@@ -249,7 +328,7 @@ const AddEmployee = () => {
                 <div className="mt-2 p-2 bg-blue-50 border border-blue-100 rounded-md flex justify-between items-center">
                   <div>
                     <span className="text-sm font-medium">Selected: </span>
-                    <span className="text-blue-700">{selectedManager.name}</span>
+                    <span className="text-blue-700">{selectedManager}</span>
                   </div>
                   <button 
                     type="button"
@@ -265,17 +344,21 @@ const AddEmployee = () => {
                 </div>
               )}
             </div>
-
+            <h2 className="text-lg font-medium text-gray-700 mb-4">Select Location</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {locations.map((loc) => (
+                <label key={loc.id} className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    value={loc.name}
+                    {...register("location", { required: "Please select a location" })}
+                    className="form-radio"
+                  />
+                  <span>{loc}</span>
+                </label>
+              ))}
+          </div>
             {/* Additional Notes (Optional) */}
-            <div className="mb-6">
-              <label className="block font-medium text-sm mb-1 text-gray-700">Additional Notes <span className="text-gray-400 text-xs">(Optional)</span></label>
-              <textarea
-                {...register("notes")}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                rows="3"
-                placeholder="Enter any additional information about the employee"
-              ></textarea>
-            </div>
           </div>
 
           {/* Form Actions */}

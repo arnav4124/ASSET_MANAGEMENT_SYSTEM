@@ -46,4 +46,19 @@ location_router.post('/add_location',authMiddleware,async(req,res)=>{
         res.status(500).json({success:false,message:"Error in adding location"})
     }
 })
+
+location_router.get('/get_all_cities',authMiddleware,async(req,res)=>{
+    try{
+        const locations = await Location.find({})
+        location_name_list = []
+        for(i=0;i<locations.length;i++){
+            location_name_list.push(locations[i].location_name)
+        }
+        console.log(location_name_list)
+        res.status(200).json(location_name_list)
+    }catch(err){
+        res.status(500).json({success:false,message:"Error in fetching locations"})
+    }
+})
+
 module.exports = location_router
