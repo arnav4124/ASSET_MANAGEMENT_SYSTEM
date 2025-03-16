@@ -1,6 +1,6 @@
 import { useState } from 'react'
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
 import SignUp from './components/SignUp/SignUp.jsx'
-import {BrowserRouter, Route, Routes} from 'react-router-dom'
 import Login from './components/Login/Login.jsx'
 import Navbar from './components/Navbar/Navbar.jsx'
 import ProjectEdit from './components/Project/Project_edit.jsx'
@@ -23,43 +23,55 @@ import ViewLocationsAdmin from './components/Location/View_Locations_Admin.jsx'
 import AssignAsset from './components/Asset/Assign_Asset.jsx'
 import Footer from './components/Footer/Footer.jsx'
 import Profile from './components/Profile/Profile.jsx'
+import WelcomePage from './components/Welcome/welcome.jsx'
+
+function Layout({ children }) {
+  const location = useLocation();
+  const hideNavbarPaths = ['/', '/login']; // Paths where Navbar should be hidden
+  const showNavbar = !hideNavbarPaths.includes(location.pathname); // Show navbar only if not in these paths
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      {showNavbar && <Navbar />}
+      <div className="flex-grow">{children}</div>
+      <Footer />
+    </div>
+  );
+}
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(false); 
+
   return (
     <BrowserRouter>
-      <div className="flex flex-col min-h-screen">
-        <Navbar isAdmin={isAdmin} />
-        <div className="flex-grow">
-          <Routes>  
-            <Route path="/signup" element={<SignUp />} />
-            <Route path='/' element={<Login />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/project/edit" element={<ProjectEdit />} />  
-            <Route path="/project/add" element={<Project_add />} />  
-            <Route path="/admin/add_user" element={<Add_user />} />
-            <Route path="/superuser/add_programme" element={<Add_progrmme />} />
-            <Route path="/superuser/add_location" element={<Add_location />} />
-            <Route path="/superuser/assign_admin" element={<AssignAdmin />} />
-            <Route path="/admin/asset/add" element={<AddAsset />} />
-            <Route path="/admin/asset/view" element={<ViewAsset />} />
-            <Route path="/admin/assets/view/:id" element={<AssetDetails/>}/>
-            <Route path="/admin/dashboard" element={<AdminDashboard/>} />
-            <Route path='/superuser/dashboard' element={<SuperUserDashboard/>} />
-            <Route path="/superuser/add_category" element={<AddCategory/>} />
-            <Route path="/admin/view_users" element={<ViewUsers/>} />
-            <Route path="/admin/view_locations" element={<ViewLocationsAdmin/>} />
-            <Route path="/superuser/view_location" element={<ViewLocation/>} />
-            <Route path="/superuser/view_category" element={<ViewCategory/>} />
-            <Route path="/superuser/view_programme" element={<ViewProgramme/>} />
-            <Route path="/admin/assets/assign_asset/:id" element={<AssignAsset/>} />
-            <Route path="/profile" element={<Profile />} />
-          </Routes>
-        </div>
-        <Footer />
-      </div>
+      <Layout>
+        <Routes>  
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/" element={<WelcomePage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/project/edit" element={<ProjectEdit />} />  
+          <Route path="/project/add" element={<Project_add />} />  
+          <Route path="/admin/add_user" element={<Add_user />} />
+          <Route path="/superuser/add_programme" element={<Add_progrmme />} />
+          <Route path="/superuser/add_location" element={<Add_location />} />
+          <Route path="/superuser/assign_admin" element={<AssignAdmin />} />
+          <Route path="/admin/asset/add" element={<AddAsset />} />
+          <Route path="/admin/asset/view" element={<ViewAsset />} />
+          <Route path="/admin/assets/view/:id" element={<AssetDetails />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/superuser/dashboard" element={<SuperUserDashboard />} />
+          <Route path="/superuser/add_category" element={<AddCategory />} />
+          <Route path="/admin/view_users" element={<ViewUsers />} />
+          <Route path="/admin/view_locations" element={<ViewLocationsAdmin />} />
+          <Route path="/superuser/view_location" element={<ViewLocation />} />
+          <Route path="/superuser/view_category" element={<ViewCategory />} />
+          <Route path="/superuser/view_programme" element={<ViewProgramme />} />
+          <Route path="/admin/assets/assign_asset/:id" element={<AssignAsset />} />
+          <Route path="/profile" element={<Profile />} />
+        </Routes>
+      </Layout>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;
