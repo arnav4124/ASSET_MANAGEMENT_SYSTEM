@@ -14,7 +14,7 @@ function Profile() {
     const [updatedData, setUpdatedData] = useState({});
 
     useEffect(() => {
-        const userId = localStorage.getItem('userID');
+        const userId = JSON.parse(localStorage.getItem("user"))._id;
         
         axios.get(`http://localhost:3487/my-profile/${userId}`)
             .then((res) => {
