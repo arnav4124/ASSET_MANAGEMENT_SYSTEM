@@ -32,7 +32,11 @@ const ViewCategory = () => {
     const fetchCategories = async () => {
         setLoading(true);
         try {
-            const response = await axios.get('http://localhost:3487/api/superuser/get_categories');
+            const response = await axios.get('http://localhost:3487/api/superuser/get_categories',{
+                headers:{
+                    token:token
+                }
+            });
             if (response?.data?.success === false) {
                 alert("unauthorized_access");
                 navigate("/login");

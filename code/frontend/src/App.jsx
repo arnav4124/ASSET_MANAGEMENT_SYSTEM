@@ -31,8 +31,9 @@ function App() {
       <div className="flex flex-col min-h-screen">
         <Navbar isAdmin={isAdmin} />
         <div className="flex-grow">
-          <Routes>
+          <Routes>  
             <Route path="/signup" element={<SignUp />} />
+            <Route path='/' element={<Login />} />
             <Route path="/login" element={<Login />} />
             <Route path="/project/edit" element={<ProjectEdit />} />  
             <Route path="/project/add" element={<Project_add />} />  

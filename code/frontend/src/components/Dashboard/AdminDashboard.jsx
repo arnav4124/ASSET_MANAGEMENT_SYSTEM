@@ -10,13 +10,25 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const projRes = await axios.get("http://localhost:3487/api/projects");
+        const projRes = await axios.get("http://localhost:3487/api/projects",{
+          headers:{
+            token:localStorage.getItem("token")
+          }
+        });
         setProjectCount(projRes.data.length);
 
-        const userRes = await axios.get("http://localhost:3487/api/users");
+        const userRes = await axios.get("http://localhost:3487/api/users",{
+          headers:{
+            token:localStorage.getItem("token")
+          }
+        });
         setUserCount(userRes.data.length);
 
-        const assetRes = await axios.get("http://localhost:3487/api/assets");
+          const assetRes = await axios.get("http://localhost:3487/api/assets",{
+          headers:{
+            token:localStorage.getItem("token")
+          }
+        });
         setAssetCount(assetRes.data.length);
       } catch (error) {
         console.error("Error fetching counts:", error);

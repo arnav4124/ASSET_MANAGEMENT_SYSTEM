@@ -49,8 +49,8 @@ const AddCategory = () => {
                 data,
                 {
                     headers: {
-                        'Content-Type': 'application/json',
-                        'token': localStorage.getItem('token')
+                        
+                        token: localStorage.getItem('token')
                     }
                 }
             );

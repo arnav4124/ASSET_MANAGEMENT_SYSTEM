@@ -11,16 +11,32 @@ const SuperUserDashboard = () => {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const locRes = await axios.get("http://localhost:3487/api/locations");
+        const locRes = await axios.get("http://localhost:3487/api/locations",{
+          headers:{
+            token:localStorage.getItem("token")
+          }
+        });
         setLocationCount(locRes.data.length);
 
-        const progRes = await axios.get("http://localhost:3487/api/programs");
+        const progRes = await axios.get("http://localhost:3487/api/programs",{
+          headers:{
+            token:localStorage.getItem("token")
+          }
+        });
         setProgramCount(progRes.data.length);
 
-        const catRes = await axios.get("http://localhost:3487/api/categories");
+        const catRes = await axios.get("http://localhost:3487/api/categories",{
+          headers:{
+            token:localStorage.getItem("token")
+          }
+        });
         setCategoryCount(catRes.data.length);
 
-        const adminRes = await axios.get("http://localhost:3487/api/admins");
+        const adminRes = await axios.get("http://localhost:3487/api/admins",{
+          headers:{
+            token:localStorage.getItem("token")
+          }
+        });
         setAdminCount(adminRes.data.length);
       } catch (error) {
         console.error("Error fetching counts:", error);
