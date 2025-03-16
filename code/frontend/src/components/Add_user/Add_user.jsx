@@ -1,11 +1,12 @@
 import React, { useState,useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { set, useForm } from "react-hook-form";
 import { UserPlus, ChevronLeft, Check, Loader2 } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from 'react-router-dom';
 
 const AddEmployee = () => {
   const navigate = useNavigate()
+  const [verified, setVerified] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -89,6 +90,7 @@ const AddEmployee = () => {
       }
       finally{
         setLoading(false)
+        setVerified(true)
       }
     }
 
@@ -184,6 +186,9 @@ const AddEmployee = () => {
     setValue("manager", manager._id.toString());
     setShowSuggestions(false);
   };
+  if(!verified){
+    return <div>Verifying...</div>
+  }
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
