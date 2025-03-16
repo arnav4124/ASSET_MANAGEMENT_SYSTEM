@@ -24,6 +24,8 @@ import AssignAsset from './components/Asset/Assign_Asset.jsx'
 import Footer from './components/Footer/Footer.jsx'
 import Profile from './components/Profile/Profile.jsx'
 import WelcomePage from './components/Welcome/welcome.jsx'
+import ViewProject from './components/Project/Project_view.jsx'
+import ProjectDetails from './components/Project/Project_details.jsx'
 
 function Layout({ children }) {
   const location = useLocation();
@@ -50,7 +52,9 @@ function App() {
           <Route path="/" element={<WelcomePage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/project/edit" element={<ProjectEdit />} />  
-          <Route path="/project/add" element={<Project_add />} />  
+          <Route path="/project/add" element={<Project_add />} />
+          <Route path="/admin/projects/view" element={<ViewProject />} />
+          <Route path="/admin/projects/view/:id" element={<ProjectDetails />} />
           <Route path="/admin/add_user" element={<Add_user />} />
           <Route path="/superuser/add_programme" element={<Add_progrmme />} />
           <Route path="/superuser/add_location" element={<Add_location />} />
