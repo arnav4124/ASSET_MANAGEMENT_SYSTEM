@@ -19,9 +19,10 @@ const ViewCategory = () => {
             navigate('/login')
         }
         else{
+            console.log(localStorage.getItem('user'))
             const role =JSON.parse(localStorage.getItem('user')).role
             console.log(role)
-
+            
             if(role!=='Superuser'){
                 navigate('/login')
             }
@@ -31,6 +32,7 @@ const ViewCategory = () => {
     
     const fetchCategories = async () => {
         setLoading(true);
+        const token=localStorage.getItem('token')
         try {
             const response = await axios.get('http://localhost:3487/api/superuser/get_categories',{
                 headers:{

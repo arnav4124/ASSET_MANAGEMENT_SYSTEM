@@ -3,10 +3,10 @@ const router = express.Router();
 const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-
+const auth = require('../middleware/auth');
 const Category = require('../models/category');
 
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
     try {
         const categories = await Category.find({});
         res.status(200).json(categories);

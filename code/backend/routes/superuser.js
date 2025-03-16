@@ -9,7 +9,7 @@ const Programme = require('../models/programme');
 const Project = require('../models/project');
 
 // Add a new category
-router.post('/add_category', async (req, res) => {
+router.post('/add_category',authMiddleware, async (req, res) => {
     try {
         const { name, description } = req.body;
 
@@ -47,7 +47,7 @@ router.post('/add_category', async (req, res) => {
 });
 
 // Get all categories
-router.get('/categories', async (req, res) => {
+router.get('/categories', authMiddleware, async (req, res) => {
     try {
         const categories = await Category.find({});
         res.status(200).json(categories);
@@ -174,7 +174,7 @@ router.get('/programmes', authMiddleware, async (req, res) => {
     }
 });
 
-router.get('/get_categories', async (req, res) => {
+router.get('/get_categories', authMiddleware, async (req, res) => {
     console.log("GET CATEGORIES")
     try {
         const categories = await Category.find()
