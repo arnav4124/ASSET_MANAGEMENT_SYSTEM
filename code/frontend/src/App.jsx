@@ -27,8 +27,9 @@ import WelcomePage from './components/Welcome/welcome.jsx'
 
 function Layout({ children }) {
   const location = useLocation();
-  const showNavbar = location.pathname !== '/'; // Hide navbar on the WelcomePage
-  
+  const hideNavbarPaths = ['/', '/login']; // Paths where Navbar should be hidden
+  const showNavbar = !hideNavbarPaths.includes(location.pathname); // Show navbar only if not in these paths
+
   return (
     <div className="flex flex-col min-h-screen">
       {showNavbar && <Navbar />}
@@ -74,4 +75,3 @@ function App() {
 }
 
 export default App;
-  
