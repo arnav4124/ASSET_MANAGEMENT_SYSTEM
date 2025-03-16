@@ -64,7 +64,9 @@ admin_router.get('/users', authMiddleware, async (req, res) => {
         const adminLocation = req.user.location;
         console.log("Admin location:", adminLocation);
         // search for the admin location in the location table
-        const adminLocationData = await Location.findOne({ location_name: adminLocation.toLowerCase() });
+        const adminLocationData = await Location.findOne({ 
+            location_name: { $regex: adminLocation, $options: 'i' } 
+        });
         console.log("Admin location data:", adminLocationData);
         // Get all locations to build hierarchy
         const allLocations = await Location.find({});
