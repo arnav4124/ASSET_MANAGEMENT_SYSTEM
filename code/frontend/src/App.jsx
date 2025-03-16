@@ -21,38 +21,40 @@ import ViewProgramme from './components/Programme/View_programme.jsx'
 import ViewCategory from './components/Category/view_category.jsx'
 import ViewLocationsAdmin from './components/Location/View_Locations_Admin.jsx'
 import AssignAsset from './components/Asset/Assign_Asset.jsx'
+import Footer from './components/Footer/Footer.jsx'
+
 function App() {
   const [isAdmin, setIsAdmin] = useState(false); 
   return (
     <BrowserRouter>
-      <Navbar isAdmin={isAdmin} />
-      <Routes>
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/project/edit" element={<ProjectEdit />} />  
-        <Route path="/project/add" element={<Project_add />} />  
-        <Route path="/admin/add_user" element={<Add_user />} />
-        <Route path="/superuser/add_programme" element={<Add_progrmme />} />
-        <Route path="/superuser/add_location" element={<Add_location />} />
-        <Route path="/superuser/assign_admin" element={<AssignAdmin />} />
-        <Route path="/admin/asset/add" element={<AddAsset />} />
-        <Route path="/admin/asset/view" element={<ViewAsset />} />
-        <Route path="/admin/assets/view/:id" element={<AssetDetails/>}/>
-        <Route path="/admin/dashboard" element={<AdminDashboard/>} />
-        <Route path='/superuser/dashboard' element={<SuperUserDashboard/>} />
-        <Route path="/superuser/add_category" element={<AddCategory/>} />
-        <Route path="/admin/view_users" element={<ViewUsers/>} />
-        <Route path="/admin/view_locations" element={<ViewLocationsAdmin/>} />
-        <Route path="/superuser/view_location" element={<ViewLocation/>} />
-        <Route path="/superuser/view_category" element={<ViewCategory/>} />
-        <Route path="/superuser/view_programme" element={<ViewProgramme/>} />
-        <Route path="/admin/assets/assign_asset/:id" element={<AssignAsset/>} />
-      </Routes>
-      {/* <button
-  class="inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-center text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900">
-  Button
-</button> */}
-
+      <div className="flex flex-col min-h-screen">
+        <Navbar isAdmin={isAdmin} />
+        <div className="flex-grow">
+          <Routes>
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/project/edit" element={<ProjectEdit />} />  
+            <Route path="/project/add" element={<Project_add />} />  
+            <Route path="/admin/add_user" element={<Add_user />} />
+            <Route path="/superuser/add_programme" element={<Add_progrmme />} />
+            <Route path="/superuser/add_location" element={<Add_location />} />
+            <Route path="/superuser/assign_admin" element={<AssignAdmin />} />
+            <Route path="/admin/asset/add" element={<AddAsset />} />
+            <Route path="/admin/asset/view" element={<ViewAsset />} />
+            <Route path="/admin/assets/view/:id" element={<AssetDetails/>}/>
+            <Route path="/admin/dashboard" element={<AdminDashboard/>} />
+            <Route path='/superuser/dashboard' element={<SuperUserDashboard/>} />
+            <Route path="/superuser/add_category" element={<AddCategory/>} />
+            <Route path="/admin/view_users" element={<ViewUsers/>} />
+            <Route path="/admin/view_locations" element={<ViewLocationsAdmin/>} />
+            <Route path="/superuser/view_location" element={<ViewLocation/>} />
+            <Route path="/superuser/view_category" element={<ViewCategory/>} />
+            <Route path="/superuser/view_programme" element={<ViewProgramme/>} />
+            <Route path="/admin/assets/assign_asset/:id" element={<AssignAsset/>} />
+          </Routes>
+        </div>
+        <Footer />
+      </div>
     </BrowserRouter>
   )
 }
