@@ -150,6 +150,11 @@ const Project_add = () => {
   };
 
   const removeParticipant = (index) => {
+    const usertoRemove = selectedParticipants[index];
+    if(selectedManager && usertoRemove.email === selectedManager.email){
+      setSelectedManager(null);
+      register("projectManager").onChange({ target: { value: '' } });
+    }
     setSelectedParticipants(prev => {
       const updatedList = [...prev];
       updatedList.splice(index, 1);
