@@ -171,6 +171,30 @@ app.get("/api/projects", async (req, res) => {
     }
 });
 
+app.get('/my-profile/:id', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+);
+
+app.put('/update-profile/:id', async (req, res) => {
+    try {
+        const
+        { first_name, last_name, email, location, role } = req.body;
+        const
+        user
+        = await User.findByIdAndUpdate(req.params.id, { first_name, last_name, email, location, role }, { new: true });
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+);
+
 // app use port
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

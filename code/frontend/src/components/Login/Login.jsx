@@ -17,13 +17,11 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await axios.post('http://localhost:3487/api/user/login', formData);
-      console.log(response.data);
       if (response.data.success) {
         localStorage.setItem('token', response.data.token);
-        console.log(response.data.user)
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('userID', response.data.user._id);
         alert(`Login successful`);
-        navigate('/dashboard');
+        navigate('/profile');
       } else {
         alert(response.data.message); 
       }

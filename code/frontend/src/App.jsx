@@ -22,6 +22,7 @@ import ViewCategory from './components/Category/view_category.jsx'
 import ViewLocationsAdmin from './components/Location/View_Locations_Admin.jsx'
 import AssignAsset from './components/Asset/Assign_Asset.jsx'
 import Footer from './components/Footer/Footer.jsx'
+import Profile from './components/Profile/Profile.jsx'
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(false); 
@@ -51,6 +52,7 @@ function App() {
             <Route path="/superuser/view_category" element={<ViewCategory/>} />
             <Route path="/superuser/view_programme" element={<ViewProgramme/>} />
             <Route path="/admin/assets/assign_asset/:id" element={<AssignAsset/>} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </div>
         <Footer />

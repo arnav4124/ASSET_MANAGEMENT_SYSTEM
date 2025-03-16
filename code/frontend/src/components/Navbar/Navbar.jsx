@@ -1,28 +1,43 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Navbar.css";
+import { Link, useNavigate } from "react-router-dom";
 
 const Navbar = ({ isAdmin }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Inbox");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    setIsLoggedIn(!!token);
+  }, [isLoggedIn]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setIsLoggedIn(false);
+    navigate("/login");
+  };
 
   const userTabs = [
-    "Inbox",
-    "View Your Assets",
-    "View Your Projects",
-    "Requests",
-    "Profile",
+    { name: "Inbox", path: "/" },
+    { name: "View Your Assets", path: "/asset/view" },
+    { name: "View Your Projects", path: "/project/edit" },
+    { name: "Requests", path: "/requests" },
+    { name: "Profile", path: "/profile" },
+    { name: "Logout", path: "/login" },
   ];
 
   const adminTabs = [
-    "View All Projects",
-    "View All Assets",
-    "Add Asset",
-    "Asset List",
-    "People",
-    "Licenses",
+    { name: "View All Projects", path: "/admin/projects" },
+    { name: "View All Assets", path: "/admin/assets" },
+    { name: "Add Asset", path: "/admin/asset/add" },
+    { name: "Asset List", path: "/admin/assets/list" },
+    { name: "People", path: "/admin/people" },
+    { name: "Licenses", path: "/admin/licenses" },
   ];
-   
-  const tabsToShow = isAdmin ? [...userTabs, ...adminTabs] : userTabs;
+
+  const tabsToShow = isAdmin ? [ ...adminTabs,...userTabs] : userTabs;
 
   return (
     <nav className="navbar">
@@ -33,12 +48,14 @@ const Navbar = ({ isAdmin }) => {
       </div>
       <ul className={`nav-links ${menuOpen ? "open" : ""}`}>
         {tabsToShow.map((tab) => (
-          <li
-            key={tab}
-            className={activeTab === tab ? "active" : ""}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab}
+          <li key={tab.name} className={activeTab === tab.name ? "active" : ""}>
+            {tab.name === "Logout" ? (
+              <span onClick={handleLogout}>{tab.name}</span>
+            ) : (
+              <Link to={tab.path} onClick={() => setActiveTab(tab.name)}>
+                {tab.name}
+              </Link>
+            )}
           </li>
         ))}
       </ul>
