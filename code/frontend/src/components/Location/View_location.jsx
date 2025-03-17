@@ -3,37 +3,77 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Plus, ChevronDown, ChevronRight, MapPin, Users, User } from 'lucide-react';
 import axios from 'axios';
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
 
+    static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+    }
 
+    componentDidCatch(error, errorInfo) {
+        console.error('LocationCard Error:', error, errorInfo);
+    }
 
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                    <h3 className="text-red-800 font-medium">Something went wrong</h3>
+                    <p className="text-red-600 text-sm mt-1">Error loading location data</p>
+                </div>
+            );
+        }
+
+        return this.props.children;
+    }
+}
 
 const LocationCard = ({ location, depth = 0, expanded, onToggle, searchTerm }) => {
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            navigate('/login');
+            return;
+        }
+
+        try {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || user.role !== 'Superuser') {
+                navigate('/login');
+            }
+        } catch (error) {
+            console.error('Error parsing user data:', error);
+            navigate('/login');
+        }
+    }, [navigate]);
+
+    // Guard clauses for required props
+    if (!location) {
+        return null;
+    }
+
     const matchesSearch = (loc) => {
+        if (!searchTerm) return true;
+        if (!loc) return false;
+
         const searchLower = searchTerm.toLowerCase();
         return (
-            loc.location_name.toLowerCase().includes(searchLower) ||
-            loc.location_type.toLowerCase().includes(searchLower) ||
-            loc.address.toLowerCase().includes(searchLower) ||
-            (loc.stats.admin?.name || '').toLowerCase().includes(searchLower)
+            (loc.location_name || '').toLowerCase().includes(searchLower) ||
+            (loc.location_type || '').toLowerCase().includes(searchLower) ||
+            (loc.address || '').toLowerCase().includes(searchLower) ||
+            ((loc.stats?.admin?.name || '')).toLowerCase().includes(searchLower)
         );
     };
-    const navigate = useNavigate();
-    useEffect(()=>{
-        const token=localStorage.getItem('token')
-        if(!token){
-            navigate('/login')
-        }
-        else{
-            const role =JSON.parse(localStorage.getItem('user')).role
-            console.log(role)
 
-            if(role!=='Superuser'){
-                navigate('/login')
-            }
-        }
-    },[])
-    const shouldShow = !searchTerm || matchesSearch(location);
-    const hasMatchingChildren = location.children.some(child => matchesSearch(child));
+    const shouldShow = matchesSearch(location);
+    const hasMatchingChildren = Array.isArray(location.children) &&
+        location.children.some(child => matchesSearch(child));
 
     if (!shouldShow && !hasMatchingChildren) return null;
 
@@ -42,7 +82,7 @@ const LocationCard = ({ location, depth = 0, expanded, onToggle, searchTerm }) =
             <div className={`p-4 bg-white rounded-lg shadow-sm mb-2 ${depth === 0 ? 'border-l-4 border-blue-500' : ''}`}>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        {location.children.length > 0 && (
+                        {Array.isArray(location.children) && location.children.length > 0 && (
                             <button
                                 onClick={() => onToggle(location._id)}
                                 className="p-1 hover:bg-gray-100 rounded"
@@ -54,9 +94,9 @@ const LocationCard = ({ location, depth = 0, expanded, onToggle, searchTerm }) =
                                 )}
                             </button>
                         )}
-                        <h3 className="font-semibold text-lg">{location.location_name}</h3>
+                        <h3 className="font-semibold text-lg">{location.location_name || 'Unnamed Location'}</h3>
                         <span className="px-2 py-1 bg-gray-100 rounded text-sm text-gray-600">
-                            {location.location_type}
+                            {location.location_type || 'Unknown Type'}
                         </span>
                     </div>
                 </div>
@@ -64,34 +104,36 @@ const LocationCard = ({ location, depth = 0, expanded, onToggle, searchTerm }) =
                 <div className="mt-2 grid grid-cols-2 gap-4">
                     <div className="flex items-center gap-2">
                         <MapPin size={16} className="text-gray-500" />
-                        <span className="text-sm text-gray-600">{location.address}</span>
+                        <span className="text-sm text-gray-600">{location.address || 'No address specified'}</span>
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                             <Users size={16} className="text-gray-500" />
                             <span className="text-sm text-gray-600">
-                                {location.stats.userCount} users
+                                {location.stats?.userCount || 0} users
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
                             <User size={16} className="text-gray-500" />
                             <span className="text-sm text-gray-600">
-                                Admin: {location.stats.admin ? location.stats.admin.name : 'None'}
+                                Admin: {location.stats?.admin?.name || 'None'}
                             </span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {expanded.includes(location._id) && location.children.map(child => (
-                <LocationCard
-                    key={child._id}
-                    location={child}
-                    depth={depth + 1}
-                    expanded={expanded}
-                    onToggle={onToggle}
-                    searchTerm={searchTerm}
-                />
+            {expanded.includes(location._id) && Array.isArray(location.children) && location.children.map(child => (
+                <ErrorBoundary key={child._id}>
+                    <LocationCard
+                        key={child._id}
+                        location={child}
+                        depth={depth + 1}
+                        expanded={expanded}
+                        onToggle={onToggle}
+                        searchTerm={searchTerm}
+                    />
+                </ErrorBoundary>
             ))}
         </div>
     );
@@ -110,7 +152,7 @@ const ViewLocation = () => {
             try {
                 const response = await axios.get('http://localhost:3487/api/superuser/locations', {
                     headers: {
-                       
+
                         token: localStorage.getItem('token')
                     }
                 });
@@ -190,7 +232,7 @@ const ViewLocation = () => {
                     </div>
                 )}
 
-                {/* Locations List */}
+                {/* Locations List with Error Boundary */}
                 <div className="space-y-4">
                     {locations.length === 0 ? (
                         <div className="text-center text-gray-500 py-8">
@@ -198,13 +240,15 @@ const ViewLocation = () => {
                         </div>
                     ) : (
                         locations.map(location => (
-                            <LocationCard
-                                key={location._id}
-                                location={location}
-                                expanded={expanded}
-                                onToggle={toggleExpand}
-                                searchTerm={searchTerm}
-                            />
+                            <ErrorBoundary key={location._id}>
+                                <LocationCard
+                                    key={location._id}
+                                    location={location}
+                                    expanded={expanded}
+                                    onToggle={toggleExpand}
+                                    searchTerm={searchTerm}
+                                />
+                            </ErrorBoundary>
                         ))
                     )}
                 </div>

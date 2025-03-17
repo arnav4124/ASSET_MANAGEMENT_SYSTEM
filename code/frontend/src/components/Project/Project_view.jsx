@@ -201,7 +201,7 @@ const ViewProject = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-500">
-                            {proj.project_head}
+                            {proj.project_head && proj.project_head.name ? proj.project_head.name : "N/A"}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
