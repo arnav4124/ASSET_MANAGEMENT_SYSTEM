@@ -14,6 +14,9 @@ function Profile() {
     const [updatedData, setUpdatedData] = useState({});
     const [message, setMessage] = useState(null);
 
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [locationOptions, setLocationOptions] = useState([]);
     useEffect(() => {
         const userId = JSON.parse(localStorage.getItem("user"))._id;
 
@@ -29,6 +32,19 @@ function Profile() {
                         role: userData.role || ''
                     });
                     setUpdatedData(userData);
+
+                    if (userData.role === 'Superuser') {
+                        axios.get('http://localhost:3487/api/locations', {
+                            headers: { token: localStorage.getItem("token") }
+                        })
+                            .then((resp) => {
+                                setLocationOptions(resp.data || []);
+                            })
+                            .catch((err) => {
+                                console.error("Error fetching location options", err);
+                            });
+                    }
+
                 }
             })
             .catch((err) => {
@@ -43,7 +59,9 @@ function Profile() {
 
     const handleSave = () => {
         const userId = JSON.parse(localStorage.getItem("user"))._id;
-        axios.put(`http://localhost:3487/update-profile/${userId}`, updatedData)
+        axios.put(`http://localhost:3487/update-profile/${userId}`, updatedData, 
+            { headers: { token: localStorage.getItem("token") } }
+        )
             .then(() => {
                 setData(updatedData);
                 setEditing(false);
@@ -53,6 +71,30 @@ function Profile() {
                 console.log("API Error:", err);
                 setMessage({ type: 'error', text: 'Error updating profile' });
             });
+    };
+
+    const handlePasswordChange = () => {
+        const userId = JSON.parse(localStorage.getItem("user"))._id;
+        console.log("Changing password for user:", userId);
+        axios.put(`http://localhost:3487/change-password/${userId}`, { currentPassword, newPassword },
+            {   withCredentials: true,
+                headers: { token: localStorage.getItem("token") }} 
+        )
+            .then((res) => {
+                console.log("Password change response:", res.data);
+                if(res.data.success){
+                    setMessage({ type: 'success', text: 'Password changed successfully' });
+                    setCurrentPassword('');
+                    setNewPassword('');
+                }else{
+                    setMessage({ type: 'error', text: res.data.message || 'Error changing password' });
+                }
+            })
+            .catch((err) => {
+                console.log("Error changing password:", err);
+                setMessage({ type: 'error', text: err.response?.data?.message || 'Error changing password' });
+            }
+            );
     };
 
     return (
@@ -105,18 +147,56 @@ function Profile() {
                             <FaMapMarkerAlt className="mr-2" />
                             LOCATION
                         </h3>
-                        {editing ? (
-                            <input
+                        {editing && data.role === 'Superuser' ? (
+                            <select
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                                type='text'
                                 name="location"
                                 value={updatedData.location || ''}
                                 onChange={handleChange}
-                            />
+                            >
+                                <option value="">Select location</option>
+                                {locationOptions.map(loc => (
+                                    <option key={loc._id} value={loc._id}>{loc.location_name}</option>
+                                ))}
+                            </select>
                         ) : (
                             <p className="text-gray-800 text-lg">{data.location}</p>
                         )}
                     </div>
+
+                    {editing ? (
+                        <div className="bg-gray-50 p-6 mt-6 rounded-lg shadow-md transition-shadow">
+                            <h3 className="font-semibold text-gray-600 mb-4">Change Password</h3>
+                            <div className="mb-4">
+                                <label className="block text-gray-700 text-sm font-bold mb-2">Current Password</label>
+                                <input
+                                    type="password"
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    value={currentPassword}
+                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                />
+                            </div>
+                            <div className="mb-4">
+                                <label className="block text-gray-700 text-sm font-bold mb-2">New Password</label>
+                                <input
+                                    type="password"
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                />
+                            </div>
+                            <button
+                                className="bg-red-600 text-white px-8 py-3 rounded-lg shadow-lg hover:bg-red-700 transition-colors text-lg font-semibold"
+                                onClick={handlePasswordChange}
+                            >
+                                Update Password
+                            </button>
+                        </div>
+
+                    ) : null}
+
+
+
 
                     <div className="bg-gray-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
                         <h3 className="font-semibold text-gray-600 mb-2 flex items-center">
@@ -154,7 +234,7 @@ function Profile() {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
 
