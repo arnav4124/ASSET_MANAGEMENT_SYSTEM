@@ -64,7 +64,7 @@ const ViewProject = () => {
   });
 
   const handleRowClick = (id) => {
-    navigate(`/admin/projects/view/${id}`);
+    navigate(`/admin/project/edit/${id}`);
   };
 
   if (loading) {
@@ -173,12 +173,15 @@ const ViewProject = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Deadline
                     </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredProjects.length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
                         No projects found
                       </td>
                     </tr>
@@ -186,28 +189,50 @@ const ViewProject = () => {
                     filteredProjects.map((proj) => (
                       <tr
                         key={proj._id}
-                        onClick={() => handleRowClick(proj._id)}
                         className="hover:bg-gray-50 cursor-pointer transition-colors duration-200"
                       >
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td
+                          className="px-6 py-4 whitespace-nowrap"
+                          onClick={() => handleRowClick(proj._id)}
+                        >
                           <div className="text-sm font-medium text-gray-900">
                             {proj.Project_name}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td
+                          className="px-6 py-4 whitespace-nowrap"
+                          onClick={() => handleRowClick(proj._id)}
+                        >
                           <div className="text-sm text-gray-500">
                             {proj.programme_name}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td
+                          className="px-6 py-4 whitespace-nowrap"
+                          onClick={() => handleRowClick(proj._id)}
+                        >
                           <div className="text-sm text-gray-500">
                             {proj.project_head && proj.project_head.name ? proj.project_head.name : "N/A"}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td
+                          className="px-6 py-4 whitespace-nowrap"
+                          onClick={() => handleRowClick(proj._id)}
+                        >
                           <div className="text-sm text-gray-500">
                             {proj.deadline ? new Date(proj.deadline).toLocaleDateString() : "N/A"}
                           </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/admin/project/edit/${proj._id}`);
+                            }}
+                            className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                          >
+                            Edit
+                          </button>
                         </td>
                       </tr>
                     ))

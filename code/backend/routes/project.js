@@ -5,6 +5,8 @@ const User = require('../models/user');
 const Location = require('../models/location');
 const authMiddleware = require('../middleware/auth');
 const UserProject = require('../models/user_project');
+const AssetProject = require('../models/asset_project');
+const mongoose = require('mongoose');
 
 // Get all users with role 'User' or 'Admin'
 router.get('/users', authMiddleware, async (req, res) => {
@@ -116,8 +118,12 @@ router.get('/', authMiddleware, async (req, res) => {
 // Get project by ID
 router.get('/:id', authMiddleware, async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: "Invalid project ID format" });
+        }
+
         const project = await Project.findById(req.params.id)
-            .populate('project_head', 'name email');
+            .populate('project_head', 'first_name last_name email');
 
         if (!project) {
             return res.status(404).json({ message: "Project not found" });
@@ -133,6 +139,10 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // Update project
 router.put('/:id', authMiddleware, async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: "Invalid project ID format" });
+        }
+
         const project = await Project.findByIdAndUpdate(
             req.params.id,
             { $set: req.body },
@@ -156,6 +166,10 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // Delete project
 router.delete('/:id', authMiddleware, async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: "Invalid project ID format" });
+        }
+
         const project = await Project.findByIdAndDelete(req.params.id);
 
         if (!project) {
@@ -170,6 +184,47 @@ router.delete('/:id', authMiddleware, async (req, res) => {
         });
     } catch (error) {
         console.error('Error deleting project:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Get project participants
+router.get('/:id/participants', authMiddleware, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: "Invalid project ID format" });
+        }
+
+        const userProjects = await UserProject.find({ project_id: req.params.id })
+            .populate('user_id', 'first_name last_name email role');
+
+        const participants = userProjects.map(up => up.user_id);
+        res.status(200).json(participants);
+    } catch (error) {
+        console.error('Error fetching project participants:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Get project assets
+router.get('/:id/assets', authMiddleware, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: "Invalid project ID format" });
+        }
+
+        const assetProjects = await AssetProject.find({ project_id: req.params.id })
+            .populate({
+                path: 'asset_id',
+                populate: {
+                    path: 'category'
+                }
+            });
+
+        const assets = assetProjects.map(ap => ap.asset_id);
+        res.status(200).json(assets);
+    } catch (error) {
+        console.error('Error fetching project assets:', error);
         res.status(500).json({ message: error.message });
     }
 });
