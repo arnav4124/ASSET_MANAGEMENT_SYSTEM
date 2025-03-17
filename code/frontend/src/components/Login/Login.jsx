@@ -1,18 +1,31 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import ReCAPTCHA from "react-google-recaptcha";
+import { useRef } from 'react';
 
 const Login = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
+	const recaptchaRef = useRef(null);
+  const [formData, setFormData] = useState({ email: '', password: '', recaptchaToken: '' });
   const [message, setMessage] = useState(null);
+  
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+  const handleRecaptchaChange = (token) => {
+		setRecaptchaToken(token);
+    setFormData({ ...formData, recaptchaToken: token });
+	}
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!recaptchaToken) {
+      setMessage({ type: 'error', text: 'Please verify that you are not a robot.' });
+			return;
+		}
     try {
       const response = await axios.post('http://localhost:3487/api/user/login', formData);
       if (response.data.success) {
@@ -29,6 +42,11 @@ const Login = () => {
         text: err.response?.status === 401 ? 'Invalid username or password. Please try again.' : 'Something went wrong. Please try again later.'
       });
     }
+    finally
+		{
+			recaptchaRef.current.reset();
+			setRecaptchaToken(null);
+		}
   };
 
   return (
@@ -63,6 +81,11 @@ const Login = () => {
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
             />
           </div>
+          <ReCAPTCHA
+							sitekey="6Lc52PYqAAAAAHi2UQWbtiBRKzImnRmcnTBJc2zB"
+							onChange={handleRecaptchaChange}
+							ref={recaptchaRef}
+						/>
           <button 
             type="submit" 
             className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
