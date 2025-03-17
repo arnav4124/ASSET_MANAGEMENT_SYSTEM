@@ -15,11 +15,26 @@ const AssignAsset = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+            navigate('/login');
+        } else {
+            const user = JSON.parse(localStorage.getItem("user"));
+            if (user.role !== "Admin") {
+                navigate('/login');
+            }
+        }
         const fetchData = async () => {
             setLoading(true);
             setError(null);
             try {
-                const endpoint = assignType === "user" ? "users" : "projects";
+                const adminData = JSON.parse(localStorage.getItem("user"));
+                const adminLocation = adminData.location;
+                console.log("Admin location:", adminLocation);
+                const endpoint = assignType === "user"
+                    ? `user?adminLocation=${adminLocation}`
+                    : "projects";
                 const res = await axios.get(`http://localhost:3487/api/${endpoint}`, {
                     withCredentials: true,
                     headers: {
@@ -51,7 +66,7 @@ const AssignAsset = () => {
             });
             setShowSuccess(true);
             setTimeout(() => {
-                navigate('/admin/assets');
+                navigate('/admin/assets/view');
             }, 2000);
         } catch (error) {
             console.error("Assign error:", error);

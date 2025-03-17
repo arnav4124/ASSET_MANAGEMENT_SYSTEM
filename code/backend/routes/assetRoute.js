@@ -8,6 +8,7 @@ const upload = multer({ storage });
 const Asset = require('../models/asset');
 const UserAsset = require('../models/user_asset');
 const AssetProject = require('../models/asset_project');
+const authMiddleware = require('../middleware/auth');
 // Example: POST add-asset
 router.post('/add-asset', upload.single('Img'), async (req, res) => {
   try {
@@ -61,23 +62,28 @@ router.post('/add-asset', upload.single('Img'), async (req, res) => {
 });
 
 // Example: GET all assets
-router.get('/', async (req, res) => {
+// GET all assets with populated Issued_by and Issued_to fields
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const assets = await Asset.find({});
-    res.json(assets);
+    const assets = await Asset.find({})
+      .populate('Issued_by', 'first_name last_name email')
+      .populate('Issued_to', 'first_name last_name email');
+    res.status(200).json(assets);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // Example: GET specific asset by id
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const asset = await Asset.findById(req.params.id);
+    const asset = await Asset.findById(req.params.id)
+      .populate('Issued_by', 'first_name last_name email')
+      .populate('Issued_to', 'first_name last_name email');
     if (!asset) {
       return res.status(404).json({ error: 'Asset not found' });
     }
-    res.json(asset);
+    res.status(200).json(asset);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -95,6 +101,10 @@ router.post("/assign_asset/:assetId", async (req, res) => {
         asset_id: assetId,
         user_email: assignId
       });
+      // set assignment_status to true
+      const asset = await Asset.findById(assetId);
+      asset.assignment_status = true;
+      await asset.save();
       return res.status(200).json(newUserAsset);
     } else {
       // Entry in asset_project
@@ -102,6 +112,9 @@ router.post("/assign_asset/:assetId", async (req, res) => {
         asset_id: assetId,
         project_id: assignId
       });
+      const asset = await Asset.findById(assetId);
+      asset.assignment_status = true;
+      await asset.save();
       return res.status(200).json(newAssetProject);
     }
   } catch (error) {

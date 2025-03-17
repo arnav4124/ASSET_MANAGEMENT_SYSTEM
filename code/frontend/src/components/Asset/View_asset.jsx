@@ -97,7 +97,7 @@ const ViewAsset = () => {
   });
 
   const handleRowClick = (id) => {
-    navigate(`/admin/assets/view/${id}`);
+    navigate(`/admin/assets/edit/${id}`);
   };
 
   if (loading) {
@@ -243,10 +243,14 @@ const ViewAsset = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {asset.Issued_by || 'Unassigned'}
+                          {asset.Issued_by && asset.Issued_by.first_name
+                            ? `${asset.Issued_by.first_name} ${asset.Issued_by.last_name}`
+                            : 'Unassigned'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {asset.Issued_to || 'Unassigned'}
+                          {asset.Issued_to && asset.Issued_to.first_name
+                            ? `${asset.Issued_to.first_name} ${asset.Issued_to.last_name}`
+                            : 'Unassigned'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${asset.status === 'Available' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
