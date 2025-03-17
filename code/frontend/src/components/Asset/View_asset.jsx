@@ -6,10 +6,10 @@ const ViewAsset = () => {
   const [assets, setAssets] = useState([]);
   const [categories, setCategories] = useState([]);
   const [locations, setLocations] = useState([]);
+  const [selectedLocations, setSelectedLocations] = useState([]); // New state for checkboxes
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const navigate = useNavigate();
@@ -19,12 +19,11 @@ const ViewAsset = () => {
     if (!token) {
       navigate("/login");
       return;
-    } else {
-      const role = JSON.parse(localStorage.getItem("user")).role;
-      if (role !== "Admin") {
-        navigate("/login");
-        return;
-      }
+    }
+    const currentUser = JSON.parse(localStorage.getItem("user"));
+    if (currentUser.role !== "Admin") {
+      navigate("/login");
+      return;
     }
 
     const fetchAssets = async () => {
@@ -55,11 +54,15 @@ const ViewAsset = () => {
 
     const fetchLocations = async () => {
       try {
-        const response = await fetch("http://localhost:3487/api/locations", {
+        // Fetch child locations from the admin-locations endpoint.
+        const response = await fetch("http://localhost:3487/api/locations/admin-locations", {
           headers: { token }
         });
-        const data = await response.json();
-        setLocations(data);
+        const childLocations = await response.json();
+        // Get admin's own location from the user object.
+        const myLocation = currentUser.location;
+        // Combine parent's location with child locations.
+        setLocations([{ _id: "admin-location", location_name: myLocation }, ...childLocations]);
       } catch (err) {
         console.error(err);
         setError('Error fetching locations');
@@ -70,6 +73,7 @@ const ViewAsset = () => {
       .then(() => setLoading(false));
   }, [navigate]);
 
+  // Updated filtering logic for location checkboxes:
   const filteredAssets = assets.filter(asset => {
     // Filter based on search term
     if (searchTerm) {
@@ -81,8 +85,8 @@ const ViewAsset = () => {
         asset.Issued_to?.toString().toLowerCase().includes(searchLower);
       if (!matchesSearch) return false;
     }
-    // Filter based on location using the Office field
-    if (locationFilter && asset.Office !== locationFilter) {
+    // Filter based on location checkboxes  
+    if (selectedLocations.length > 0 && !selectedLocations.includes(asset.Office)) {
       return false;
     }
     // Filter based on category (assumes the API returns populated category name)
@@ -95,6 +99,17 @@ const ViewAsset = () => {
     }
     return true;
   });
+
+  // Handler for location checkbox toggle
+  const handleLocationToggle = (locationName) => {
+    setSelectedLocations(prev => {
+      if (prev.includes(locationName)) {
+        return prev.filter(loc => loc !== locationName);
+      } else {
+        return [...prev, locationName];
+      }
+    });
+  };
 
   const handleRowClick = (id) => {
     navigate(`/admin/assets/view/${id}`);
@@ -131,26 +146,41 @@ const ViewAsset = () => {
         </div>
 
         <div className="flex gap-6">
-          {/* Left Sidebar Filters */}
+          {/* Left Sidebar Filters (with checkbox for Location) */}
           <div className="w-1/4">
             <div className="bg-white rounded-lg shadow-md p-4 mb-6">
               <h2 className="text-xl font-semibold mb-4">Filters</h2>
+              {/* Checkbox for Location */}
               <div className="mb-4">
-                <label className="block text-gray-700">Location (Office)</label>
-                <select
-                  value={locationFilter}
-                  onChange={(e) => setLocationFilter(e.target.value)}
-                  className="w-full border border-gray-300 p-2 rounded-md mt-1"
-                >
-                  <option value="">All Locations</option>
+                <span className="block text-gray-700 font-medium mb-2">Location (Office)</span>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
                   {locations.map(loc => (
-                    <option key={loc._id} value={loc.location_name}>
-                      {loc.location_name}
-                    </option>
+                    <div key={loc._id} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`loc-${loc._id}`}
+                        checked={selectedLocations.includes(loc.location_name)}
+                        onChange={() => handleLocationToggle(loc.location_name)}
+                        className="h-4 w-4 text-blue-500 focus:ring-blue-400 rounded"
+                      />
+                      <label htmlFor={`loc-${loc._id}`} className="ml-2 text-sm text-gray-700">
+                        {loc.location_name}
+                      </label>
+                    </div>
                   ))}
-                </select>
+                </div>
+                {selectedLocations.length > 0 && (
+                  <div className="mt-3">
+                    <button
+                      onClick={() => setSelectedLocations([])}
+                      className="text-xs text-blue-500 hover:text-blue-700"
+                    >
+                      Clear all filters
+                    </button>
+                  </div>
+                )}
               </div>
-
+              {/* Keep other filters as before */}
               <div className="mb-4">
                 <label className="block text-gray-700">Category</label>
                 <select
@@ -166,7 +196,6 @@ const ViewAsset = () => {
                   ))}
                 </select>
               </div>
-
               <div className="mb-4">
                 <label className="block text-gray-700">Asset Type</label>
                 <select
