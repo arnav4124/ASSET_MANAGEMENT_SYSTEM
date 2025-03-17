@@ -339,72 +339,21 @@ const AddEmployee = () => {
               </div>
             </div>
 
-            <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2 pt-2">Management</h2>
+           
 
             {/* Manager - Autocomplete */}
             <div className="mb-6 relative">
-              <label className="block font-medium text-sm mb-1 text-gray-700">
-                Manager (Search by name or email)
-              </label>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={handleSearch}
-                onFocus={() => setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                placeholder="Start typing to search for a manager"
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-              />
-              <input
-                type="hidden"
-                {...register("manager")}
-              />
+              
 
               {/* Suggestions list */}
-              {showSuggestions && filteredManagers.length > 0 && (
-                <div className="absolute z-10 bg-white mt-1 w-full border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                  {filteredManagers.map((manager) => (
-                    <div
-                      key={manager._id}
-                      className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 transition-colors duration-150"
-                      onClick={() => selectManager(manager)}
-                    >
-                      <div className="font-medium">{manager.name}</div>
-                      <div className="text-sm text-gray-500">{manager.email}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
+          
+            
 
               {/* No results message */}
-              {showSuggestions && searchTerm && filteredManagers.length === 0 && (
-                <div className="absolute z-10 bg-white mt-1 w-full border border-gray-300 rounded-md shadow-lg p-3">
-                  <p className="text-gray-500">No managers found. Try a different search term.</p>
-                </div>
-              )}
-
-              {errors.manager && <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.manager.message}</p>}
+             
 
               {/* Selected manager display */}
-              {selectedManager && (
-                <div className="mt-2 p-2 bg-blue-50 border border-blue-100 rounded-md flex justify-between items-center">
-                  <div>
-                    <span className="text-sm font-medium">Selected: </span>
-                    <span className="text-blue-700">{selectedManager}</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="text-sm text-gray-500 hover:text-red-500"
-                    onClick={() => {
-                      setSelectedManager(null);
-                      setSearchTerm("");
-                      setValue("manager", "");
-                    }}
-                  >
-                    Clear
-                  </button>
-                </div>
-              )}
+             
             </div>
             <h2 className="text-lg font-medium text-gray-700 mb-4">Select Location</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

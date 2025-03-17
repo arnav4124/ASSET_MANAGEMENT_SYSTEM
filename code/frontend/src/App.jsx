@@ -26,8 +26,9 @@ import Profile from './components/Profile/Profile.jsx'
 import WelcomePage from './components/Welcome/welcome.jsx'
 import ViewProject from './components/Project/Project_view.jsx'
 import ProjectDetails from './components/Project/Project_details.jsx'
-import View_admin  from './components/View_admin.jsx'
+import View_admin from './components/View_admin.jsx'
 import View_asset_for_user from './components/Asset/View_asset_for_user.jsx'
+import EditUser from './components/Add_user/Edit_user.jsx'
 
 function Layout({ children }) {
   const location = useLocation();
@@ -44,16 +45,16 @@ function Layout({ children }) {
 }
 
 function App() {
-  const [isAdmin, setIsAdmin] = useState(false); 
+  const [isAdmin, setIsAdmin] = useState(false);
 
   return (
     <BrowserRouter>
       <Layout>
-        <Routes>  
+        <Routes>
           <Route path="/signup" element={<SignUp />} />
           <Route path="/" element={<WelcomePage />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/admin/project/edit/:id" element={<ProjectEdit />} />  
+          <Route path="/admin/project/edit/:id" element={<ProjectEdit />} />
           <Route path="admin/project/add" element={<Project_add />} />
           <Route path="/admin/projects/view" element={<ViewProject />} />
           <Route path="/admin/projects/view/:id" element={<ProjectDetails />} />
@@ -68,6 +69,7 @@ function App() {
           <Route path="/superuser/dashboard" element={<SuperUserDashboard />} />
           <Route path="/superuser/add_category" element={<AddCategory />} />
           <Route path="/admin/view_users" element={<ViewUsers />} />
+          <Route path="/admin/edit_user/:userId" element={<EditUser />} />
           <Route path="/admin/view_locations" element={<ViewLocationsAdmin />} />
           <Route path="/superuser/view_location" element={<ViewLocation />} />
           <Route path="/superuser/view_category" element={<ViewCategory />} />
@@ -75,7 +77,7 @@ function App() {
           <Route path="/superuser/view_admin" element={<View_admin />} />
           <Route path="/admin/assets/assign_asset/:id" element={<AssignAsset />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/user/assets/view/" element={<View_asset_for_user/>}/>
+          <Route path="/user/assets/view/" element={<View_asset_for_user />} />
         </Routes>
       </Layout>
     </BrowserRouter>
