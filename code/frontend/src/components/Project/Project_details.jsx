@@ -58,7 +58,7 @@ const ProjectDetails = () => {
             <strong>Programme:</strong> {project.programme_name}
           </p>
           <p className="text-gray-700 mb-2">
-            <strong>Project Head:</strong> {project.project_head}
+            <strong>Project Head:</strong> {project.project_head && project.project_head.name ? project.project_head.name : "N/A"}
           </p>
           <p className="text-gray-700 mb-2">
             <strong>Locations:</strong> {(project.location || []).join(", ")}
