@@ -1,77 +1,112 @@
-const {Schema,model} = require('mongoose');
+const mongoose = require("mongoose");
 
-const assetSchema = new Schema({
-    name:{
-        type:String,
-        required:true
+const assetSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true
+    },
+    brand_name: {
+        type: String,
+        // required:true
+    },
+    Serial_number: {
+        type: String,
+        required: true,
+        unique: true
     },
 
-    Serial_number:{
-        type:String,
-        required:true
+    asset_type: {
+        type: String,
+        required: true,
+        enum: ["physical", "virtual"]
     },
 
-    asset_type:{
-        type:String,
-        required:true
-    },
-
-    category:{
-        type:Schema.Types.ObjectId,
-        ref:'Category',
+    category: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
         //required:true 
     },
 
-    status:{
-        type:String,
-        required:true,
-        default: 'Available'
+    status: {
+        type: String,
+        required: true,
+        enum: ["Available", "Unavailable", "Maintenance", "Disposed"]
     },
 
-    Office:{
-        type:String,
-        required:true
+    Office: {
+        type: String,
+        required: true
     },
 
-    assignment_status:{
-        type:Boolean,
-        required:true,
-        default:false
+    assignment_status: {
+        type: Boolean,
+        default: false
     },
 
-    Sticker_seq:{
-        type:String,
-        required:true,
-        default:null
+    Sticker_seq: {
+        type: String,
+        required: true,
     },
 
-    Img:{
-        type:Buffer,
+    Img: {
+        type: String,
     },
 
-    description:{
-        type:String,
-        required:true
+    description: {
+        type: String,
+        required: true
     },
-    Invoice_id:{
-        type: Schema.Types.ObjectId,
-        ref: 'Invoice',
-        default: null
+    Invoice_id: {
+        type: String,
     },
 
-    Issued_by:{
-        type:Schema.Types.ObjectId,
-        ref:'User',
-        required:true
-    },
-
-    Issued_to:{
-        type: Schema.Types.ObjectId,
+    Issued_by: {
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        default: null
+        // required: true
     },
-})
 
-const Asset = model('Asset',assetSchema);
+    Issued_to: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    vendor_name: {
+        type: String,
+        // required:true
+    },
+    vendor_email: {
+        type: String,
+        // required:true
+    },
+    vendor_phone: {
+        type: String,
+        // required:true
+    },
+    vendor_city: {
+        type: String,
+        // required:true
+    },
+    vendor_address: {
+        type: String,
+        // required:true
+    },
+    vendor_name: {
+        type: String,
+        // required:true
+    },
+    additional_files: {
+        type: Buffer,
+        // required:true
+    },
+    brand: {
+        type: String,
+        required: true,
+    },
+
+}, {
+    timestamps: true,
+});
+
+const Asset = mongoose.model('Asset', assetSchema);
 
 module.exports = Asset;
