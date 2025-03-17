@@ -17,7 +17,7 @@ const AdminDashboard = () => {
         });
         setProjectCount(projRes.data.length);
 
-        const userRes = await axios.get("http://localhost:3487/api/users",{
+        const userRes = await axios.get("http://localhost:3487/api/user",{
           headers:{
             token:localStorage.getItem("token")
           }

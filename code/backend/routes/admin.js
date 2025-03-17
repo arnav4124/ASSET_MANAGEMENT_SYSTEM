@@ -139,5 +139,22 @@ admin_router.get('/location-details/:locationName', authMiddleware, async (req, 
     }
 });
 
+
+// route to get all admins
+
+admin_router.get('/get_admins', authMiddleware, async(req, res) => {
+    try{
+        const allAdmins = await User.find({role : "Admin" });
+        res.status(200).json(allAdmins);
+    }catch(error){
+        console.error("Error fetching admins:", error);
+        res.status(500).json({
+            message: "Error fetching admins",
+            error: error.message
+        });
+    }
+
+});
+
 module.exports = admin_router
 

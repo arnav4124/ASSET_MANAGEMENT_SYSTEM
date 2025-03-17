@@ -171,6 +171,7 @@ app.get("/api/projects", async (req, res) => {
     }
 });
 
+
 app.get('/my-profile/:id', async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
