@@ -45,7 +45,7 @@ const Navbar = () => {
   };
 
   const tabsToShow = role === "Superuser" ? [
-    { name: "View Admin", path: "/superuser/admins" },//path
+    { name: "View Admin", path: "/superuser/view_admin" },//path
     { name: "View Programmes", path: "/superuser/view_programme" },
     { name: "View Locations", path: "/superuser/view_location" },
     { name: "View Categories", path: "/superuser/view_category" }
