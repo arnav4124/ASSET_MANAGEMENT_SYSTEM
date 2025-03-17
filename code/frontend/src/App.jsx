@@ -27,6 +27,8 @@ import WelcomePage from './components/Welcome/welcome.jsx'
 import ViewProject from './components/Project/Project_view.jsx'
 import ProjectDetails from './components/Project/Project_details.jsx'
 import View_admin  from './components/View_admin.jsx'
+import View_asset_for_user from './components/Asset/View_asset_for_user.jsx'
+
 function Layout({ children }) {
   const location = useLocation();
   const hideNavbarPaths = ['/', '/login']; // Paths where Navbar should be hidden
@@ -73,6 +75,7 @@ function App() {
           <Route path="/superuser/view_admin" element={<View_admin />} />
           <Route path="/admin/assets/assign_asset/:id" element={<AssignAsset />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/user/assets/view/" element={<View_asset_for_user/>}/>
         </Routes>
       </Layout>
     </BrowserRouter>
