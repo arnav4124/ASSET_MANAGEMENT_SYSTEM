@@ -51,8 +51,8 @@ function App() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/" element={<WelcomePage />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/project/edit" element={<ProjectEdit />} />  
-          <Route path="/project/add" element={<Project_add />} />
+          <Route path="admin/project/edit/:id" element={<ProjectEdit />} />  
+          <Route path="admin/project/add" element={<Project_add />} />
           <Route path="/admin/projects/view" element={<ViewProject />} />
           <Route path="/admin/projects/view/:id" element={<ProjectDetails />} />
           <Route path="/admin/add_user" element={<Add_user />} />

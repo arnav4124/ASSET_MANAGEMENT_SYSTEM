@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Pencil, Trash2, UserPlus, ChevronRight, ChevronLeft, Check, X } from "lucide-react";
+import { Pencil, Trash2, UserPlus, ChevronRight, ChevronLeft, Check, X, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const formatDate = (date) => {
   if (!date) return 'No deadline';
@@ -14,82 +16,142 @@ const formatDate = (date) => {
 };
 
 const ProjectEdit = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [newParticipantEmail, setNewParticipantEmail] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
   const [toBeDeletedParticipants, setToBeDeletedParticipants] = useState([]);
-
-  const programmes = ["Programme A", "Programme B", "Programme C"];
-  const locations = ["Location A", "Location B", "Location C"];
-
-  // Sample participants data
-  const [participants, setParticipants] = useState([
-    { id: 1, name: "Jane Smith", email: "jane.smith@example.com", role: "Developer" },
-    { id: 2, name: "John Doe", email: "john.doe@example.com", role: "Designer" },
-    { id: 3, name: "Alice Johnson", email: "alice.johnson@example.com", role: "Project Manager" },
-    { id: 4, name: "Bob Wilson", email: "bob.wilson@example.com", role: "Developer" },
-    { id: 5, name: "Carol White", email: "carol.white@example.com", role: "QA Engineer" },
-    { id: 6, name: "Dave Brown", email: "dave.brown@example.com", role: "Business Analyst" },
-    { id: 7, name: "Eve Black", email: "eve.black@example.com", role: "UX Designer" },
-    { id: 8, name: "Frank Green", email: "frank.green@example.com", role: "Backend Developer" },
-    { id: 9, name: "Grace Lee", email: "grace.lee@example.com", role: "Frontend Developer" },
-    { id: 10, name: "Harry Chen", email: "harry.chen@example.com", role: "DevOps Engineer" },
-    { id: 11, name: "Ivy Wong", email: "ivy.wong@example.com", role: "Data Scientist" },
-    { id: 12, name: "Jack Taylor", email: "jack.taylor@example.com", role: "Security Specialist" },
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [project, setProject] = useState(null);
+  const [participants, setParticipants] = useState([]);
+  const [assets, setAssets] = useState([]);
+  const [programmes, setProgrammes] = useState([]);
 
   const participantsPerPage = 10;
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    setValue
+  } = useForm();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    const role = JSON.parse(localStorage.getItem('user'))?.role;
+    if (role !== 'Admin') {
+      navigate('/login');
+      return;
+    }
+
+    // Validate MongoDB ObjectId format
+    const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+    if (!objectIdPattern.test(id)) {
+      setError('Invalid project ID format');
+      setLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch project details
+        const projectRes = await axios.get(`http://localhost:3487/api/projects/${id}`, {
+          headers: { token: localStorage.getItem('token') }
+        });
+
+        if (!projectRes.data) {
+          throw new Error('Project not found');
+        }
+
+        setProject(projectRes.data);
+
+        // Set form values
+        setValue("projectName", projectRes.data.Project_name);
+        setValue("programme", projectRes.data.programme_name);
+        setValue("description", projectRes.data.description);
+        if (projectRes.data.deadline) {
+          setValue("deadline", new Date(projectRes.data.deadline).toISOString().split('T')[0]);
+        }
+
+        // Fetch all data in parallel
+        const [participantsRes, assetsRes, programmesRes] = await Promise.all([
+          axios.get(`http://localhost:3487/api/projects/${id}/participants`, {
+            headers: { token: localStorage.getItem('token') }
+          }),
+          axios.get(`http://localhost:3487/api/projects/${id}/assets`, {
+            headers: { token: localStorage.getItem('token') }
+          }),
+          axios.get('http://localhost:3487/api/programmes', {
+            headers: { token: localStorage.getItem('token') }
+          })
+        ]);
+
+        setParticipants(participantsRes.data);
+        setAssets(assetsRes.data);
+        setProgrammes(programmesRes.data);
+
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        if (err.response?.status === 404) {
+          setError('Project not found');
+        } else if (err.response?.status === 400) {
+          setError(err.response.data.message || 'Invalid project ID');
+        } else {
+          setError(err.response?.data?.message || 'Error loading project data');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id, navigate, setValue]);
+
   const pageCount = Math.ceil(participants.length / participantsPerPage);
   const paginatedParticipants = participants.slice(
     currentPage * participantsPerPage,
     (currentPage + 1) * participantsPerPage
   );
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    watch
-  } = useForm({
-    defaultValues: {
-      projectName: "Sample Project",
-      programme: "Programme A",
-      description: "This is a sample project description."
-    }
-  });
+  const onSubmit = async (data) => {
+    try {
+      setLoading(true);
+      const response = await axios.put(
+        `http://localhost:3487/api/projects/${id}`,
+        {
+          Project_name: data.projectName,
+          programme_name: data.programme,
+          description: data.description,
+          deadline: data.deadline || null,
+          location: project.location // Keep existing locations
+        },
+        {
+          headers: { token: localStorage.getItem('token') }
+        }
+      );
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
-    } else {
-      const role = JSON.parse(localStorage.getItem('user')).role;
-      console.log(role);
-
-      if (role !== 'Admin') {
-        navigate('/login');
+      if (response.status === 200) {
+        setProject(response.data.project);
+        setIsEditing(false);
+        alert('Project updated successfully!');
       }
-    }
-  }, []);
-
-  const onSubmit = (data) => {
-    console.log(data);
-    // Handle form submission here
-  };
-
-  const addParticipant = () => {
-    if (newParticipantEmail.trim() !== "") {
-      const newId = participants.length > 0 ? Math.max(...participants.map(p => p.id)) + 1 : 1;
-      const newParticipant = {
-        id: newId,
-        name: newParticipantEmail.split('@')[0].replace('.', ' '),
-        email: newParticipantEmail,
-        role: "Unassigned"
-      };
-      setParticipants([...participants, newParticipant]);
-      setNewParticipantEmail("");
-      setShowAddParticipant(false);
+    } catch (err) {
+      console.error('Error updating project:', err);
+      setError(err.response?.data?.message || 'Error updating project');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,328 +163,352 @@ const ProjectEdit = () => {
     }
   };
 
-  const selectAllParticipants = () => {
-    setToBeDeletedParticipants(participants.map(p => p.id));
-  };
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div className="text-white text-xl">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mx-auto mb-4"></div>
+          Loading...
+        </div>
+      </div>
+    );
+  }
 
-  const clearSelectedParticipants = () => {
-    setToBeDeletedParticipants([]);
-  };
-
-  const deleteSelectedParticipants = () => {
-    setParticipants(participants.filter(p => !toBeDeletedParticipants.includes(p.id)));
-    setToBeDeletedParticipants([]);
-  };
-
-  const deleteAllParticipants = () => {
-    setParticipants([]);
-    setToBeDeletedParticipants([]);
-  };
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-4xl mx-auto bg-red-50 border-l-4 border-red-500 p-4 rounded">
+          <p className="text-red-700">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-white p-6">
-      {/* Navigation Bar */}
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-md mb-8 p-6 border-l-4 border-blue-500 transition-all duration-300 hover:shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">Edit Project</h1>
+              <p className="text-gray-500 mt-1">Update project details and manage participants</p>
+            </div>
+            <button
+              type="button"
+              className={`px-4 py-2 rounded-md flex items-center gap-2 transition-colors duration-200 ${isEditing ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                }`}
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              <Pencil size={16} />
+              {isEditing ? 'Editing...' : 'Enable Edit'}
+            </button>
+          </div>
+        </div>
 
+        <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-6 space-y-6">
+            {/* Project Basic Information */}
+            <div>
+              <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Project Details</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="transition-all duration-200">
+                  <label className="block font-medium text-sm mb-1 text-gray-700">Project Name</label>
+                  <input
+                    {...register("projectName", {
+                      required: "Project name is required",
+                      minLength: { value: 3, message: "Project name must be at least 3 characters" }
+                    })}
+                    type="text"
+                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                    disabled={!isEditing}
+                  />
+                  {errors.projectName && (
+                    <p className="text-red-500 text-sm mt-1">{errors.projectName.message}</p>
+                  )}
+                </div>
 
-      {/* Page Title - Centered alignment */}
-      <div className="flex flex-col items-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Edit Project</h1>
-        <button
-          type="button"
-          className="text-gray-500 hover:text-gray-700 flex items-center gap-2"
-          onClick={() => setIsEditing(!isEditing)}
-        >
-          <Pencil size={16} />
-          <span className="text-sm">Enable Edit</span>
-        </button>
-      </div>
+                <div className="transition-all duration-200">
+                  <label className="block font-medium text-sm mb-1 text-gray-700">Programme</label>
+                  <select
+                    {...register("programme")}
+                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                    disabled={!isEditing}
+                  >
+                    {programmes.map((prog) => (
+                      <option key={prog._id} value={prog.name}>{prog.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-6">
-        {/* Project Name & Number Inline */}
-        <div className="grid grid-cols-2 gap-6 mb-4">
-          {/* Project Name */}
-          <div>
-            <label className="block font-medium text-sm mb-1 text-gray-700">Project Name</label>
-            <input
-              {...register("projectName", {
-                required: "Project name is required",
-                minLength: { value: 3, message: "Project name must be at least 3 characters" }
-              })}
-              type="text"
-              className="w-full p-2 border border-gray-300 rounded bg-gray-100"
-              disabled={!isEditing}
-            />
-            {errors.projectName && (
-              <p className="text-red-500 text-sm mt-1">{errors.projectName.message}</p>
+            {/* Project Head & Deadline */}
+            <div>
+              <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Project Timeline & Management</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="transition-all duration-200">
+                  <label className="block font-medium text-sm mb-1 text-gray-700">Project Head</label>
+                  <div className="p-3 bg-gray-50 rounded-md">
+                    {project?.project_head ? (
+                      <div className="flex items-center gap-2">
+                        <div>
+                          <p className="font-medium">{`${project.project_head.first_name} ${project.project_head.last_name}`}</p>
+                          <p className="text-sm text-gray-500">{project.project_head.email}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500">No project head assigned</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="transition-all duration-200">
+                  <label className="block font-medium text-sm mb-1 text-gray-700">Project Deadline</label>
+                  <input
+                    {...register("deadline")}
+                    type="date"
+                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                    disabled={!isEditing}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Project Description */}
+            <div>
+              <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Project Description</h2>
+              <textarea
+                {...register("description")}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none min-h-[120px]"
+                disabled={!isEditing}
+                rows="4"
+              />
+            </div>
+
+            {/* Project Locations */}
+            <div>
+              <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Project Locations</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {project?.location?.map((loc) => (
+                  <div key={loc} className="p-2 bg-blue-50 rounded-md text-blue-700 text-sm">
+                    {loc}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Project Assets */}
+            <div>
+              <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Project Assets</h2>
+              <div className="overflow-x-auto border rounded">
+                <table className="w-full bg-white">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="text-left p-3 text-sm font-medium text-gray-700">Asset Name</th>
+                      <th className="text-left p-3 text-sm font-medium text-gray-700">Category</th>
+                      <th className="text-left p-3 text-sm font-medium text-gray-700">Location</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {assets.length === 0 ? (
+                      <tr>
+                        <td colSpan="3" className="text-center py-4 text-gray-500">No assets assigned</td>
+                      </tr>
+                    ) : (
+                      assets.map((asset) => (
+                        <tr key={asset._id} className="border-b hover:bg-gray-50">
+                          <td className="p-3 text-sm">{asset.name}</td>
+                          <td className="p-3 text-sm">{asset.category?.name || 'N/A'}</td>
+                          <td className="p-3 text-sm">{asset.Office}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Participants Section */}
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-medium text-gray-700">Project Participants</h2>
+                {isEditing && (
+                  <button
+                    type="button"
+                    className="px-3 py-1 bg-blue-500 text-white rounded text-sm flex items-center gap-2"
+                    onClick={() => setShowAddParticipant(true)}
+                  >
+                    <UserPlus size={14} />
+                    Add Participant
+                  </button>
+                )}
+              </div>
+
+              {/* Add Participant Form */}
+              {showAddParticipant && (
+                <div className="mb-4 p-3 border rounded-md bg-white">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="email"
+                      value={newParticipantEmail}
+                      onChange={(e) => setNewParticipantEmail(e.target.value)}
+                      placeholder="Enter email address"
+                      className="flex-1 p-2 border border-gray-300 rounded"
+                    />
+                    <button
+                      type="button"
+                      className="p-2 bg-blue-500 text-white rounded-md"
+                      onClick={() => {/* Add participant logic */ }}
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="p-2 text-gray-500 rounded-md"
+                      onClick={() => setShowAddParticipant(false)}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Participants Table */}
+              <div className="overflow-x-auto border rounded">
+                <table className="w-full bg-white">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="text-left p-3 text-sm font-medium text-gray-700">Name</th>
+                      <th className="text-left p-3 text-sm font-medium text-gray-700">Email</th>
+                      <th className="text-left p-3 text-sm font-medium text-gray-700">Role</th>
+                      <th className="text-right p-3 text-sm font-medium text-gray-700">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedParticipants.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" className="text-center py-4 text-gray-500">
+                          No participants found
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedParticipants.map((participant) => (
+                        <tr
+                          key={participant._id}
+                          className={`border-b ${toBeDeletedParticipants.includes(participant._id)
+                            ? "bg-red-50"
+                            : "hover:bg-gray-50"
+                            } group`}
+                        >
+                          <td className="p-3 text-sm">{`${participant.first_name} ${participant.last_name}`}</td>
+                          <td className="p-3 text-sm">{participant.email}</td>
+                          <td className="p-3 text-sm">{participant.role}</td>
+                          <td className="p-3 text-right">
+                            {isEditing && (
+                              <button
+                                type="button"
+                                onClick={() => toggleParticipantForDeletion(participant._id)}
+                                className={`${toBeDeletedParticipants.includes(participant._id)
+                                  ? "text-red-500"
+                                  : "text-gray-400 opacity-0 group-hover:opacity-100"
+                                  } transition-opacity duration-200`}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination Controls */}
+              {pageCount > 1 && (
+                <div className="flex justify-center mt-4 gap-2 items-center">
+                  <button
+                    type="button"
+                    className="p-1 border rounded"
+                    onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                    disabled={currentPage === 0}
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <span className="text-sm text-gray-600">
+                    Page {currentPage + 1} of {pageCount}
+                  </span>
+                  <button
+                    type="button"
+                    className="p-1 border rounded"
+                    onClick={() => setCurrentPage(Math.min(pageCount - 1, currentPage + 1))}
+                    disabled={currentPage === pageCount - 1}
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              )}
+
+              {/* Deletion Controls */}
+              {toBeDeletedParticipants.length > 0 && isEditing && (
+                <div className="mt-4 p-3 border rounded-md bg-red-50 flex justify-between items-center">
+                  <span className="font-medium text-red-600 text-sm">
+                    {toBeDeletedParticipants.length} participant(s) selected
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="px-3 py-1 text-gray-700 text-sm"
+                      onClick={() => setToBeDeletedParticipants([])}
+                    >
+                      Clear Selection
+                    </button>
+                    <button
+                      type="button"
+                      className="px-3 py-1 bg-red-500 text-white rounded text-sm"
+                      onClick={() => {/* Delete participants logic */ }}
+                    >
+                      Delete Selected
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Form Actions */}
+          <div className="bg-gray-50 p-6 flex justify-between items-center border-t">
+            <button
+              type="button"
+              className="px-4 py-2 text-gray-600 flex items-center gap-2"
+              onClick={() => navigate(-1)}
+            >
+              <ChevronLeft size={16} />
+              Back
+            </button>
+            {isEditing && (
+              <button
+                type="submit"
+                className="px-6 py-2 bg-blue-500 text-white rounded-md flex items-center gap-2"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Check size={16} />
+                    Save Changes
+                  </>
+                )}
+              </button>
             )}
           </div>
-          {/* Project Number */}
-          <div>
-            <label className="block font-medium text-sm mb-1 text-gray-700">Project Number</label>
-            <input
-              type="text"
-              className="w-full p-2 border border-gray-300 rounded bg-gray-100"
-              disabled={true}
-              value="123456"
-              readOnly
-            />
-          </div>
-        </div>
-
-        {/* Project Head & Programme Inline */}
-        <div className="grid grid-cols-2 gap-6 mb-4">
-          {/* Project Head */}
-          <div>
-            <label className="block font-medium text-sm mb-1 text-gray-700">Project Head</label>
-            <input
-              {...register("projectHead")}
-              type="text"
-              className="w-full p-2 border border-gray-300 rounded bg-gray-100"
-              disabled={!isEditing}
-              defaultValue="John Doe"
-            />
-          </div>
-
-          {/* Programme Dropdown */}
-          <div>
-            <label className="block font-medium text-sm mb-1 text-gray-700">Programme</label>
-            <select
-              {...register("programme")}
-              className="w-full p-2 border border-gray-300 rounded bg-gray-100"
-              disabled={!isEditing}
-            >
-              {programmes.map((programme) => (
-                <option key={programme}>{programme}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Project Deadline */}
-        <div className="mb-4">
-          <label className="block font-medium text-sm mb-1 text-gray-700">Project Deadline</label>
-          <input
-            {...register("deadline")}
-            type="date"
-            className="w-full p-2 border border-gray-300 rounded bg-gray-100"
-            disabled={!isEditing}
-            min={new Date().toISOString().split('T')[0]}
-          />
-          <p className="text-sm text-gray-500 mt-1">Optional: Set a deadline for this project</p>
-        </div>
-
-        {/* Project Location */}
-        <div className="mb-4">
-          <label className="block font-medium text-sm mb-2 text-gray-700">Project Location</label>
-          <div className="flex flex-row gap-6">
-            {locations.map((location) => (
-              <label key={location} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  value={location}
-                  {...register("location")}
-                  disabled={!isEditing}
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-                <span className="text-sm">{location}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Description Field */}
-        <div className="mb-4">
-          <label className="block font-medium text-sm mb-1 text-gray-700">Description</label>
-          <textarea
-            {...register("description")}
-            className="w-full p-2 border border-gray-300 rounded bg-gray-100"
-            rows="4"
-            disabled={!isEditing}
-          />
-          <div className="flex justify-end mt-1">
-            <Pencil size={14} className="text-gray-400" />
-          </div>
-        </div>
-
-        {/* Participants Section */}
-        <div className="border rounded-lg p-4 bg-gray-50 mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="font-medium text-base">Project Participants</h2>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm flex items-center"
-                onClick={() => setShowAddParticipant(true)}
-                disabled={!isEditing}
-              >
-                <UserPlus size={14} className="mr-1" />
-                Add Participant
-              </button>
-            </div>
-          </div>
-
-          {/* Add Participant Form */}
-          {showAddParticipant && (
-            <div className="mb-4 p-3 border rounded-md bg-white">
-              <div className="flex items-center gap-2">
-                <input
-                  type="email"
-                  value={newParticipantEmail}
-                  onChange={(e) => setNewParticipantEmail(e.target.value)}
-                  placeholder="Enter email address"
-                  className="flex-1 p-2 border border-gray-300 rounded"
-                />
-                <button
-                  type="button"
-                  className="p-2 bg-blue-500 text-white rounded-md"
-                  onClick={addParticipant}
-                >
-                  <Check size={14} />
-                </button>
-                <button
-                  type="button"
-                  className="p-2 text-gray-500 rounded-md"
-                  onClick={() => setShowAddParticipant(false)}
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Participants Table */}
-          <div className="overflow-x-auto border rounded">
-            <table className="w-full bg-white">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="w-1/4 text-left p-2 text-sm font-medium text-gray-700">Name</th>
-                  <th className="w-2/5 text-left p-2 text-sm font-medium text-gray-700">Email</th>
-                  <th className="w-1/4 text-left p-2 text-sm font-medium text-gray-700">Role</th>
-                  <th className="w-1/12 text-right p-2 text-sm font-medium text-gray-700">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedParticipants.map((participant) => (
-                  <tr
-                    key={participant.id}
-                    className={`border-b ${toBeDeletedParticipants.includes(participant.id) ? "bg-red-50" : "hover:bg-gray-50"
-                      } group`}
-                  >
-                    <td className="p-2 text-sm">{participant.name}</td>
-                    <td className="p-2 text-sm">{participant.email}</td>
-                    <td className="p-2 text-sm">{participant.role}</td>
-                    <td className="p-2 text-right">
-                      <button
-                        type="button"
-                        onClick={() => toggleParticipantForDeletion(participant.id)}
-                        className={`${toBeDeletedParticipants.includes(participant.id)
-                          ? "text-red-500"
-                          : "text-gray-400 opacity-0 group-hover:opacity-100"
-                          } transition-opacity duration-200`}
-                        disabled={!isEditing}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {paginatedParticipants.length === 0 && (
-                  <tr>
-                    <td colSpan="4" className="text-center py-4 text-gray-500 text-sm">
-                      No participants found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination Controls */}
-          {pageCount > 1 && (
-            <div className="flex justify-center mt-4 gap-2 items-center">
-              <button
-                type="button"
-                className="p-1 border rounded"
-                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                disabled={currentPage === 0}
-              >
-                <ChevronLeft size={14} />
-              </button>
-              <span className="text-sm text-gray-600">
-                Page {currentPage + 1} of {pageCount}
-              </span>
-              <button
-                type="button"
-                className="p-1 border rounded"
-                onClick={() => setCurrentPage(Math.min(pageCount - 1, currentPage + 1))}
-                disabled={currentPage === pageCount - 1}
-              >
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          )}
-
-          {/* Deletion Controls - Show when users are selected */}
-          {toBeDeletedParticipants.length > 0 && (
-            <div className="mt-4 p-3 border rounded-md bg-red-50 flex justify-between items-center">
-              <div>
-                <span className="font-medium text-red-600 text-sm">
-                  {toBeDeletedParticipants.length} participant(s) selected
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="px-3 py-1 text-gray-700 text-sm"
-                  onClick={clearSelectedParticipants}
-                >
-                  Clear Selection
-                </button>
-                <button
-                  type="button"
-                  className="px-3 py-1 border border-gray-300 rounded text-sm"
-                  onClick={selectAllParticipants}
-                >
-                  Select All
-                </button>
-                <button
-                  type="button"
-                  className="px-3 py-1 bg-red-500 text-white rounded text-sm"
-                  onClick={deleteSelectedParticipants}
-                  disabled={!isEditing}
-                >
-                  Delete Selected
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Delete All / Bulk Actions - Only show when no users are selected */}
-          {participants.length > 0 && toBeDeletedParticipants.length === 0 && (
-            <div className="mt-4 flex justify-center">
-              <button
-                type="button"
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded text-sm w-full"
-                onClick={selectAllParticipants}
-                disabled={!isEditing}
-              >
-                Delete All Participants
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Save Button */}
-        <div className="text-center mt-6">
-          <button
-            type="submit"
-            className="px-6 py-2 bg-gray-300 text-gray-700 rounded-md w-full"
-            disabled={!isEditing}
-          >
-            Save Changes
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };

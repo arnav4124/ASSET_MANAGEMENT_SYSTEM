@@ -75,13 +75,15 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // Example: GET specific asset by id
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const asset = await Asset.findById(req.params.id);
+    const asset = await Asset.findById(req.params.id)
+      .populate('Issued_by', 'first_name last_name email')
+      .populate('Issued_to', 'first_name last_name email');
     if (!asset) {
       return res.status(404).json({ error: 'Asset not found' });
     }
-    res.json(asset);
+    res.status(200).json(asset);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

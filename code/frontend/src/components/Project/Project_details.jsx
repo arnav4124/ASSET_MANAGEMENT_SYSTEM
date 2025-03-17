@@ -70,12 +70,20 @@ const ProjectDetails = () => {
           <p className="text-gray-700 mb-4">
             <strong>Description:</strong> {project.description}
           </p>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md"
-          >
-            Back
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => navigate(`/admin/project/edit/${id}`)}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+            >
+              Edit Project
+            </button>
+          </div>
         </div>
       </div>
     )
