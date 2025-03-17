@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { FaUserCircle } from "react-icons/fa";
 import logo from "./logo.png";
 
 const Navbar = () => {
@@ -8,6 +9,7 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [role, setRole] = useState(null);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -26,7 +28,6 @@ const Navbar = () => {
       "/admin/view_users": "View Users",
       "/admin/view_locations": "View Locations",
       "/admin/asset/add": "Add Asset",
-      "/admin/assets/assign_asset/:id": "Assign Asset",
       "/superuser/assign_admin": "Assign Admin",
       "/superuser/admins": "View Admin",
       "/superuser/view_programme": "View Programmes",
@@ -40,66 +41,53 @@ const Navbar = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setIsLoggedIn(false);
-    // navigate("/login");
     navigate("/");
   };
 
-  const userTabs = [
-    { name: "View Assets", path: "/asset/view" },//path
-    { name: "View Projects", path: "/project/view" },//path
-    { name: "Profile", path: "/profile" },
-    // { name: "Logout", path: "/login" },
-    { name: "Logout", path: "/" },
-  ];
-
-  const adminTabs = [
-    { name: "View Assets", path: "/admin/asset/view" },
-    { name: "View Projects", path: "/admin/projects/view" },//path
-    { name: "View Users", path: "/admin/view_users" },
-    { name: "View Locations", path: "/admin/view_locations" },
-    { name: "Add Asset", path: "/admin/asset/add" },
-    { name: "Assign Asset", path: "/admin/assets/assign_asset/:id" },//path
-    { name: "Profile", path: "/profile" },
-    // { name: "Logout", path: "/login" },
-    { name: "Logout", path: "/" },
-  ];
-
-  const superuserTabs = [
-    { name: "Assign Admin", path: "/superuser/assign_admin" },
+  const tabsToShow = role === "Superuser" ? [
     { name: "View Admin", path: "/superuser/admins" },//path
     { name: "View Programmes", path: "/superuser/view_programme" },
     { name: "View Locations", path: "/superuser/view_location" },
-    { name: "View Categories", path: "/superuser/view_category" },
-    { name: "Profile", path: "/profile" },
-    // { name: "Logout", path: "/login" },
-    { name: "Logout", path: "/" },
+    { name: "View Categories", path: "/superuser/view_category" }
+  ] : role === "Admin" ? [
+    { name: "View Assets", path: "/admin/asset/view" },
+    { name: "View Projects", path: "/admin/projects/view" },
+    { name: "View Users", path: "/admin/view_users" },
+    { name: "View Locations", path: "/admin/view_locations" },//path
+    { name: "Add Asset", path: "/admin/asset/add" }
+  ] : [
+    { name: "View Assets", path: "/asset/view" },//path
+    { name: "View Projects", path: "/project/view" }//path
   ];
-
-  const tabsToShow = role === "Superuser" ? superuserTabs : role === "Admin" ? adminTabs : userTabs;
 
   return (
     <nav className="bg-white shadow-md p-4 flex justify-between items-center">
       <div className="flex items-center">
         <img src={logo} alt="Logo" className="h-10 w-auto" />
-        <button className="ml-4 text-xl" onClick={() => setMenuOpen(!menuOpen)}>
-          ☰
-        </button>
+        <button className="ml-4 text-xl" onClick={() => setMenuOpen(!menuOpen)}></button>
       </div>
       <ul className={`flex space-x-6 ${menuOpen ? "block" : "hidden"} md:flex`}>
         {tabsToShow.map((tab) => (
           <li key={tab.name} className={activeTab === tab.name ? "font-bold" : ""}>
-            {tab.name === "Logout" ? (
-              <button onClick={handleLogout} className="text-red-600 hover:underline">
-                {tab.name}
-              </button>
-            ) : (
-              <Link to={tab.path} onClick={() => setActiveTab(tab.name)} className="hover:underline">
-                {tab.name}
-              </Link>
-            )}
+            <Link to={tab.path} onClick={() => setActiveTab(tab.name)} className="hover:underline">
+              {tab.name}
+            </Link>
           </li>
         ))}
       </ul>
+      {isLoggedIn && (
+        <div className="relative">
+          <button onClick={() => setProfileDropdownOpen(!profileDropdownOpen)} className="text-gray-700 focus:outline-none">
+            <FaUserCircle size={30} />
+          </button>
+          {profileDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow-lg">
+              <Link to="/profile" className="block px-4 py-2 text-gray-700 hover:bg-gray-200" onClick={() => setProfileDropdownOpen(false)}>View Profile</Link>
+              <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-200">Logout</button>
+            </div>
+          )}
+        </div>
+      )}
     </nav>
   );
 };
