@@ -1,8 +1,20 @@
 const userModel = require("../models/user");
 const jwt = require("jsonwebtoken");
+const axios = require("axios");
+
 
 //login user
 const loginUser = async (req, res) => {
+    const recapchaToken=req.body.recaptchaToken;
+		if(!recapchaToken){
+			return res.status(400).send({ message: "Recaptcha Token is required" });
+		}
+
+        const isRecaptchValid = await verifyRecaptcha(recapchaToken);
+		if(!isRecaptchValid){
+			return res.status(400).send({ message: "Invalid Recaptcha Token" });
+		}
+
     const { email, password } = req.body;
     try {
         const user = await userModel.findOne({ email });
@@ -35,6 +47,24 @@ const loginUser = async (req, res) => {
     }
 }
 
+const verifyRecaptcha = async (recaptchaToken) => {
+    const secretKey = "6Lc52PYqAAAAAM-nybw2l65DO3JQyDMSTFXoBurk"; // Replace with your reCAPTCHA secret key
+    const url = "https://www.google.com/recaptcha/api/siteverify";
+
+    try {
+        const response = await axios.post(url, null, {
+            params: {
+                secret: secretKey,
+                response: recaptchaToken,
+            },
+        });
+
+        return response.data.success; // Returns true if reCAPTCHA is valid
+    } catch (error) {
+        console.error("Error verifying reCAPTCHA:", error);
+        return false;
+    }
+};
 const createToken = (user) => {
     return jwt.sign({
         id: user._id,
