@@ -35,6 +35,7 @@ const Programme = require("./models/programme");
 const Invoice = require("./models/invoice");
 const Project = require("./models/project");
 const assetRouter = require("./routes/assetRoute");
+const authMiddleware = require("./middleware/auth.js");
 
 // Middleware
 app.use(cors({
@@ -187,13 +188,58 @@ app.get('/my-profile/:id', async (req, res) => {
 app.put('/update-profile/:id', async (req, res) => {
     try {
         const
-        { first_name, last_name, email, location, role } = req.body;
+            { first_name, last_name, email, location, role } = req.body;
         const
-        user
-        = await User.findByIdAndUpdate(req.params.id, { first_name, last_name, email, location, role }, { new: true });
+            user
+                = await User.findByIdAndUpdate(req.params.id, { first_name, last_name, email, location, role }, { new: true });
         res.json(user);
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+}
+);
+
+app.put('/change-password/:id', authMiddleware, async (req, res) => {
+    try{
+
+        const { id } = req.params;
+        console.log("User ID", id);
+        const { currentPassword, newPassword } = req.body;
+        console.log("Current password", currentPassword);
+        console.log("New password", newPassword);
+        const user = await User.findById(id);
+        console.log("User", user);
+
+        if ((currentPassword === '') && (newPassword === '')) {
+            // no need to change password, leave it as is, no error
+            return res.json({ success: true, message: "No password change requested" });
+        }
+
+        if (!user) {
+            console.log("User not found");
+            return res.status(404).json({ success: false, error: "User not found" });
+        }
+
+        console.log("User found");
+
+        // check if current password and user password match, directly compare without bcrypt
+
+        if (currentPassword !== user.password) {
+            console.log("password mismatch");
+            return res.status(400).json({ success: false, message: "Current password is incorrect" });
+        }
+
+        console.log("password match");
+
+        if(currentPassword === newPassword){
+            return res.status(400).json({ success: false, message: "New password cannot be the same as current password" });
+        }
+        user.password = newPassword;
+        await user.save();
+        res.json({ success: true, message: "Password changed successfully" });
+    } catch (error) {
+        console.error("Error changing password:", error);
+        res.status(500).json({ success: false, message: error.message });
     }
 }
 );
