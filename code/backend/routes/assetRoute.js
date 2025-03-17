@@ -7,7 +7,7 @@ const upload = multer({ storage });
 // Import necessary models
 const Asset = require('../models/asset');
 const UserAsset = require('../models/user_asset');
-
+const AssetProject = require('../models/asset_project');
 // Example: POST add-asset
 router.post('/add-asset', upload.single('Img'), async (req, res) => {
   try {

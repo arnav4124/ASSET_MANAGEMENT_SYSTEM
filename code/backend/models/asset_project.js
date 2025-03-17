@@ -12,3 +12,6 @@ const assetProjectSchema = new Schema({
         required:true
     }
 })
+
+module.exports = model('AssetProject', assetProjectSchema);
+
