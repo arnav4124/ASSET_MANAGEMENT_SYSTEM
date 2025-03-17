@@ -72,7 +72,12 @@ const Navbar = () => {
   return (
     <nav className="bg-white shadow-md p-4 flex justify-between items-center">
       <div className="flex items-center">
-        <img src={logo} alt="Logo" className="h-10 w-auto" />
+        <img
+            src={logo}
+            alt="Logo"
+            className="h-10 w-auto cursor-pointer"
+            onClick={() => navigate("/")}
+          />
         <button className="ml-4 text-xl" onClick={() => setMenuOpen(!menuOpen)}></button>
       </div>
       <ul className={`flex space-x-6 ${menuOpen ? "block" : "hidden"} md:flex`}>
