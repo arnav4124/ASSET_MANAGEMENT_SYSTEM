@@ -8,6 +8,7 @@ const upload = multer({ storage });
 const Asset = require('../models/asset');
 const UserAsset = require('../models/user_asset');
 const AssetProject = require('../models/asset_project');
+const authMiddleware = require('../middleware/auth');
 // Example: POST add-asset
 router.post('/add-asset', upload.single('Img'), async (req, res) => {
   try {
@@ -61,10 +62,13 @@ router.post('/add-asset', upload.single('Img'), async (req, res) => {
 });
 
 // Example: GET all assets
-router.get('/', async (req, res) => {
+// GET all assets with populated Issued_by and Issued_to fields
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const assets = await Asset.find({});
-    res.json(assets);
+    const assets = await Asset.find({})
+      .populate('Issued_by', 'first_name last_name email')
+      .populate('Issued_to', 'first_name last_name email');
+    res.status(200).json(assets);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
