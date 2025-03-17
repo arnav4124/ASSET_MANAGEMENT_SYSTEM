@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Box, ChevronLeft, Loader2, Upload, Check } from "lucide-react";
+import { Box, ChevronLeft, Loader2, Upload, Check, Plus, Trash2 } from "lucide-react";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 
@@ -14,6 +14,13 @@ const Asset_add = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const [quantity, setQuantity] = useState(1);
+  const [serialNumbers, setSerialNumbers] = useState(['']);
+  const [uploadedFiles, setUploadedFiles] = useState({
+    imageFile: null,
+    invoicePdf: null,
+    additionalPdf: null
+  });
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -68,32 +75,112 @@ const Asset_add = () => {
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
   const [assetType, setAssetType] = useState("physical");
 
+  const handleQuantityChange = (e) => {
+    const newQuantity = parseInt(e.target.value) || 1;
+    setQuantity(newQuantity);
+    setSerialNumbers(Array(newQuantity).fill(''));
+  };
+
+  const handleSerialNumberChange = (index, value) => {
+    const newSerialNumbers = [...serialNumbers];
+    newSerialNumbers[index] = value;
+    setSerialNumbers(newSerialNumbers);
+  };
+
+  const handleFileUpload = (file, type) => {
+    if (file && file[0]) {
+      setUploadedFiles(prev => ({
+        ...prev,
+        [type]: file[0]
+      }));
+    }
+  };
+
+  const handleFileRemove = (type) => {
+    setUploadedFiles(prev => ({
+      ...prev,
+      [type]: null
+    }));
+  };
+
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     setError(null);
     setShowSuccess(false);
 
-    const formData = new FormData();
-    formData.append("name", data.assetName);
-    formData.append("Serial_number", data.serialNumber);
-    formData.append("asset_type", data.assetType);
-    formData.append("status", data.status);
-    formData.append("Office", data.office);
-    formData.append("assignment_status", data.assignmentStatus ? "true" : "false");
-    formData.append("Sticker_seq", data.stickerSeq);
-    if (data.imageFile && data.imageFile.length > 0) {
-      formData.append("Img", data.imageFile[0]);
-    }
-    formData.append("description", data.description);
-    formData.append("Invoice_id", data.invoiceId);
-    formData.append("Issued_by", data.issuedBy);
-    formData.append("Issued_to", data.assignedToUser || "");
-
-    if (data.invoicePdf && data.invoicePdf.length > 0) {
-      formData.append("invoicePdf", data.invoicePdf[0]);
-    }
-
     try {
+      console.log('Submitting form data:', data);
+      console.log('Serial numbers:', serialNumbers);
+
+      // Validate serial numbers
+      if (serialNumbers.some(sn => !sn)) {
+        throw new Error('All serial numbers must be filled');
+      }
+
+      // Validate required fields
+      const requiredFields = {
+        assetName: 'Asset Name',
+        brand_name: 'Brand Name',
+        brand: 'Brand',
+        assetType: 'Asset Type',
+        status: 'Status',
+        office: 'Office',
+        stickerSeq: 'Sticker Sequence',
+        description: 'Description',
+        vendor_name: 'Vendor Name',
+        vendor_email: 'Vendor Email',
+        vendor_phone: 'Vendor Phone',
+        vendor_city: 'Vendor City',
+        vendor_address: 'Vendor Address',
+        price: 'Price'
+      };
+
+      const missingFields = Object.entries(requiredFields)
+        .filter(([key]) => !data[key])
+        .map(([_, label]) => label);
+
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      }
+
+      const formData = new FormData();
+      formData.append("name", data.assetName);
+      formData.append("brand_name", data.brand_name);
+      formData.append("brand", data.brand);
+      formData.append("asset_type", data.assetType);
+      formData.append("status", data.status);
+      formData.append("Office", data.office);
+      formData.append("assignment_status", data.assignmentStatus ? "true" : "false");
+      formData.append("Sticker_seq", data.stickerSeq);
+      formData.append("description", data.description);
+      formData.append("Issued_by", data.issuedBy || null);
+      formData.append("Issued_to", data.assignedToUser || "");
+      formData.append("vendor_name", data.vendor_name);
+      formData.append("vendor_email", data.vendor_email);
+      formData.append("vendor_phone", data.vendor_phone);
+      formData.append("vendor_city", data.vendor_city);
+      formData.append("vendor_address", data.vendor_address);
+      formData.append("category", data.category);
+      formData.append("price", data.price);
+      formData.append("quantity", quantity);
+      formData.append("serialNumbers", JSON.stringify(serialNumbers));
+
+      if (uploadedFiles.imageFile) {
+        formData.append("Img", uploadedFiles.imageFile);
+      }
+      if (uploadedFiles.invoicePdf) {
+        formData.append("invoicePdf", uploadedFiles.invoicePdf);
+      }
+      if (uploadedFiles.additionalPdf) {
+        formData.append("additionalPdf", uploadedFiles.additionalPdf);
+      }
+
+      // Log the form data for debugging
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+      }
+
+      console.log('Sending request to backend...');
       const response = await axios.post("http://localhost:3487/api/assets/add-asset", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -101,16 +188,48 @@ const Asset_add = () => {
         },
         withCredentials: true
       });
-      if (response.status === 200) {
+
+      console.log('Backend response:', response.data);
+
+      if (response.data.success) {
         setShowSuccess(true);
         reset();
+        setQuantity(1);
+        setSerialNumbers(['']);
+        setUploadedFiles({
+          imageFile: null,
+          invoicePdf: null,
+          additionalPdf: null
+        });
         setTimeout(() => {
           navigate("/admin/assets");
         }, 2000);
+      } else {
+        throw new Error(response.data.error || 'Failed to add assets');
       }
     } catch (error) {
-      console.error("Error adding asset:", error);
-      setError("Failed to add asset. Please try again.");
+      console.error("Error adding assets:", error);
+      let errorMessage = "Failed to add assets. Please try again.";
+
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Error response:', error.response.data);
+        errorMessage = error.response.data.error || errorMessage;
+        if (error.response.data.details) {
+          errorMessage += `\nDetails: ${JSON.stringify(error.response.data.details)}`;
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('No response received:', error.request);
+        errorMessage = "No response received from server. Please check if the server is running.";
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error setting up request:', error.message);
+        errorMessage = error.message;
+      }
+
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -187,18 +306,168 @@ const Asset_add = () => {
                 )}
               </div>
 
-              {/* Serial Number */}
+              {/* Brand Name */}
               <div>
-                <label className="block font-medium text-sm mb-1 text-gray-700">Serial Number</label>
+                <label className="block font-medium text-sm mb-1 text-gray-700">Brand Name</label>
                 <input
-                  {...register("serialNumber", { required: "Serial number is required" })}
+                  {...register("brand_name", { required: "Brand name is required" })}
                   type="text"
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                  placeholder="Enter serial number"
+                  placeholder="Enter brand name"
                 />
-                {errors.serialNumber && (
-                  <p className="text-red-500 text-sm mt-1">{errors.serialNumber.message}</p>
+                {errors.brand_name && (
+                  <p className="text-red-500 text-sm mt-1">{errors.brand_name.message}</p>
                 )}
+              </div>
+
+              {/* Brand */}
+              <div>
+                <label className="block font-medium text-sm mb-1 text-gray-700">Brand</label>
+                <input
+                  {...register("brand", { required: "Brand is required" })}
+                  type="text"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                  placeholder="Enter brand"
+                />
+                {errors.brand && (
+                  <p className="text-red-500 text-sm mt-1">{errors.brand.message}</p>
+                )}
+              </div>
+
+              {/* Quantity */}
+              <div>
+                <label className="block font-medium text-sm mb-1 text-gray-700">Quantity</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={handleQuantityChange}
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Vendor Information */}
+            <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2 pt-4">Vendor Information</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {/* Vendor Name */}
+              <div>
+                <label className="block font-medium text-sm mb-1 text-gray-700">Vendor Name</label>
+                <input
+                  {...register("vendor_name", { required: "Vendor name is required" })}
+                  type="text"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                  placeholder="Enter vendor name"
+                />
+                {errors.vendor_name && (
+                  <p className="text-red-500 text-sm mt-1">{errors.vendor_name.message}</p>
+                )}
+              </div>
+
+              {/* Vendor Email */}
+              <div>
+                <label className="block font-medium text-sm mb-1 text-gray-700">Vendor Email</label>
+                <input
+                  {...register("vendor_email", {
+                    required: "Vendor email is required",
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: "Invalid email address"
+                    }
+                  })}
+                  type="email"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                  placeholder="Enter vendor email"
+                />
+                {errors.vendor_email && (
+                  <p className="text-red-500 text-sm mt-1">{errors.vendor_email.message}</p>
+                )}
+              </div>
+
+              {/* Vendor Phone */}
+              <div>
+                <label className="block font-medium text-sm mb-1 text-gray-700">Vendor Phone</label>
+                <input
+                  {...register("vendor_phone", { required: "Vendor phone is required" })}
+                  type="tel"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                  placeholder="Enter vendor phone"
+                />
+                {errors.vendor_phone && (
+                  <p className="text-red-500 text-sm mt-1">{errors.vendor_phone.message}</p>
+                )}
+              </div>
+
+              {/* Vendor City */}
+              <div>
+                <label className="block font-medium text-sm mb-1 text-gray-700">Vendor City</label>
+                <input
+                  {...register("vendor_city", { required: "Vendor city is required" })}
+                  type="text"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                  placeholder="Enter vendor city"
+                />
+                {errors.vendor_city && (
+                  <p className="text-red-500 text-sm mt-1">{errors.vendor_city.message}</p>
+                )}
+              </div>
+
+              {/* Vendor Address */}
+              <div className="md:col-span-2">
+                <label className="block font-medium text-sm mb-1 text-gray-700">Vendor Address</label>
+                <textarea
+                  {...register("vendor_address", { required: "Vendor address is required" })}
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                  rows="3"
+                  placeholder="Enter vendor address"
+                />
+                {errors.vendor_address && (
+                  <p className="text-red-500 text-sm mt-1">{errors.vendor_address.message}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Serial Numbers */}
+            <div className="mb-6">
+              <h3 className="text-md font-medium text-gray-700 mb-3">Serial Numbers</h3>
+              <div className="space-y-3">
+                {serialNumbers.map((serialNumber, index) => (
+                  <div key={index} className="flex items-center gap-3">
+                    <input
+                      type="text"
+                      value={serialNumber}
+                      onChange={(e) => handleSerialNumberChange(index, e.target.value)}
+                      className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                      placeholder={`Enter serial number ${index + 1}`}
+                      required
+                    />
+                    {index === serialNumbers.length - 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuantity(prev => prev + 1);
+                          setSerialNumbers(prev => [...prev, '']);
+                        }}
+                        className="p-3 text-blue-500 hover:text-blue-600 transition-colors duration-200"
+                      >
+                        <Plus size={20} />
+                      </button>
+                    )}
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuantity(prev => prev - 1);
+                          setSerialNumbers(prev => prev.filter((_, i) => i !== index));
+                        }}
+                        className="p-3 text-red-500 hover:text-red-600 transition-colors duration-200"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -346,60 +615,153 @@ const Asset_add = () => {
             </div>
 
             {/* Assignment Information */}
-            <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2 pt-4">Assignment Information</h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {/* Issued By */}
-              <div>
-                <label className="block font-medium text-sm mb-1 text-gray-700">Issued By</label>
-                <select
-                  {...register("issuedBy", { required: "Issued By is required" })}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                >
-                  <option value="">Select Admin</option>
-                  {adminUsers.map((admin) => (
-                    <option key={admin._id} value={admin._id}>
-                      {admin.first_name} {admin.last_name} ({admin.email})
-                    </option>
-                  ))}
-                </select>
-                {errors.issuedBy && (
-                  <p className="text-red-500 text-sm mt-1">{errors.issuedBy.message}</p>
-                )}
-              </div>
 
-              {/* Invoice ID */}
-              <div>
-                <label className="block font-medium text-sm mb-1 text-gray-700">Invoice PDF</label>
-                <input
-                  {...register("invoicePdf")}
-                  type="file"
-                  accept="application/pdf"
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                  placeholder="Upload invoice pdf"
-                />
-              </div>
-            </div>
+            {/* File Uploads Section */}
+            <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2 pt-4">File Uploads</h2>
 
             {/* Image Upload */}
             <div className="mb-6">
-              <label className="block font-medium text-sm mb-1 text-gray-700">Upload Image</label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+              <label className="block font-medium text-m mb-1 text-gray-700">Upload Image</label>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-500 transition-colors duration-200">
                 <div className="space-y-1 text-center">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                  <div className="flex text-sm text-gray-600">
-                    <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                      <span>Upload a file</span>
-                      <input {...register("imageFile")} type="file" className="sr-only" />
-                    </label>
-                    <p className="pl-1">or drag and drop</p>
-                  </div>
-                  <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                  {uploadedFiles.imageFile ? (
+                    <div className="relative">
+                      <img
+                        src={URL.createObjectURL(uploadedFiles.imageFile)}
+                        alt="Preview"
+                        className="max-h-32 mx-auto mb-2 rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleFileRemove('imageFile')}
+                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      <p className="text-sm text-gray-600">{uploadedFiles.imageFile.name}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mx-auto h-12 w-12 text-gray-400">
+                        <Upload className="h-12 w-12" />
+                      </div>
+                      <div className="flex text-sm text-gray-600">
+                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                          <span>Upload a file</span>
+                          <input
+                            {...register("imageFile")}
+                            type="file"
+                            className="sr-only"
+                            accept="image/*"
+                            onChange={(e) => handleFileUpload(e.target.files, 'imageFile')}
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Invoice PDF Upload */}
+            <div className="mb-6">
+              <label className="block font-medium text-m mb-1 text-gray-700">Upload Invoice PDF</label>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-500 transition-colors duration-200">
+                <div className="space-y-1 text-center">
+                  {uploadedFiles.invoicePdf ? (
+                    <div className="relative">
+                      <div className="bg-gray-100 p-4 rounded-lg">
+                        <div className="flex items-center justify-center mb-2">
+                          <svg className="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleFileRemove('invoicePdf')}
+                          className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        <p className="text-sm text-gray-600">{uploadedFiles.invoicePdf.name}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mx-auto h-12 w-12 text-gray-400">
+                        <Upload className="h-12 w-12" />
+                      </div>
+                      <div className="flex text-sm text-gray-600">
+                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                          <span>Upload PDF</span>
+                          <input
+                            {...register("invoicePdf")}
+                            type="file"
+                            className="sr-only"
+                            accept="application/pdf"
+                            onChange={(e) => handleFileUpload(e.target.files, 'invoicePdf')}
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">PDF files up to 10MB</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Additional PDF Upload */}
+            <div className="mb-6">
+              <label className="block font-medium text-m mb-1 text-gray-700">Upload Additional Files</label>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-500 transition-colors duration-200">
+                <div className="space-y-1 text-center">
+                  {uploadedFiles.additionalPdf ? (
+                    <div className="relative">
+                      <div className="bg-gray-100 p-4 rounded-lg">
+                        <div className="flex items-center justify-center mb-2">
+                          <svg className="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleFileRemove('additionalPdf')}
+                          className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        <p className="text-sm text-gray-600">{uploadedFiles.additionalPdf.name}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mx-auto h-12 w-12 text-gray-400">
+                        <Upload className="h-12 w-12" />
+                      </div>
+                      <div className="flex text-sm text-gray-600">
+                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                          <span>Upload PDF</span>
+                          <input
+                            {...register("additionalPdf")}
+                            type="file"
+                            className="sr-only"
+                            accept="application/pdf"
+                            onChange={(e) => handleFileUpload(e.target.files, 'additionalPdf')}
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">PDF files up to 10MB</p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-
           {/* Form Actions */}
           <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-4 border-t">
             <button
