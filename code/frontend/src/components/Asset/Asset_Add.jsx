@@ -29,7 +29,7 @@ const Asset_add = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const usersRes = await axios.get("http://localhost:3487/api/users", {
+        const usersRes = await axios.get("http://localhost:3487/api/user", {
           withCredentials: true,
           headers: { token: localStorage.getItem("token") }
         });
