@@ -229,6 +229,23 @@ router.get('/:id/assets', authMiddleware, async (req, res) => {
     }
 });
 
+router.get('/get_user_projects/:id',authMiddleware, async (req, res) => {
+    try{
+        const userProjects = await UserProject.find({user_id: req.params.id});
+        const projectIds = userProjects.map(up => up.project_id);   
+        const pros = []
+        for (let i = 0 ; i < projectIds.length; i++){
+            const project = await Project.findById(projectIds[i]);
+            pros.push(project);
+        }
+        res.status(200).json(pros);
+    }
+    catch(err){
+        console.error(err);
+        res.status(500).json({error: 'Error fetching user projects'});
+    }
+})
+
 // Add this helper function at the end of the file, before module.exports
 function isValidDate(dateString) {
     const date = new Date(dateString);
