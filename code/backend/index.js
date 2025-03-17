@@ -68,15 +68,15 @@ app.get("/", (req, res) => {
     res.send("Hello World!");
 });
 
-app.get("/api/users", async (req, res) => {
-    try {
-        const allUsers = await User.find({});
-        console.log(allUsers);
-        res.json(allUsers);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+// app.get("/api/users", async (req, res) => {
+//     try {
+//         const allUsers = await User.find({});
+//         console.log(allUsers);
+//         res.json(allUsers);
+//     } catch (error) {
+//         res.status(500).json({ error: error.message });
+//     }
+// });
 
 
 
