@@ -40,14 +40,16 @@ const Navbar = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setIsLoggedIn(false);
-    navigate("/login");
+    // navigate("/login");
+    navigate("/");
   };
 
   const userTabs = [
     { name: "View Assets", path: "/asset/view" },//path
     { name: "View Projects", path: "/project/view" },//path
     { name: "Profile", path: "/profile" },
-    { name: "Logout", path: "/login" },
+    // { name: "Logout", path: "/login" },
+    { name: "Logout", path: "/" },
   ];
 
   const adminTabs = [
@@ -58,7 +60,8 @@ const Navbar = () => {
     { name: "Add Asset", path: "/admin/asset/add" },
     { name: "Assign Asset", path: "/admin/assets/assign_asset/:id" },//path
     { name: "Profile", path: "/profile" },
-    { name: "Logout", path: "/login" },
+    // { name: "Logout", path: "/login" },
+    { name: "Logout", path: "/" },
   ];
 
   const superuserTabs = [
@@ -68,7 +71,8 @@ const Navbar = () => {
     { name: "View Locations", path: "/superuser/view_location" },
     { name: "View Categories", path: "/superuser/view_category" },
     { name: "Profile", path: "/profile" },
-    { name: "Logout", path: "/login" },
+    // { name: "Logout", path: "/login" },
+    { name: "Logout", path: "/" },
   ];
 
   const tabsToShow = role === "Superuser" ? superuserTabs : role === "Admin" ? adminTabs : userTabs;
