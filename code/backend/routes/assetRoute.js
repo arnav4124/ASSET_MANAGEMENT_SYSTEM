@@ -10,13 +10,17 @@ const UserAsset = require('../models/user_asset');
 const AssetProject = require('../models/asset_project');
 const authMiddleware = require('../middleware/auth');
 const Invoice = require('../models/invoice')
+
 // Example: POST add-asset
-router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1}, {name: 'invoicePdf', maxCount: 1}]), async (req, res) => {
+router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: 'invoicePdf', maxCount: 1 }, { name: 'additionalPdf', maxCount: 1 }]), async (req, res) => {
   try {
-    console.log("here");
+    console.log('Received add-asset request');
+    console.log('Request body:', req.body);
+    console.log('Files:', req.files);
+
     const {
       name,
-      Serial_number,
+      brand_name,
       asset_type,
       status,
       Office,
@@ -25,7 +29,36 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1}, {name: 'in
       description,
       Issued_by,
       Issued_to,
+      vendor_name,
+      vendor_email,
+      vendor_phone,
+      vendor_city,
+      vendor_address,
+      brand,
+      category,
+      price,
+      quantity,
+      serialNumbers
     } = req.body;
+
+    // Validate required fields
+    if (!name || !brand_name || !asset_type || !status || !Office || !Sticker_seq || !description || !Issued_by) {
+      console.error('Missing required fields');
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields',
+        details: {
+          name: !name,
+          brand_name: !brand_name,
+          asset_type: !asset_type,
+          status: !status,
+          Office: !Office,
+          Sticker_seq: !Sticker_seq,
+          description: !description,
+          Issued_by: !Issued_by
+        }
+      });
+    }
 
     const assignmentStatusBoolean = assignment_status === 'true';
     let imgBuffer = null;
@@ -33,19 +66,13 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1}, {name: 'in
       imgBuffer = req.files.Img[0].buffer;
     }
 
-    const newAsset = new Asset({
-      name,
-      Serial_number,
-      asset_type,
-      status,
-      Office,
-      assignment_status: assignmentStatusBoolean,
-      Sticker_seq,
-      Img: imgBuffer,
-      description,
-      Issued_by
-    });
+    let additionalFilesBuffer = null;
+    if (req.files && req.files.additionalPdf) {
+      additionalFilesBuffer = req.files.additionalPdf[0].buffer;
+    }
 
+    // Create invoice if invoice PDF is uploaded
+    let invoiceId = null;
     if (req.files && req.files.invoicePdf) {
       const pdfBuffer = req.files.invoicePdf[0].buffer;
       const pdfFilename = req.files.invoicePdf[0].originalname;
@@ -59,18 +86,68 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1}, {name: 'in
       });
       await newInvoice.save();
 
-      newAsset.Invoice_id = newInvoice._id;
+      invoiceId = newInvoice._id;
     }
 
-    if (Issued_to && Issued_to.length === 24) {
-      newAsset.Issued_to = Issued_to;
+    // Parse serial numbers from the request
+    let serialNumbersArray;
+    try {
+      serialNumbersArray = JSON.parse(serialNumbers);
+      if (!Array.isArray(serialNumbersArray)) {
+        throw new Error('Serial numbers must be an array');
+      }
+    } catch (error) {
+      console.error('Error parsing serial numbers:', error);
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid serial numbers format',
+        details: error.message
+      });
     }
 
-    await newAsset.save();
-    return res.status(201).json({ success: true, asset: newAsset });
+    // Create multiple assets with different serial numbers
+    const assetPromises = serialNumbersArray.map(async (serialNumber) => {
+      if (!serialNumber) {
+        throw new Error('Empty serial number found');
+      }
+
+      const assetData = {
+        name: req.body.name,
+        brand_name: req.body.brand_name,
+        brand: req.body.brand,
+        asset_type: req.body.asset_type,
+        status: req.body.status,
+        Office: req.body.Office,
+        assignment_status: req.body.assignment_status === "true",
+        Sticker_seq: req.body.Sticker_seq,
+        description: req.body.description,
+        Issued_by: req.body.Issued_by === "null" ? null : req.body.Issued_by,
+        Issued_to: req.body.Issued_to && req.body.Issued_to.length === 24 ? req.body.Issued_to : null,
+        vendor_name: req.body.vendor_name,
+        vendor_email: req.body.vendor_email,
+        vendor_phone: req.body.vendor_phone,
+        vendor_city: req.body.vendor_city,
+        vendor_address: req.body.vendor_address,
+        category: req.body.category,
+        price: req.body.price,
+        Serial_number: serialNumber
+      };
+
+      const newAsset = new Asset(assetData);
+
+      return newAsset.save();
+    });
+
+    const createdAssets = await Promise.all(assetPromises);
+    console.log('Successfully created assets:', createdAssets.length);
+    return res.status(201).json({ success: true, assets: createdAssets });
   } catch (error) {
-    console.error('Error saving asset:', error);
-    return res.status(500).json({ success: false, error: error.message });
+    console.error('Error saving assets:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
