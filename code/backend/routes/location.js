@@ -31,7 +31,7 @@ location_router.get('/get_cities', authMiddleware, async (req, res) => {
 location_router.post('/add_location', authMiddleware, async (req, res) => {
     try {
         const { location_name, location_type, parent_location, address, pincode } = req.body
-        console.log(req.body)
+        console.log("body",req.body)
         const location = new Location({
             location_name,
             location_type,
@@ -40,10 +40,11 @@ location_router.post('/add_location', authMiddleware, async (req, res) => {
             pincode
         })
         await location.save()
-        console.log(response)
+        //console.log("response",response)
         res.status(200).json({ success: true, message: "Location added successfully" })
     }
     catch (err) {
+        console.error("Error in adding location:", err);
         res.status(500).json({ success: false, message: "Error in adding location" })
     }
 })

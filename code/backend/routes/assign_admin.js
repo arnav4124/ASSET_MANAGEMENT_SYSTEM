@@ -13,6 +13,7 @@ router.post('/assign', authMiddleware, async (req, res) => {
         firstName = firstName.trim();
         lastName = lastName.trim();
         email = email.trim();
+        console.log(firstName, lastName, email);
 
         // Check if user exists with given credentials
         const existingUser = await User.findOne({

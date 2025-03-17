@@ -202,7 +202,7 @@ const Asset_add = () => {
           additionalPdf: null
         });
         setTimeout(() => {
-          navigate("/admin/assets");
+          navigate("/admin/asset/view");
         }, 2000);
       } else {
         throw new Error(response.data.error || 'Failed to add assets');

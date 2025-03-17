@@ -19,6 +19,7 @@ const adminRoutes = require("./routes/admin.js");
 const locationRoutes = require("./routes/location");
 const superuserRoutes = require("./routes/superuser.js");
 const categoryRoutes = require("./routes/category.js");
+const assignAdminRoutes = require("./routes/assign_admin.js");
 // require("dotenv").config();
 require("dotenv").config({ path: ".env" });
 const MONGO_URI = process.env.MONGO_URI;
@@ -63,6 +64,7 @@ app.use("/api/locations", locationRoutes);
 app.use("/api/superuser", superuserRoutes);
 app.use("/api/assets", assetRouter);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/add_admin", assignAdminRoutes);
 // test route
 app.get("/", (req, res) => {
     res.send("Hello World!");
