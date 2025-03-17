@@ -50,7 +50,7 @@ const AdminDashboard = () => {
   return (
     <div className="grid grid-cols-2 gap-6 p-8">
       {/* Projects Card */}
-      <Link to="/admin/projects">
+      <Link to="/admin/projects/view">
         <div className="bg-white rounded-xl shadow-lg hover:shadow-xl p-6 transition-all text-center border-t-4 border-blue-500">
           <h2 className="text-lg font-semibold text-gray-700">Projects</h2>
           <p className="text-4xl font-bold text-blue-600">{projectCount}</p>
@@ -58,7 +58,7 @@ const AdminDashboard = () => {
       </Link>
 
       {/* Users Card */}
-      <Link to="/admin/users">
+      <Link to="/admin/view_users">
         <div className="bg-white rounded-xl shadow-lg hover:shadow-xl p-6 transition-all text-center border-t-4 border-green-500">
           <h2 className="text-lg font-semibold text-gray-700">Users</h2>
           <p className="text-4xl font-bold text-green-600">{userCount}</p>
@@ -66,7 +66,7 @@ const AdminDashboard = () => {
       </Link>
 
       {/* Assets Card */}
-      <Link to="/admin/assets">
+      <Link to="/admin/asset/view">
         <div className="bg-white rounded-xl shadow-lg hover:shadow-xl p-6 transition-all text-center border-t-4 border-red-500">
           <h2 className="text-lg font-semibold text-gray-700">Assets</h2>
           <p className="text-4xl font-bold text-red-600">{assetCount}</p>

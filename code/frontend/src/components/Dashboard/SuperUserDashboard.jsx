@@ -59,7 +59,7 @@ const SuperUserDashboard = () => {
   return (
     <div className="grid grid-cols-2 gap-6 p-8">
       {/* Locations Card */}
-      <Link to="/admin/locations">
+      <Link to="/superuser/view_location">
         <div className="bg-white rounded-xl shadow-lg hover:shadow-xl p-6 transition-all text-center border-t-4 border-blue-500">
           <h2 className="text-lg font-semibold text-gray-700">Locations</h2>
           <p className="text-4xl font-bold text-blue-600">{locationCount}</p>
@@ -67,7 +67,7 @@ const SuperUserDashboard = () => {
       </Link>
 
       {/* Programs Card */}
-      <Link to="/admin/programs">
+      <Link to="/superuser/view_programme">
         <div className="bg-white rounded-xl shadow-lg hover:shadow-xl p-6 transition-all text-center border-t-4 border-green-500">
           <h2 className="text-lg font-semibold text-gray-700">Programs</h2>
           <p className="text-4xl font-bold text-green-600">{programCount}</p>
@@ -75,7 +75,7 @@ const SuperUserDashboard = () => {
       </Link>
 
       {/* Categories Card */}
-      <Link to="/admin/categories">
+      <Link to="/superuser/view_category">
         <div className="bg-white rounded-xl shadow-lg hover:shadow-xl p-6 transition-all text-center border-t-4 border-red-500">
           <h2 className="text-lg font-semibold text-gray-700">Categories</h2>
           <p className="text-4xl font-bold text-red-600">{categoryCount}</p>
@@ -83,7 +83,7 @@ const SuperUserDashboard = () => {
       </Link>
 
       {/* Admins Card */}
-      <Link to="/admin/admins">
+      <Link to="/superuser/view_admin">
         <div className="bg-white rounded-xl shadow-lg hover:shadow-xl p-6 transition-all text-center border-t-4 border-purple-500">
           <h2 className="text-lg font-semibold text-gray-700">Admins</h2>
           <p className="text-4xl font-bold text-purple-600">{adminCount}</p>

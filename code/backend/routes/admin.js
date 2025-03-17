@@ -88,7 +88,7 @@ admin_router.get('/users', authMiddleware, async (req, res) => {
         var users = await User.find({
             role: { $in: ["User", "Admin"] },
             location: { $in: validLocations }
-        }).select('first_name last_name email location');
+        }).select('first_name last_name email location ');
         // remove the Admin of the admin location
 
         res.status(200).json({
@@ -142,11 +142,11 @@ admin_router.get('/location-details/:locationName', authMiddleware, async (req, 
 
 // route to get all admins
 
-admin_router.get('/get_admins', authMiddleware, async(req, res) => {
-    try{
-        const allAdmins = await User.find({role : "Admin" });
+admin_router.get('/get_admins', authMiddleware, async (req, res) => {
+    try {
+        const allAdmins = await User.find({ role: "Admin" });
         res.status(200).json(allAdmins);
-    }catch(error){
+    } catch (error) {
         console.error("Error fetching admins:", error);
         res.status(500).json({
             message: "Error fetching admins",
@@ -154,6 +154,60 @@ admin_router.get('/get_admins', authMiddleware, async(req, res) => {
         });
     }
 
+});
+
+// Get a single user by ID
+admin_router.get('/user/:userId', authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+        res.status(200).json(user);
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching user",
+            error: error.message
+        });
+    }
+});
+
+// Update a user
+admin_router.put('/edit_user/:userId', authMiddleware, async (req, res) => {
+    try {
+        const { location } = req.body;
+        const user = await User.findById(req.params.userId);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        // Update only location
+        user.location = location;
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: "User updated successfully",
+            user
+        });
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error updating user",
+            error: error.message
+        });
+    }
 });
 
 module.exports = admin_router

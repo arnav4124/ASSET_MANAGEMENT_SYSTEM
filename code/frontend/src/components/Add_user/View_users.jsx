@@ -53,49 +53,49 @@ const ViewUsers = () => {
         };
         const fetchLocations = async () => {
             try {
-              const token = localStorage.getItem('token');
-              if (!token) {
-                navigate('/login');
-                return;
-              }
-              
-              const currentUser = JSON.parse(localStorage.getItem('user'));
-              const adminLocation = currentUser?.location;
-              
-              const response = await axios.get("http://localhost:3487/api/locations/admin-locations", {
-                headers: { token }
-              });
-              
-              console.log('Locations response:', response.data);
-              
-              // Create a new array with admin's location first, then child locations
-              let allLocations = [];
-              
-              if (adminLocation) {
-                // Add admin's own location first
-                allLocations.push({
-                  _id: "admin-location", // Use a unique identifier
-                  location_name: adminLocation
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    navigate('/login');
+                    return;
+                }
+
+                const currentUser = JSON.parse(localStorage.getItem('user'));
+                const adminLocation = currentUser?.location;
+
+                const response = await axios.get("http://localhost:3487/api/locations/admin-locations", {
+                    headers: { token }
                 });
-              }
-              
-              // Add child locations from API response
-              if (response.data && Array.isArray(response.data)) {
-                allLocations = [...allLocations, ...response.data];
-              }
-              
-              console.log('All locations including admin:', allLocations);
-              setLocations(allLocations);
-              
-              // Optionally store in localStorage for persistence
-              localStorage.setItem('locations', JSON.stringify(allLocations));
-              
+
+                console.log('Locations response:', response.data);
+
+                // Create a new array with admin's location first, then child locations
+                let allLocations = [];
+
+                if (adminLocation) {
+                    // Add admin's own location first
+                    allLocations.push({
+                        _id: "admin-location", // Use a unique identifier
+                        location_name: adminLocation
+                    });
+                }
+
+                // Add child locations from API response
+                if (response.data && Array.isArray(response.data)) {
+                    allLocations = [...allLocations, ...response.data];
+                }
+
+                console.log('All locations including admin:', allLocations);
+                setLocations(allLocations);
+
+                // Optionally store in localStorage for persistence
+                localStorage.setItem('locations', JSON.stringify(allLocations));
+
             } catch (err) {
-              console.error('Error fetching locations:', err);
-              setError('Error fetching locations');
+                console.error('Error fetching locations:', err);
+                setError('Error fetching locations');
             }
-          };
-          
+        };
+
         fetchUsers();
         fetchLocations();
     }, []);
@@ -113,24 +113,24 @@ const ViewUsers = () => {
     // Update filtering logic to handle multiple location selection
     useEffect(() => {
         let filtered = users;
-        
+
         // Filter by search term if provided
         if (searchTerm.trim() !== '') {
-          const searchTermLower = searchTerm.toLowerCase();
-          filtered = filtered.filter(user => {
-            const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
-            return fullName.includes(searchTermLower) ||
-                   user.first_name.toLowerCase().includes(searchTermLower) ||
-                   user.last_name.toLowerCase().includes(searchTermLower) ||
-                   user.email.toLowerCase().includes(searchTermLower);
-          });
+            const searchTermLower = searchTerm.toLowerCase();
+            filtered = filtered.filter(user => {
+                const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
+                return fullName.includes(searchTermLower) ||
+                    user.first_name.toLowerCase().includes(searchTermLower) ||
+                    user.last_name.toLowerCase().includes(searchTermLower) ||
+                    user.email.toLowerCase().includes(searchTermLower);
+            });
         }
-        
+
         // Filter by selected locations if any are selected
         if (selectedLocations.length > 0) {
-          filtered = filtered.filter(user => selectedLocations.includes(user.location));
+            filtered = filtered.filter(user => selectedLocations.includes(user.location));
         }
-        
+
         setFilteredUsers(filtered);
         setCurrentPage(1); // Reset to first page when filtering
     }, [searchTerm, selectedLocations, users]);
@@ -156,10 +156,10 @@ const ViewUsers = () => {
         }
     };
 
-    useEffect(()=>{
-        console.log("LOCATIONS",locations)
-    },[locations])
-    
+    useEffect(() => {
+        console.log("LOCATIONS", locations)
+    }, [locations])
+
     if (loading) {
         return (
             <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
@@ -197,7 +197,7 @@ const ViewUsers = () => {
                         </div>
                         {selectedLocations.length > 0 && (
                             <div className="mt-4 pt-2 border-t">
-                                <button 
+                                <button
                                     onClick={() => setSelectedLocations([])}
                                     className="text-xs text-blue-500 hover:text-blue-700"
                                 >
@@ -254,8 +254,8 @@ const ViewUsers = () => {
                                 {selectedLocations.map(loc => (
                                     <span key={loc} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs flex items-center">
                                         {loc}
-                                        <button 
-                                            onClick={() => handleLocationToggle(loc)} 
+                                        <button
+                                            onClick={() => handleLocationToggle(loc)}
                                             className="ml-1 text-blue-600 hover:text-blue-800"
                                         >
                                             ×
@@ -286,7 +286,11 @@ const ViewUsers = () => {
                                         </tr>
                                     ) : (
                                         currentUsers.map((user, index) => (
-                                            <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
+                                            <tr
+                                                key={index}
+                                                className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+                                                onClick={() => navigate(`/admin/edit_user/${user._id}`)}
+                                            >
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm font-medium text-gray-900">
                                                         {user.first_name} {user.last_name}
@@ -312,7 +316,7 @@ const ViewUsers = () => {
                             Showing {filteredUsers.length > 0 ? `${indexOfFirstUser + 1}-${Math.min(indexOfLastUser, filteredUsers.length)} of ${filteredUsers.length}` : '0'} users
                         </div>
                         <div className="flex items-center space-x-2">
-                            <button 
+                            <button
                                 onClick={goToPreviousPage}
                                 disabled={currentPage === 1}
                                 className={`p-2 rounded-md ${currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}`}
@@ -322,7 +326,7 @@ const ViewUsers = () => {
                             <span className="text-gray-600">
                                 Page {currentPage} of {totalPages || 1}
                             </span>
-                            <button 
+                            <button
                                 onClick={goToNextPage}
                                 disabled={currentPage === totalPages || totalPages === 0}
                                 className={`p-2 rounded-md ${currentPage === totalPages || totalPages === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}`}
