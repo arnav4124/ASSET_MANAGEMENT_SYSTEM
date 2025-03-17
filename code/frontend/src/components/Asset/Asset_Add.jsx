@@ -191,6 +191,8 @@ const Asset_add = () => {
 
       console.log('Backend response:', response.data);
 
+
+      window.scrollTo(0, 0);
       if (response.data.success) {
         setShowSuccess(true);
         reset();
