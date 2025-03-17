@@ -10,6 +10,8 @@ const Login = () => {
   const recaptchaRef = useRef(null);
   const [formData, setFormData] = useState({ email: '', password: '', recaptchaToken: '' });
   const [message, setMessage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -26,12 +28,16 @@ const Login = () => {
       setMessage({ type: 'error', text: 'Please verify that you are not a robot.' });
       return;
     }
+    
+    setIsLoading(true);
+    
     try {
       const response = await axios.post('http://localhost:3487/api/user/login', formData);
       if (response.data.success) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         setMessage({ type: 'success', text: 'Login successful' });
+        setIsSuccess(true);
 
         // get user from local storage
         const user = JSON.parse(localStorage.getItem('user'));
@@ -51,20 +57,16 @@ const Login = () => {
         text: err.response?.status === 401 ? 'Invalid username or password. Please try again.' : 'Something went wrong. Please try again later.'
       });
     } finally {
-      recaptchaRef.current.reset();
-      setRecaptchaToken(null);
+      if (!isSuccess) {
+        recaptchaRef.current.reset();
+        setRecaptchaToken(null);
+      }
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      {/* <div className="w-full h-full bg-blue-600 flex items-center justify-center p-2 rounded shadow-md">
-        <img
-          src={logo}
-          alt="AMS Logo"
-          className="w-full h-full object-contain"
-        />
-      </div> */}
       <div className="w-full max-w-3xl flex bg-white shadow-lg rounded-lg overflow-hidden">
         {/* Left Section */}
         <div className="w-1/2 bg-blue-500 flex flex-col justify-center items-center p-10 text-white">
@@ -91,7 +93,8 @@ const Login = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
+                  disabled={isLoading || isSuccess}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300 ${(isLoading || isSuccess) ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 />
               </div>
               <div>
@@ -102,7 +105,8 @@ const Login = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
+                  disabled={isLoading || isSuccess}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300 ${(isLoading || isSuccess) ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 />
               </div>
               <div className="flex justify-center">
@@ -110,13 +114,15 @@ const Login = () => {
                   sitekey="6Lc52PYqAAAAAHi2UQWbtiBRKzImnRmcnTBJc2zB"
                   onChange={handleRecaptchaChange}
                   ref={recaptchaRef}
+                  disabled={isLoading || isSuccess}
                 />
               </div>
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+                disabled={isLoading || isSuccess}
+                className={`w-full text-white py-2 rounded-lg transition ${isSuccess ? 'bg-green-600 cursor-not-allowed' : isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
               >
-                Login
+                {isLoading ? 'Logging in...' : isSuccess ? 'Success! Redirecting...' : 'Login'}
               </button>
             </form>
           </div>
