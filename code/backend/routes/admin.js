@@ -64,25 +64,25 @@ admin_router.get('/users', authMiddleware, async (req, res) => {
         const adminLocation = req.user.location;
         console.log("Admin location:", adminLocation);
         // search for the admin location in the location table
-        const adminLocationData = await Location.findOne({ 
-            location_name: { $regex: adminLocation, $options: 'i' } 
+        const adminLocationData = await Location.findOne({
+            location_name: { $regex: adminLocation, $options: 'i' }
         });
         console.log("Admin location data:", adminLocationData);
         // Get all locations to build hierarchy
         const allLocations = await Location.find({});
 
         // Function to get child locations
-        const getChildLocations = (parentLocation,parentLocationId) => {
+        const getChildLocations = (parentLocation, parentLocationId) => {
             const children = allLocations.filter(loc => loc.parent_location === parentLocationId.toString());
             let childLocations = [...children.map(c => c.location_name)];
             children.forEach(child => {
-                childLocations = [...childLocations, ...getChildLocations(child.location_name,child._id)];
+                childLocations = [...childLocations, ...getChildLocations(child.location_name, child._id)];
             });
             return childLocations;
         };
 
         // Get all valid locations (admin's location and its children)
-        const validLocations = [adminLocation, ...getChildLocations(adminLocation,adminLocationData._id)];
+        const validLocations = [adminLocation, ...getChildLocations(adminLocation, adminLocationData._id)];
         console.log(validLocations)
         // Get users with role 'User'  and 'Admin' and matching locations
         var users = await User.find({
@@ -90,7 +90,7 @@ admin_router.get('/users', authMiddleware, async (req, res) => {
             location: { $in: validLocations }
         }).select('first_name last_name email location');
         // remove the Admin of the admin location
-        
+
         res.status(200).json({
             success: true,
             users
@@ -101,6 +101,39 @@ admin_router.get('/users', authMiddleware, async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error fetching users",
+            error: error.message
+        });
+    }
+});
+
+// Add new route to get admin location details
+admin_router.get('/location-details/:locationName', authMiddleware, async (req, res) => {
+    try {
+        const locationName = decodeURIComponent(req.params.locationName);
+        console.log("Searching for location:", locationName);
+
+        const locationDetails = await Location.findOne({
+            location_name: { $regex: new RegExp('^' + locationName + '$', 'i') }
+        });
+
+        console.log("Found location details:", locationDetails);
+
+        if (!locationDetails) {
+            return res.status(404).json({
+                success: false,
+                message: "Location not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            location: locationDetails
+        });
+    } catch (error) {
+        console.error('Error fetching location details:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching location details",
             error: error.message
         });
     }
