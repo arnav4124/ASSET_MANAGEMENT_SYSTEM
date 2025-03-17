@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -48,54 +49,61 @@ const AssetDetails = () => {
       : "Unassigned";
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-4xl mx-auto bg-white shadow rounded-lg p-6">
-        <button className="text-blue-600 hover:underline mb-6" onClick={() => navigate(-1)}>
-          &larr; Back
-        </button>
-        <button
-          className="btn btn-primary mb-6 ml-4"
-          onClick={() => navigate(`/admin/assets/assign_asset/${id}`)}
-        >
-          Assign Asset
-        </button>
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">Asset Details - {asset.name}</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <span className="font-semibold text-gray-600">Issued To:</span>
-            <p className="text-gray-800">{issuedTo}</p>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white rounded-lg shadow-md mb-8 p-6 border-l-4 border-blue-500 transition-all duration-300 hover:shadow-lg">
+          <div className="flex items-center justify-between mb-6">
+            <button
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200"
+              onClick={() => navigate(-1)}
+            >
+              &larr; Back
+            </button>
+            <button
+              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200"
+              onClick={() => navigate(`/admin/assets/assign_asset/${id}`)}
+            >
+              Assign Asset
+            </button>
           </div>
-          <div>
-            <span className="font-semibold text-gray-600">Issued By:</span>
-            <p className="text-gray-800">{issuedBy}</p>
-          </div>
-          <div>
-            <span className="font-semibold text-gray-600">Asset Type:</span>
-            <p className="text-gray-800">{asset.asset_type}</p>
-          </div>
-          <div>
-            <span className="font-semibold text-gray-600">Status:</span>
-            <p className="text-gray-800">{asset.status}</p>
-          </div>
-          <div>
-            <span className="font-semibold text-gray-600">Office:</span>
-            <p className="text-gray-800">{asset.Office}</p>
-          </div>
-          <div>
-            <span className="font-semibold text-gray-600">Serial Number:</span>
-            <p className="text-gray-800">{asset.Serial_number}</p>
-          </div>
-          <div className="sm:col-span-2">
-            <span className="font-semibold text-gray-600">Sticker Sequence:</span>
-            <p className="text-gray-800">{asset.Sticker_seq}</p>
-          </div>
-          <div className="sm:col-span-2">
-            <span className="font-semibold text-gray-600">Description:</span>
-            <p className="text-gray-800">{asset.description}</p>
-          </div>
-          <div className="sm:col-span-2">
-            <span className="font-semibold text-gray-600">Invoice ID:</span>
-            <p className="text-gray-800">{asset.Invoice_id}</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-6">Asset Details - {asset.name}</h1>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <span className="font-semibold text-gray-600">Issued To:</span>
+              <p className="text-gray-800">{issuedTo}</p>
+            </div>
+            <div>
+              <span className="font-semibold text-gray-600">Issued By:</span>
+              <p className="text-gray-800">{issuedBy}</p>
+            </div>
+            <div>
+              <span className="font-semibold text-gray-600">Asset Type:</span>
+              <p className="text-gray-800">{asset.asset_type}</p>
+            </div>
+            <div>
+              <span className="font-semibold text-gray-600">Status:</span>
+              <p className="text-gray-800">{asset.status}</p>
+            </div>
+            <div>
+              <span className="font-semibold text-gray-600">Office:</span>
+              <p className="text-gray-800">{asset.Office}</p>
+            </div>
+            <div>
+              <span className="font-semibold text-gray-600">Serial Number:</span>
+              <p className="text-gray-800">{asset.Serial_number}</p>
+            </div>
+            <div className="sm:col-span-2">
+              <span className="font-semibold text-gray-600">Sticker Sequence:</span>
+              <p className="text-gray-800">{asset.Sticker_seq}</p>
+            </div>
+            <div className="sm:col-span-2">
+              <span className="font-semibold text-gray-600">Description:</span>
+              <p className="text-gray-800">{asset.description}</p>
+            </div>
+            <div className="sm:col-span-2">
+              <span className="font-semibold text-gray-600">Invoice ID:</span>
+              <p className="text-gray-800">{asset.Invoice_id ? asset.Invoice_id : 'N/A'}</p>
+            </div>
           </div>
         </div>
       </div>
