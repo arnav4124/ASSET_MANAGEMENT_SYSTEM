@@ -10,16 +10,21 @@ const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [role, setRole] = useState(null);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [firstName, setFirstName] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userData = JSON.parse(localStorage.getItem("user"));
     setIsLoggedIn(!!token);
     setRole(userData ? userData.role : null);
+    setFirstName(userData ? userData.first_name : "");
   }, [isLoggedIn]);
 
   useEffect(() => {
     const pathToTab = {
+      "/dashboard/user": "Dashboard",
+      "/admin/dashboard": "Dashboard",
+      "/superuser/dashboard": "Dashboard",
       "/profile": "Profile",
       "/asset/view": "View Assets",
       "/project/view": "View Projects",
@@ -45,17 +50,20 @@ const Navbar = () => {
   };
 
   const tabsToShow = role === "Superuser" ? [
-    { name: "View Admin", path: "/superuser/view_admin" },//path
+    { name: "Dashboard", path: "/superuser/dashboard" },
+    { name: "View Admin", path: "/superuser/view_admin" },
     { name: "View Programmes", path: "/superuser/view_programme" },
     { name: "View Locations", path: "/superuser/view_location" },
     { name: "View Categories", path: "/superuser/view_category" }
   ] : role === "Admin" ? [
+    { name: "Dashboard", path: "/admin/dashboard" },
     { name: "View Assets", path: "/admin/asset/view" },
     { name: "View Projects", path: "/admin/projects/view" },
     { name: "View Users", path: "/admin/view_users" },
-    { name: "View Locations", path: "/admin/view_locations" },//path
+    { name: "View Locations", path: "/admin/view_locations" },
     { name: "Add Asset", path: "/admin/asset/add" }
   ] : [
+    { name: "Dashboard", path: "/dashboard/user" },//path
     { name: "View Assets", path: "/asset/view" },//path
     { name: "View Projects", path: "/project/view" }//path
   ];
@@ -77,16 +85,32 @@ const Navbar = () => {
       </ul>
       {isLoggedIn && (
         <div className="relative">
-          <button onClick={() => setProfileDropdownOpen(!profileDropdownOpen)} className="text-gray-700 focus:outline-none">
-            <FaUserCircle size={30} />
-          </button>
-          {profileDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow-lg">
-              <Link to="/profile" className="block px-4 py-2 text-gray-700 hover:bg-gray-200" onClick={() => setProfileDropdownOpen(false)}>View Profile</Link>
-              <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-200">Logout</button>
-            </div>
-          )}
-        </div>
+        <button
+          onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+          className="flex items-center text-gray-700 focus:outline-none"
+        >
+          <FaUserCircle size={30} />
+          <span className="ml-2 text-gray-800 font-medium">{firstName}</span>
+        </button>
+        {profileDropdownOpen && (
+          <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow-lg">
+            <Link
+              to="/profile"
+              className="block px-4 py-2 text-gray-700 hover:bg-gray-200"
+              onClick={() => setProfileDropdownOpen(false)}
+            >
+              View Profile
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-200"
+            >
+              Logout
+            </button>
+          </div>
+        )}
+      </div>
+      
       )}
     </nav>
   );
