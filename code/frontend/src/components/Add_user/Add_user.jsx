@@ -336,7 +336,7 @@ const AddEmployee = () => {
               />
               <input
                 type="hidden"
-                {...register("manager", { required: "Please select a manager" })}
+                {...register("manager")}
               />
               
               {/* Suggestions list */}

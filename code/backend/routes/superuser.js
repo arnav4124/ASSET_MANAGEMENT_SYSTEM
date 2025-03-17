@@ -82,6 +82,7 @@ router.get('/locations', authMiddleware, async (req, res) => {
         // Calculate user counts and find admins for each location
         users.forEach(user => {
             if (locationStats[user.location.toLowerCase()]) {
+                console.log("Current location", user.location)
                 locationStats[user.location.toLowerCase()].userCount++;
                 if (user.role === 'Admin') {
                     locationStats[user.location.toLowerCase()].admin = {
@@ -91,7 +92,7 @@ router.get('/locations', authMiddleware, async (req, res) => {
                 }
             }
         });
-
+        // console.log("Location stats", locationStats)
         // Build the hierarchy
         const buildHierarchy = (parentLocation) => {
 
@@ -99,14 +100,14 @@ router.get('/locations', authMiddleware, async (req, res) => {
                 .filter(loc => loc.parent_location === parentLocation)
                 .map(loc => ({
                     ...loc,
-                    stats: locationStats[loc.location_name],
+                    stats: locationStats[loc.location_name.toLowerCase()],
                     children: buildHierarchy(loc._id.toString())
                 }));
         };
 
         // Get root level locations and build tree
         const hierarchicalLocations = buildHierarchy("ROOT");
-
+        console.log("Hierarchical locations", hierarchicalLocations)
         res.json({
             success: true,
             locations: hierarchicalLocations
