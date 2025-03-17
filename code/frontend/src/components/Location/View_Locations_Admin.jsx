@@ -6,7 +6,7 @@ const ViewLocationsAdmin = () => {
   const navigate = useNavigate();
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [city_admin, setCityAdmin] = useState([]);
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -14,6 +14,7 @@ const ViewLocationsAdmin = () => {
       return;
     }
     const storedUser = JSON.parse(localStorage.getItem("user"));
+    setCityAdmin(storedUser.location);
     if (!storedUser || storedUser.role !== "Admin") {
       navigate("/login");
       return;
@@ -66,7 +67,8 @@ return (
                             className="border-b hover:bg-gray-100 cursor-pointer"
                         >
                             <td className="px-4 py-2 text-sm text-gray-800">{loc.location_name}</td>
-                            <td className="px-4 py-2 text-sm text-gray-800">{loc.parent_location}</td>
+                            {/* <td className="px-4 py-2 text-sm text-gray-800">{loc.parent_location}</td> */}
+                            <td className="px-4 py-2 text-sm text-gray-800">{city_admin}</td>
                             <td className="px-4 py-2 text-sm text-gray-800">{loc.location_type}</td>
                             <td className="px-4 py-2 text-sm text-gray-800">{loc.address}</td>
                             <td className="px-4 py-2 text-sm text-gray-800">{loc.pincode}</td>
