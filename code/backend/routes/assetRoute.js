@@ -123,4 +123,17 @@ router.post("/assign_asset/:assetId", async (req, res) => {
   }
 });
 
+router.put('/:id/unassign', authMiddleware, async (req, res) => {
+  try {
+    const asset = await Asset.findByIdAndUpdate(
+      req.params.id,
+      { Issued_to: null }, // or Issued_by as well if needed
+      { new: true }
+    ).populate('Issued_by', 'first_name last_name').populate('Issued_to', 'first_name last_name');
+    res.status(200).json(asset);
+  } catch (error) {
+    res.status(500).json({ error: 'Error unassigning asset' });
+  }
+});
+
 module.exports = router;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -13,12 +12,11 @@ const AssetDetails = () => {
     if (!token) {
       navigate("/login");
       return;
-    } else {
-      const role = JSON.parse(localStorage.getItem("user")).role;
-      if (role !== "Admin") {
-        navigate("/login");
-        return;
-      }
+    }
+    const role = JSON.parse(localStorage.getItem("user")).role;
+    if (role !== "Admin") {
+      navigate("/login");
+      return;
     }
 
     axios
@@ -28,7 +26,6 @@ const AssetDetails = () => {
       })
       .then((res) => {
         setAsset(res.data);
-        console.log("Fetched Asset:", res.data);
       })
       .catch((err) => {
         console.error(err);
@@ -48,6 +45,26 @@ const AssetDetails = () => {
       ? `${asset.Issued_to.first_name} ${asset.Issued_to.last_name}`
       : "Unassigned";
 
+  // Handler to unassign the asset
+  const handleUnassign = () => {
+    axios
+      .put(
+        `http://localhost:3487/api/assets/${id}/unassign`, 
+        {}, 
+        {
+          withCredentials: true,
+          headers: { token: localStorage.getItem("token") },
+        }
+      )
+      .then((response) => {
+        // After unassigning, refresh or update the local state
+        setAsset(response.data);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
@@ -59,14 +76,25 @@ const AssetDetails = () => {
             >
               &larr; Back
             </button>
-            <button
-              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200"
-              onClick={() => navigate(`/admin/assets/assign_asset/${id}`)}
-            >
-              Assign Asset
-            </button>
+            {asset.Issued_to && asset.Issued_to.first_name ? (
+              <button
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200"
+                onClick={handleUnassign}
+              >
+                Unassign Asset
+              </button>
+            ) : (
+              <button
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200"
+                onClick={() => navigate(`/admin/assets/assign_asset/${id}`)}
+              >
+                Assign Asset
+              </button>
+            )}
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">Asset Details - {asset.name}</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-6">
+            Asset Details - {asset.name}
+          </h1>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <span className="font-semibold text-gray-600">Issued To:</span>
@@ -102,7 +130,9 @@ const AssetDetails = () => {
             </div>
             <div className="sm:col-span-2">
               <span className="font-semibold text-gray-600">Invoice ID:</span>
-              <p className="text-gray-800">{asset.Invoice_id ? asset.Invoice_id : 'N/A'}</p>
+              <p className="text-gray-800">
+                {asset.Invoice_id ? asset.Invoice_id : "N/A"}
+              </p>
             </div>
           </div>
         </div>
