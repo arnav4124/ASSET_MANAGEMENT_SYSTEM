@@ -204,6 +204,7 @@ router.post("/assign_asset/:assetId", async (req, res) => {
       });
       const asset = await Asset.findById(assetId);
       asset.assignment_status = true;
+      asset.Issued_to = assignId;
       await asset.save();
       return res.status(200).json(newAssetProject);
     }
