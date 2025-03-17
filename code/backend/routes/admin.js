@@ -5,6 +5,8 @@ const Location = require('../models/location')
 const authMiddleware = require('../middleware/auth')
 const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
+const nodemailer = require('nodemailer');
+require("dotenv").config({ path: ".env" });
 
 admin_router.get('/get_manager', authMiddleware, async (req, res) => {
     console.log("MANAGER CHECK")
@@ -23,13 +25,24 @@ admin_router.get('/get_manager', authMiddleware, async (req, res) => {
         });
     }
 })
+console.log(process.env.EMAIL_USER)
+const transporter = nodemailer.createTransport({
+    secure: true,
+    host: 'smtp.gmail.com',
+    port: 465,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD
+    }
+  });
 
-admin_router.post('/add_user', authMiddleware, async (req, res) => {
+  admin_router.post('/add_user', authMiddleware, async (req, res) => {
     console.log("ADD USER")
-    const { first_name, last_name, email, location , phoneNumber} = req.body
+    const { first_name, last_name, email, location, phoneNumber } = req.body
     console.log(req.body)
-    password = crypto.randomBytes(6).toString('hex');
-    role = "User"
+    const password = crypto.randomBytes(6).toString('hex');
+    const role = "User"
+    
     try {
         const newUser = new User({
             first_name,
@@ -40,17 +53,51 @@ admin_router.post('/add_user', authMiddleware, async (req, res) => {
             role,
             phoneNumber
         })
+        
         await newUser.save()
-        res.status(201).json({ success: true, user: newUser });
-    } catch (err) {
-        console.error("Error saving user:", err);
-        res.status(500).json({
-            success: false,
-            message: "Error saving user",
-            error: err.message
-        });
-    }
-})
+        
+        try {
+            // Send email with the password
+            const mailOptions = {
+              from: process.env.EMAIL_USER,
+              to: email,
+              subject: 'Your Account Has Been Created',
+              html: `
+                <h1>Welcome to Our Application</h1>
+                <p>Hello ${first_name} ${last_name},</p>
+                <p>Your account has been created successfully.</p>
+                <p>Your temporary password is: <strong>${password}</strong></p>
+                <p>Please log in and change your password as soon as possible.</p>
+                <p>Best regards,<br/>The Admin Team</p>
+              `
+            };
+            
+            await transporter.sendMail(mailOptions);
+            
+            // If email sending succeeds, send success response
+            res.status(201).json({ 
+              success: true, 
+              message: "User created successfully and email sent" 
+            });
+          } catch (emailError) {
+            console.error("Error sending email:", emailError);
+            // If only the email part fails, still indicate user was created
+            res.status(201).json({ 
+              success: true, 
+              message: "User created successfully but email could not be sent",
+              emailError: emailError.message
+            });
+          }
+        } catch (error) {
+          console.error("Error creating user:", error);
+          res.status(500).json({ 
+            success: false, 
+            message: "Error creating user", 
+            error: error.message 
+          });
+        }
+      });
+        
 
 // Get users based on admin's location (including child locations)
 admin_router.get('/users', authMiddleware, async (req, res) => {
