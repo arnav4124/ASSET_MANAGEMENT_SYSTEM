@@ -18,7 +18,7 @@ const SuperUserDashboard = () => {
         });
         setLocationCount(locRes.data.length);
 
-        const progRes = await axios.get("http://localhost:3487/api/programs",{
+        const progRes = await axios.get("http://localhost:3487/api/programmes",{
           headers:{
             token:localStorage.getItem("token")
           }
@@ -32,7 +32,7 @@ const SuperUserDashboard = () => {
         });
         setCategoryCount(catRes.data.length);
 
-        const adminRes = await axios.get("http://localhost:3487/api/admins",{
+        const adminRes = await axios.get("http://localhost:3487/api/admin/get_admins",{
           headers:{
             token:localStorage.getItem("token")
           }
