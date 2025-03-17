@@ -203,4 +203,22 @@ router.get('/get_categories', authMiddleware, async (req, res) => {
     }
 })
 
+router.get('/get_all_admins', authMiddleware, async (req, res) => {
+    try {
+        const admins = await User.find({ role: "Admin" })
+        res.status(200).json({
+            success: true,
+            admins: admins
+        })
+    }
+    catch (err) {
+        console.error("Error fetching admins:", err);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching admins",
+            error: err.message
+        });
+    }
+})
+
 module.exports = router;
