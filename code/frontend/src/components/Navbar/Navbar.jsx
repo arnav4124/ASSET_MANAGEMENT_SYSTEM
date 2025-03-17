@@ -34,7 +34,7 @@ const Navbar = () => {
       "/admin/view_locations": "View Locations",
       "/admin/asset/add": "Add Asset",
       "/superuser/assign_admin": "Assign Admin",
-      "/superuser/admins": "View Admin",
+      "/superuser/view_admin": "View Admin",
       "/superuser/view_programme": "View Programmes",
       "/superuser/view_location": "View Locations",
       "/superuser/view_category": "View Categories",
