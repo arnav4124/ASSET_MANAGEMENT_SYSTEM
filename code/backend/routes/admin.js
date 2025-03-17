@@ -26,7 +26,7 @@ admin_router.get('/get_manager', authMiddleware, async (req, res) => {
 
 admin_router.post('/add_user', authMiddleware, async (req, res) => {
     console.log("ADD USER")
-    const { first_name, last_name, email, location } = req.body
+    const { first_name, last_name, email, location , phoneNumber} = req.body
     console.log(req.body)
     password = crypto.randomBytes(6).toString('hex');
     role = "User"
@@ -37,7 +37,8 @@ admin_router.post('/add_user', authMiddleware, async (req, res) => {
             email,
             password,
             location,
-            role
+            role,
+            phoneNumber
         })
         await newUser.save()
         res.status(201).json({ success: true, user: newUser });

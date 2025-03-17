@@ -134,9 +134,9 @@ const AddEmployee = () => {
         first_name: data.first_name,
         last_name: data.last_name,
         email: data.email,
-        phoneNumber: data.phoneNumber,
         manager: data.manager,
-        location: data.location
+        location: data.location,
+        phoneNumber: data.phoneNumber,
       }, {
         headers: {
           token: localStorage.getItem("token")
