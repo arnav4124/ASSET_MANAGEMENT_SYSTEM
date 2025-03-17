@@ -66,7 +66,7 @@ const AssignAsset = () => {
             });
             setShowSuccess(true);
             setTimeout(() => {
-                navigate('/admin/assets');
+                navigate('/admin/assets/view');
             }, 2000);
         } catch (error) {
             console.error("Assign error:", error);

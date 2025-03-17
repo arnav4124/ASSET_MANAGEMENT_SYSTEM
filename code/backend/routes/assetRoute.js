@@ -99,6 +99,10 @@ router.post("/assign_asset/:assetId", async (req, res) => {
         asset_id: assetId,
         user_email: assignId
       });
+      // set assignment_status to true
+      const asset = await Asset.findById(assetId);
+      asset.assignment_status = true;
+      await asset.save();
       return res.status(200).json(newUserAsset);
     } else {
       // Entry in asset_project
@@ -106,6 +110,9 @@ router.post("/assign_asset/:assetId", async (req, res) => {
         asset_id: assetId,
         project_id: assignId
       });
+      const asset = await Asset.findById(assetId);
+      asset.assignment_status = true;
+      await asset.save();
       return res.status(200).json(newAssetProject);
     }
   } catch (error) {
