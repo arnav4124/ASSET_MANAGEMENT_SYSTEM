@@ -9,7 +9,7 @@ const Programme = require('../models/programme');
 const Project = require('../models/project');
 
 // Add a new category
-router.post('/add_category',authMiddleware, async (req, res) => {
+router.post('/add_category', authMiddleware, async (req, res) => {
     try {
         const { name, description } = req.body;
 
@@ -230,5 +230,67 @@ router.get('/get_all_admins', authMiddleware, async (req, res) => {
         });
     }
 })
+
+// Get location vs users count data for graph
+router.get('/location_users_graph', authMiddleware, async (req, res) => {
+    try {
+        const locations = await Location.find({}).lean();
+        const users = await User.find({}).lean();
+
+        const locationUserCounts = locations.map(location => {
+            const userCount = users.filter(user =>
+                user.location.toLowerCase() === location.location_name.toLowerCase()
+            ).length;
+
+            return {
+                location_name: location.location_name,
+                user_count: userCount
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            data: locationUserCounts
+        });
+    } catch (error) {
+        console.error('Error fetching location users graph data:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching location users graph data",
+            error: error.message
+        });
+    }
+});
+
+// Get category vs assets count data for graph
+router.get('/category_assets_graph', authMiddleware, async (req, res) => {
+    try {
+        const categories = await Category.find({}).lean();
+        const assets = await Asset.find({}).lean();
+
+        const categoryAssetCounts = categories.map(category => {
+            const assetCount = assets.filter(asset =>
+                asset.category && asset.category.toString() === category._id.toString()
+            ).length;
+
+            return {
+                category_name: category.name,
+                asset_count: assetCount
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            data: categoryAssetCounts
+        });
+    } catch (error) {
+        console.error('Error fetching category assets graph data:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching category assets graph data",
+            error: error.message
+        });
+    }
+});
 
 module.exports = router;
