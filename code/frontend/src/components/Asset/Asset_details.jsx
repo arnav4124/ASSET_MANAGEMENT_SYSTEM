@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from 'axios';
-
+import axios from "axios";
 
 const AssetDetails = () => {
   const { id } = useParams();
@@ -12,36 +11,46 @@ const AssetDetails = () => {
     const token = localStorage.getItem("token");
     if (!token) {
       navigate("/login");
+      return;
     } else {
       const role = JSON.parse(localStorage.getItem("user")).role;
-      console.log("Role:", role);
       if (role !== "Admin") {
         navigate("/login");
+        return;
       }
     }
 
-    axios.get(`http://localhost:3487/api/assets/${id}`, {
-      withCredentials: true,
-      headers: {
-        token: localStorage.getItem("token")
-      }
-    }).then((res) => {
-      setAsset(res.data);
-      console.log(res.data);
-    }).catch((err) => {
-      console.error(err);
-    });
-  }, [id]);
+    axios
+      .get(`http://localhost:3487/api/assets/${id}`, {
+        withCredentials: true,
+        headers: { token: localStorage.getItem("token") },
+      })
+      .then((res) => {
+        setAsset(res.data);
+        console.log("Fetched Asset:", res.data);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  }, [id, navigate]);
 
   if (!asset) return <div>Loading...</div>;
+
+  // If populated, asset.Issued_by and asset.Issued_to will have first_name and last_name
+  const issuedBy =
+    asset.Issued_by && asset.Issued_by.first_name
+      ? `${asset.Issued_by.first_name} ${asset.Issued_by.last_name}`
+      : "Unassigned";
+
+  const issuedTo =
+    asset.Issued_to && asset.Issued_to.first_name
+      ? `${asset.Issued_to.first_name} ${asset.Issued_to.last_name}`
+      : "Unassigned";
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-4xl mx-auto bg-white shadow rounded-lg p-6">
-        <button
-          className="text-blue-600 hover:underline mb-6"
-          onClick={() => navigate(-1)}
-        >
+        <button className="text-blue-600 hover:underline mb-6" onClick={() => navigate(-1)}>
           &larr; Back
         </button>
         <button
@@ -50,17 +59,15 @@ const AssetDetails = () => {
         >
           Assign Asset
         </button>
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">
-          Asset Details - {asset.name}
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">Asset Details - {asset.name}</h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <span className="font-semibold text-gray-600">Issued To:</span>
-            <p className="text-gray-800">{asset.Issued_to}</p>
+            <p className="text-gray-800">{issuedTo}</p>
           </div>
           <div>
             <span className="font-semibold text-gray-600">Issued By:</span>
-            <p className="text-gray-800">{asset.Issued_by}</p>
+            <p className="text-gray-800">{issuedBy}</p>
           </div>
           <div>
             <span className="font-semibold text-gray-600">Asset Type:</span>
