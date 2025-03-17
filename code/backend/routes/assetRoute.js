@@ -9,8 +9,9 @@ const Asset = require('../models/asset');
 const UserAsset = require('../models/user_asset');
 const AssetProject = require('../models/asset_project');
 const authMiddleware = require('../middleware/auth');
+const Invoice = require('../models/invoice')
 // Example: POST add-asset
-router.post('/add-asset', upload.single('Img'), async (req, res) => {
+router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1}, {name: 'invoicePdf', maxCount: 1}]), async (req, res) => {
   try {
     console.log("here");
     const {
@@ -22,15 +23,14 @@ router.post('/add-asset', upload.single('Img'), async (req, res) => {
       assignment_status,
       Sticker_seq,
       description,
-      Invoice_id,
       Issued_by,
       Issued_to,
     } = req.body;
 
     const assignmentStatusBoolean = assignment_status === 'true';
     let imgBuffer = null;
-    if (req.file) {
-      imgBuffer = req.file.buffer;
+    if (req.files && req.files.Img) {
+      imgBuffer = req.files.Img[0].buffer;
     }
 
     const newAsset = new Asset({
@@ -43,12 +43,25 @@ router.post('/add-asset', upload.single('Img'), async (req, res) => {
       Sticker_seq,
       Img: imgBuffer,
       description,
+      Issued_by
     });
 
-    newAsset.Issued_by = Issued_by;
-    if (Invoice_id) {
-      newAsset.Invoice_id = Invoice_id;
+    if (req.files && req.files.invoicePdf) {
+      const pdfBuffer = req.files.invoicePdf[0].buffer;
+      const pdfFilename = req.files.invoicePdf[0].originalname;
+      const generatedInvoiceId = `INV-${Date.now()}`;
+
+      const newInvoice = new Invoice({
+        invoice_id: generatedInvoiceId,
+        pdf_file: pdfBuffer,
+        filename: pdfFilename,
+        uploadDate: new Date()
+      });
+      await newInvoice.save();
+
+      newAsset.Invoice_id = newInvoice._id;
     }
+
     if (Issued_to && Issued_to.length === 24) {
       newAsset.Issued_to = Issued_to;
     }

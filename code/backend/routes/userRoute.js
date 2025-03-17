@@ -16,6 +16,7 @@ userRouter.get("/", async (req, res) => {
         console.log("Admin location", adminLocation);
         if (!adminLocation) {
             // Fallback: return all users or handle as needed
+            console.log("fetching all users, no adminlocation")
             const allUsers = await User.find({});
             return res.status(200).json(allUsers);
         }
