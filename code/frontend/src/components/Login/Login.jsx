@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import ReCAPTCHA from "react-google-recaptcha";
+import logo from './eklavya_logo.png';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ const Login = () => {
           setTimeout(() => navigate('/superuser/dashboard'), 1500);
         } else if (user.role === 'Admin') {
           setTimeout(() => navigate('/admin/dashboard'), 1500);
-        } else{
+        } else {
           setTimeout(() => navigate('/profile'), 1500);
         }
       } else {
@@ -57,6 +58,13 @@ const Login = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      {/* <div className="w-full h-full bg-blue-600 flex items-center justify-center p-2 rounded shadow-md">
+        <img
+          src={logo}
+          alt="AMS Logo"
+          className="w-full h-full object-contain"
+        />
+      </div> */}
       <div className="w-full max-w-3xl flex bg-white shadow-lg rounded-lg overflow-hidden">
         {/* Left Section */}
         <div className="w-1/2 bg-blue-500 flex flex-col justify-center items-center p-10 text-white">
@@ -77,23 +85,23 @@ const Login = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-gray-600 font-semibold">Email</label>
-                <input 
-                  type="email" 
-                  name="email" 
-                  value={formData.email} 
-                  onChange={handleChange} 
-                  required 
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
                 />
               </div>
               <div>
                 <label className="block text-gray-600 font-semibold">Password</label>
-                <input 
-                  type="password" 
-                  name="password" 
-                  value={formData.password} 
-                  onChange={handleChange} 
-                  required 
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
                 />
               </div>
@@ -104,8 +112,8 @@ const Login = () => {
                   ref={recaptchaRef}
                 />
               </div>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
               >
                 Login

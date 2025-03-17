@@ -15,6 +15,7 @@ const View_admin = () => {
         try {
             const token = localStorage.getItem('token');
             const response = await axios.get('http://localhost:3487/api/superuser/get_all_admins', {
+                withCredentials: true,
                 headers: {
                     token: token
                 }
@@ -115,7 +116,7 @@ const View_admin = () => {
                         <p className="text-gray-500 mt-1">Manage and view all administrators in the system</p>
                     </div>
                     <button
-                        onClick={() => navigate('/add-admin')}
+                        onClick={() => navigate('superuser/assign-admin')}
                         className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2"
                     >
                         <UserPlus size={20} />
