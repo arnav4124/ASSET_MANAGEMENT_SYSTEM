@@ -19,10 +19,10 @@ const View_asset_for_user = () => {
         return;
       }
       const role = JSON.parse(localStorage.getItem("user")).role;
-      if (role !== "User") {
-        navigate("/login");
-        return;
-      }
+    //   if (role == "User"||role =="Admin"||role == "Superuser") {
+    //     navigate("/login");
+    //     return;  
+    //   }
       
       try {
         const token_string = localStorage.getItem("token");
@@ -63,7 +63,11 @@ const View_asset_for_user = () => {
   });
 
   const handleRowClick = (id) => {
-    navigate(`/user/asset/${id}`);
+    const role = JSON.parse(localStorage.getItem("user")).role;
+    if (role === "Admin" || role === "Superuser") {
+      navigate(`/admin/assets/view/${id}`);
+    }
+    // navigate(`/asset/${id}`);
   };
 
   if (loading) {
@@ -153,10 +157,15 @@ const View_asset_for_user = () => {
                     </tr>
                   ) : (
                     filteredAssets.map((asset) => (
-                      <tr
+                        <tr
                         key={asset._id}
                         onClick={() => handleRowClick(asset._id)}
-                        className="hover:bg-gray-50 cursor-pointer transition-colors duration-200"
+                        className={`hover:bg-gray-50 cursor-pointer transition-colors duration-200 ${
+                          (JSON.parse(localStorage.getItem("user")).role === "Admin" || 
+                           JSON.parse(localStorage.getItem("user")).role === "Superuser") 
+                            ? "cursor-pointer" 
+                            : "cursor-default"
+                        }`}
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
