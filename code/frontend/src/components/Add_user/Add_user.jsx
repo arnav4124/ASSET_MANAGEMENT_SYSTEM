@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { set, useForm } from "react-hook-form";
 import { UserPlus, ChevronLeft, Check, Loader2 } from "lucide-react";
 import axios from "axios";
@@ -16,79 +16,80 @@ const AddEmployee = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const [managers,setManagers]= useState([]);
-  const [locations,setLocations]= useState([]);
-  useEffect(()=>{
+  const [managers, setManagers] = useState([]);
+  const [message, setMessage] = useState("");
+  const [locations, setLocations] = useState([]);
+  useEffect(() => {
     const token_st = localStorage.getItem("token")
-    const token=localStorage.getItem('token')
-         if(!token){
-             navigate('/login')
-         }
-         else{
-             const role =JSON.parse(localStorage.getItem('user')).role
-             console.log(role)
- 
-             if(role!=='Admin'){
-                 navigate('/login')
-             }
-         }
-    if(!token_st){
+    const token = localStorage.getItem('token')
+    if (!token) {
+      navigate('/login')
+    }
+    else {
+      const role = JSON.parse(localStorage.getItem('user')).role
+      console.log(role)
+
+      if (role !== 'Admin') {
+        navigate('/login')
+      }
+    }
+    if (!token_st) {
       alert("unauthorized_access")
       navigate("/login")
     }
-    const fetchManagers = async ()=>{
+    const fetchManagers = async () => {
 
       console.log(token_st)
-      if(!token){
+      if (!token) {
         alert("unauthorized_access")
         navigate("/login")
         return;
       }
       setLoading(true)
-      try{
+      try {
         console.log("SENDING REQ FOR MANAGERS")
-        const response = await axios.get("http://localhost:3487/api/admin/get_manager",{
-          headers:{
-            token:token_st
+        const response = await axios.get("http://localhost:3487/api/admin/get_manager", {
+          headers: {
+            token: token_st
           }
         })
 
-        if(response?.data?.success === false){
+        if (response?.data?.success === false) {
           alert("unauthorized_access")
           navigate("/login")
         }
         console.log(response)
         setManagers(response.data)
       }
-      catch(err){
-        console.log("Error fetching managers:",err)
+      catch (err) {
+        console.log("Error fetching managers:", err)
         setError("Error fetching managers")
       }
-      finally{
+      finally {
         setLoading(false)
       }
-    } 
-    const fetchLocations = async ()=>{  
+    }
+    const fetchLocations = async () => {
       setLoading(true)
-      try{
+      try {
         console.log("SENDING REQ FOR LOCATIONS")
-        const response = await axios.get("http://localhost:3487/api/locations/get_all_cities",{
-          headers:{
-            token:token_st
+        const response = await axios.get("http://localhost:3487/api/locations/get_all_cities", {
+          headers: {
+            token: token_st
           }
         })
-        if(response?.data?.success === false){
+        if (response?.data?.success === false) {
           alert("unauthorized_access")
           navigate("/login")
         }
         console.log(response)
         setLocations(response.data)
       }
-      catch(err){
-        console.log("Error fetching locations:",err)
+      catch (err) {
+        console.log("Error fetching locations:", err)
         setError("Error fetching locations")
       }
-      finally{
+      finally {
         setLoading(false)
         setVerified(true)
       }
@@ -96,14 +97,14 @@ const AddEmployee = () => {
 
     fetchManagers()
     fetchLocations()
-   },[navigate])
+  }, [navigate])
 
   useEffect(() => {
     console.log("Managers:", managers);
   }, [managers]);
-  useEffect(()=>{
-    console.log("Locations:",locations)
-  },[locations])
+  useEffect(() => {
+    console.log("Locations:", locations)
+  }, [locations])
   const {
     register,
     handleSubmit,
@@ -121,62 +122,66 @@ const AddEmployee = () => {
     }
   });
 
-  const onSubmit = async(data) =>{
-    try{
+  const onSubmit = async (data) => {
+    try {
       setLoading(true)
       setError(null)
       setShowSuccess(false)
       setIsSubmitting(true)
       console.log("Submitting data:")
       console.log(data)
-      const response = await axios.post("http://localhost:3487/api/admin/add_user",{
+      const response = await axios.post("http://localhost:3487/api/admin/add_user", {
         first_name: data.first_name,
         last_name: data.last_name,
         email: data.email,
         phoneNumber: data.phoneNumber,
         manager: data.manager,
-        location : data.location
-      },{
-      headers:{
-        token:localStorage.getItem("token")
-      }})
+        location: data.location
+      }, {
+        headers: {
+          token: localStorage.getItem("token")
+        }
+      })
       console.log(response)
       if (response.status === 201 || response.status === 200) {
-        setSuccess(true);
+        setShowSuccess(true);
         reset();
-        alert("user added successfully!");
+        //alert("user added successfully!");
+        setMessage("User added succesfully")
         navigate("/admin/add_user");
       }
     }
-    catch(err){
+    catch (err) {
       console.error("Error adding employee:", err);
+      setMessage(err)
       setError("Error adding employee")
     }
-    finally{
+    finally {
       setLoading(false)
       setIsSubmitting(false)
+      window.scrollTo(0, 0);
     }
   }
   const handleSearch = (e) => {
     const query = e.target.value.toLowerCase();
     setSearchTerm(query);
     setShowSuggestions(true);
-  
+
     if (query.trim() === "") {
       setFilteredManagers([]);
       return;
     }
-  
+
     // Filter the managers based on the search term
     const filtered = managers.filter((manager) => {
       // Create a full name from first_name and last_name
       const fullName = `${manager.first_name} ${manager.last_name}`.toLowerCase();
       const email = manager.email.toLowerCase();
-      
+
       // Check if the search term is in the full name or email
       return fullName.includes(query) || email.includes(query);
     });
-  
+
     setFilteredManagers(filtered);
   };
 
@@ -186,7 +191,7 @@ const AddEmployee = () => {
     setValue("manager", manager._id.toString());
     setShowSuggestions(false);
   };
-  if(!verified){
+  if (!verified) {
     return <div>Verifying...</div>
   }
   if (loading) {
@@ -215,6 +220,8 @@ const AddEmployee = () => {
           </div>
         </div>
 
+
+
         {/* Success message with animation */}
         {showSuccess && (
           <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-md shadow-md animate-fadeIn">
@@ -230,19 +237,33 @@ const AddEmployee = () => {
           </div>
         )}
 
+        {/* Error message */}
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-md">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
+
+        {/* {message && (
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-md shadow-md animate-fadeIn">
+            <p className="text-blue-700">{message}</p>
+          </div>
+        )} */}
+
         {/* Form Card */}
         <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg">
           {/* Form Sections */}
           <div className="p-6">
             <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Personal Information</h2>
-            
+
             {/* First Name & Last Name */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               {/* First Name */}
               <div className="transition-all duration-200">
                 <label className="block font-medium text-sm mb-1 text-gray-700">First Name</label>
                 <input
-                  {...register("first_name", { 
+                  {...register("first_name", {
                     required: "First name is required",
                     minLength: { value: 2, message: "First name must be at least 2 characters" }
                   })}
@@ -254,12 +275,12 @@ const AddEmployee = () => {
                   <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.first_name.message}</p>
                 )}
               </div>
-              
+
               {/* Last Name */}
               <div className="transition-all duration-200">
                 <label className="block font-medium text-sm mb-1 text-gray-700">Last Name</label>
                 <input
-                  {...register("last_name", { 
+                  {...register("last_name", {
                     required: "Last name is required",
                     minLength: { value: 2, message: "Last name must be at least 2 characters" }
                   })}
@@ -274,18 +295,18 @@ const AddEmployee = () => {
             </div>
 
             <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2 pt-2">Contact Information</h2>
-            
+
             {/* Email & Phone Number */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               {/* Email */}
               <div className="transition-all duration-200">
                 <label className="block font-medium text-sm mb-1 text-gray-700">Email Address</label>
                 <input
-                  {...register("email", { 
+                  {...register("email", {
                     required: "Email is required",
-                    pattern: { 
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, 
-                      message: "Invalid email address" 
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: "Invalid email address"
                     }
                   })}
                   type="email"
@@ -296,16 +317,16 @@ const AddEmployee = () => {
                   <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.email.message}</p>
                 )}
               </div>
-              
+
               {/* Phone Number */}
               <div className="transition-all duration-200">
                 <label className="block font-medium text-sm mb-1 text-gray-700">Phone Number</label>
                 <input
-                  {...register("phoneNumber", { 
+                  {...register("phoneNumber", {
                     required: "Phone number is required",
-                    pattern: { 
-                      value: /^[0-9+\-\s()]{7,15}$/, 
-                      message: "Invalid phone number" 
+                    pattern: {
+                      value: /^[0-9+\-\s()]{7,15}$/,
+                      message: "Invalid phone number"
                     }
                   })}
                   type="tel"
@@ -319,7 +340,7 @@ const AddEmployee = () => {
             </div>
 
             <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2 pt-2">Management</h2>
-            
+
             {/* Manager - Autocomplete */}
             <div className="mb-6 relative">
               <label className="block font-medium text-sm mb-1 text-gray-700">
@@ -338,13 +359,13 @@ const AddEmployee = () => {
                 type="hidden"
                 {...register("manager", { required: "Please select a manager" })}
               />
-              
+
               {/* Suggestions list */}
               {showSuggestions && filteredManagers.length > 0 && (
                 <div className="absolute z-10 bg-white mt-1 w-full border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
                   {filteredManagers.map((manager) => (
-                    <div 
-                      key={manager.id}
+                    <div
+                      key={manager._id}
                       className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 transition-colors duration-150"
                       onClick={() => selectManager(manager)}
                     >
@@ -354,16 +375,16 @@ const AddEmployee = () => {
                   ))}
                 </div>
               )}
-              
+
               {/* No results message */}
               {showSuggestions && searchTerm && filteredManagers.length === 0 && (
                 <div className="absolute z-10 bg-white mt-1 w-full border border-gray-300 rounded-md shadow-lg p-3">
                   <p className="text-gray-500">No managers found. Try a different search term.</p>
                 </div>
               )}
-              
+
               {errors.manager && <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.manager.message}</p>}
-              
+
               {/* Selected manager display */}
               {selectedManager && (
                 <div className="mt-2 p-2 bg-blue-50 border border-blue-100 rounded-md flex justify-between items-center">
@@ -371,7 +392,7 @@ const AddEmployee = () => {
                     <span className="text-sm font-medium">Selected: </span>
                     <span className="text-blue-700">{selectedManager}</span>
                   </div>
-                  <button 
+                  <button
                     type="button"
                     className="text-sm text-gray-500 hover:text-red-500"
                     onClick={() => {
@@ -387,18 +408,18 @@ const AddEmployee = () => {
             </div>
             <h2 className="text-lg font-medium text-gray-700 mb-4">Select Location</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {locations.map((loc, index) => (
-  <label key={index} className="flex items-center space-x-2">
-    <input
-      type="radio"
-      value={loc} // Use the location string directly
-      {...register("location", { required: "Please select a location" })}
-      className="form-radio"
-    />
-    <span>{loc}</span> {/* Display the location string */}
-  </label>
-))}
-          </div>
+              {locations.map((loc, index) => (
+                <label key={index} className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    value={loc} // Use the location string directly
+                    {...register("location", { required: "Please select a location" })}
+                    className="form-radio"
+                  />
+                  <span>{loc}</span> {/* Display the location string */}
+                </label>
+              ))}
+            </div>
             {/* Additional Notes (Optional) */}
           </div>
 
@@ -415,8 +436,8 @@ const AddEmployee = () => {
             >
               Reset
             </button>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isSubmitting}
               className={`px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-200 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
