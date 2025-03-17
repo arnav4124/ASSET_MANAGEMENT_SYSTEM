@@ -1,40 +1,51 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const SuperUserDashboard = () => {
   const [locationCount, setLocationCount] = useState(0);
   const [programCount, setProgramCount] = useState(0);
   const [categoryCount, setCategoryCount] = useState(0);
   const [adminCount, setAdminCount] = useState(0);
-
+  const navigate = useNavigate();
+  
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+    } else {
+      const role = JSON.parse(localStorage.getItem("user")).role;
+      if (role !== "Superuser") {
+        navigate("/login");
+      }
+    }
     const fetchCounts = async () => {
       try {
-        const locRes = await axios.get("http://localhost:3487/api/locations",{
-          headers:{
-            token:localStorage.getItem("token")
+        const locRes = await axios.get("http://localhost:3487/api/locations", {
+          headers: {
+            token: localStorage.getItem("token")
           }
         });
         setLocationCount(locRes.data.length);
 
-        const progRes = await axios.get("http://localhost:3487/api/programmes",{
-          headers:{
-            token:localStorage.getItem("token")
+        const progRes = await axios.get("http://localhost:3487/api/programmes", {
+          headers: {
+            token: localStorage.getItem("token")
           }
         });
         setProgramCount(progRes.data.length);
 
-        const catRes = await axios.get("http://localhost:3487/api/categories",{
-          headers:{
-            token:localStorage.getItem("token")
+        const catRes = await axios.get("http://localhost:3487/api/categories", {
+          headers: {
+            token: localStorage.getItem("token")
           }
         });
         setCategoryCount(catRes.data.length);
 
-        const adminRes = await axios.get("http://localhost:3487/api/admin/get_admins",{
-          headers:{
-            token:localStorage.getItem("token")
+        const adminRes = await axios.get("http://localhost:3487/api/admin/get_admins", {
+          headers: {
+            token: localStorage.getItem("token")
           }
         });
         setAdminCount(adminRes.data.length);
