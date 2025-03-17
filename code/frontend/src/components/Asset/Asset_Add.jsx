@@ -89,9 +89,16 @@ const Asset_add = () => {
     formData.append("Issued_by", data.issuedBy);
     formData.append("Issued_to", data.assignedToUser || "");
 
+    if (data.invoicePdf && data.invoicePdf.length > 0) {
+      formData.append("invoicePdf", data.invoicePdf[0]);
+    }
+
     try {
       const response = await axios.post("http://localhost:3487/api/assets/add-asset", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+          token: localStorage.getItem("token")
+        },
         withCredentials: true
       });
       if (response.status === 200) {
@@ -279,8 +286,8 @@ const Asset_add = () => {
                 >
                   <option value="">Select Category</option>
                   {categories.map((cat) => (
-                    <option key={cat._id} value={cat.category_name}>
-                      {cat.category_name}
+                    <option key={cat._id} value={cat._id}>
+                      {cat.name}
                     </option>
                   ))}
                 </select>
@@ -363,12 +370,13 @@ const Asset_add = () => {
 
               {/* Invoice ID */}
               <div>
-                <label className="block font-medium text-sm mb-1 text-gray-700">Invoice ID</label>
+                <label className="block font-medium text-sm mb-1 text-gray-700">Invoice PDF</label>
                 <input
-                  {...register("invoiceId")}
-                  type="text"
+                  {...register("invoicePdf")}
+                  type="file"
+                  accept="application/pdf"
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                  placeholder="Enter invoice ID"
+                  placeholder="Upload invoice pdf"
                 />
               </div>
             </div>
