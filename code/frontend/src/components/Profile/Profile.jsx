@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import './Profile.css';
 import axios from 'axios';
 
 function Profile() {
@@ -12,6 +11,7 @@ function Profile() {
     });
     const [editing, setEditing] = useState(false);
     const [updatedData, setUpdatedData] = useState({});
+    const [message, setMessage] = useState(null);
 
     useEffect(() => {
         const userId = JSON.parse(localStorage.getItem("user"))._id;
@@ -32,7 +32,7 @@ function Profile() {
             })
             .catch((err) => {
                 console.log("API Error:", err);
-                alert('Error getting profile');
+                setMessage({ type: 'error', text: 'Error getting profile' });
             });
     }, []);
 
@@ -41,50 +41,57 @@ function Profile() {
     };
 
     const handleSave = () => {
-        const userId = localStorage.getItem('userID');
+        const userId = JSON.parse(localStorage.getItem("user"))._id;
         axios.put(`http://localhost:3487/update-profile/${userId}`, updatedData)
             .then(() => {
                 setData(updatedData);
                 setEditing(false);
-                alert('Profile updated successfully');
+                setMessage({ type: 'success', text: 'Profile updated successfully' });
             })
             .catch((err) => {
                 console.log("API Error:", err);
-                alert('Error updating profile');
+                setMessage({ type: 'error', text: 'Error updating profile' });
             });
     };
 
     return (
-        <div className="profile-wrapper">
-            <h2 className="profile-title">My Profile</h2>
-            <div className='profile-container'>
-                {['first_name', 'last_name', 'location', 'role'].map((key) => (
-                    <div className='profile-item' key={key}>
-                        <h3 className="profile-label">{key.replace('_', ' ').toUpperCase()}</h3>
-                        {editing ? (
-                            <input 
-                                className="profile-input"
-                                type='text' 
-                                name={key} 
-                                value={updatedData[key] || ''} 
-                                onChange={handleChange} 
-                            />
-                        ) : (
-                            <p className="profile-text">{data[key]}</p>
-                        )}
+        <div className="min-h-screen bg-gray-100 p-8">
+            <div className="max-w-2xl mx-auto bg-white shadow rounded-lg p-6">
+                <h2 className="text-3xl font-bold text-gray-800 mb-6">My Profile</h2>
+                {message && (
+                    <div className={`p-3 mb-4 rounded-md text-white ${message.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+                        {message.text}
                     </div>
-                ))}
-                <div className='profile-item'>
-                    <h3 className="profile-label">EMAIL</h3>
-                    <p className="profile-text">{data.email}</p>
-                </div>
-            </div>
-            <div className="button-container">
-                {editing ? (
-                    <button className="profile-button" onClick={handleSave}>Save</button>
-                ) : (
-                    <button className="profile-button" onClick={() => setEditing(true)}>Edit</button>
                 )}
+                <div className='grid grid-cols-1 gap-4'>
+                    {['first_name', 'last_name', 'location', 'role'].map((key) => (
+                        <div key={key}>
+                            <h3 className="font-semibold text-gray-600">{key.replace('_', ' ').toUpperCase()}</h3>
+                            {editing ? (
+                                <input 
+                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                    type='text' 
+                                    name={key} 
+                                    value={updatedData[key] || ''} 
+                                    onChange={handleChange} 
+                                />
+                            ) : (
+                                <p className="text-gray-800">{data[key]}</p>
+                            )}
+                        </div>
+                    ))}
+                    <div>
+                        <h3 className="font-semibold text-gray-600">EMAIL</h3>
+                        <p className="text-gray-800">{data.email}</p>
+                    </div>
+                </div>
+                <div className="mt-6 flex justify-end">
+                    {editing ? (
+                        <button className="bg-blue-600 text-white px-4 py-2 rounded-md" onClick={handleSave}>Save</button>
+                    ) : (
+                        <button className="bg-blue-600 text-white px-4 py-2 rounded-md" onClick={() => setEditing(true)}>Edit</button>
+                    )}
+                </div>
             </div>
         </div>
     );

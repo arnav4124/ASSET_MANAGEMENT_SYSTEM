@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import './Login.css';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+
 const Login = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [message, setMessage] = useState(null);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -20,38 +18,59 @@ const Login = () => {
       if (response.data.success) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
-      
-        alert(`Login successful`);
-        navigate('/profile');
+        setMessage({ type: 'success', text: 'Login successful' });
+        setTimeout(() => navigate('/profile'), 1500);
       } else {
-        alert(response.data.message); 
+        setMessage({ type: 'error', text: response.data.message });
       }
     } catch (err) {
-      if (err.response && err.response.status === 401) {
-        alert('Invalid username or password. Please try again.');
-      } else {
-        console.log(err);
-        alert('Something went wrong. Please try again later.');
-      }
+      setMessage({
+        type: 'error',
+        text: err.response?.status === 401 ? 'Invalid username or password. Please try again.' : 'Something went wrong. Please try again later.'
+      });
     }
   };
-  
-
 
   return (
-    <div className="container">
-      <h2 className="title">Login</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="input-group">
-          <label>Email</label>
-          <input type="email" name="email" value={formData.email} onChange={handleChange} required />
-        </div>
-        <div className="input-group">
-          <label>Password</label>
-          <input type="password" name="password" value={formData.password} onChange={handleChange} required />
-        </div>
-        <button type="submit" className="btn">Login</button>
-      </form>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+      <div className="max-w-md w-full bg-white shadow-md rounded-lg p-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Login</h2>
+        {message && (
+          <div className={`p-3 mb-4 rounded-md text-white ${message.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+            {message.text}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-gray-600 font-semibold">Email</label>
+            <input 
+              type="email" 
+              name="email" 
+              value={formData.email} 
+              onChange={handleChange} 
+              required 
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-600 font-semibold">Password</label>
+            <input 
+              type="password" 
+              name="password" 
+              value={formData.password} 
+              onChange={handleChange} 
+              required 
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
+            />
+          </div>
+          <button 
+            type="submit" 
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+          >
+            Login
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

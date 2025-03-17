@@ -1,58 +1,95 @@
 import React, { useState, useEffect } from "react";
-import "./Navbar.css";
 import { Link, useNavigate } from "react-router-dom";
+import logo from "./logo.png";
 
-const Navbar = ({ isAdmin }) => {
+const Navbar = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("Inbox");
+  const [activeTab, setActiveTab] = useState("View Assets");
   const [menuOpen, setMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [role, setRole] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const userData = JSON.parse(localStorage.getItem("user"));
     setIsLoggedIn(!!token);
+    setRole(userData ? userData.role : null);
   }, [isLoggedIn]);
+
+  useEffect(() => {
+    const pathToTab = {
+      "/profile": "Profile",
+      "/asset/view": "View Assets",
+      "/project/view": "View Projects",
+      "/admin/asset/view": "View Assets",
+      "/admin/projects/view": "View Projects",
+      "/admin/view_users": "View Users",
+      "/admin/view_locations": "View Locations",
+      "/admin/asset/add": "Add Asset",
+      "/admin/assets/assign_asset/:id": "Assign Asset",
+      "/superuser/assign_admin": "Assign Admin",
+      "/superuser/admins": "View Admin",
+      "/superuser/view_programme": "View Programmes",
+      "/superuser/view_location": "View Locations",
+      "/superuser/view_category": "View Categories",
+    };
+    setActiveTab(pathToTab[location.pathname] || "View Assets");
+  }, [location.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setIsLoggedIn(false);
     navigate("/login");
   };
 
   const userTabs = [
-    { name: "Inbox", path: "/" },
-    { name: "View Your Assets", path: "/asset/view" },
-    { name: "View Your Projects", path: "/project/edit" },
-    { name: "Requests", path: "/requests" },
+    { name: "View Assets", path: "/asset/view" },//path
+    { name: "View Projects", path: "/project/view" },//path
     { name: "Profile", path: "/profile" },
     { name: "Logout", path: "/login" },
   ];
 
   const adminTabs = [
-    { name: "View All Projects", path: "/admin/projects" },
-    { name: "View All Assets", path: "/admin/assets" },
+    { name: "View Assets", path: "/admin/asset/view" },
+    { name: "View Projects", path: "/admin/projects/view" },//path
+    { name: "View Users", path: "/admin/view_users" },
+    { name: "View Locations", path: "/admin/view_locations" },
     { name: "Add Asset", path: "/admin/asset/add" },
-    { name: "Asset List", path: "/admin/assets/list" },
-    { name: "People", path: "/admin/people" },
-    { name: "Licenses", path: "/admin/licenses" },
+    { name: "Assign Asset", path: "/admin/assets/assign_asset/:id" },//path
+    { name: "Profile", path: "/profile" },
+    { name: "Logout", path: "/login" },
   ];
 
-  const tabsToShow = isAdmin ? [ ...adminTabs,...userTabs] : userTabs;
+  const superuserTabs = [
+    { name: "Assign Admin", path: "/superuser/assign_admin" },
+    { name: "View Admin", path: "/superuser/admins" },//path
+    { name: "View Programmes", path: "/superuser/view_programme" },
+    { name: "View Locations", path: "/superuser/view_location" },
+    { name: "View Categories", path: "/superuser/view_category" },
+    { name: "Profile", path: "/profile" },
+    { name: "Logout", path: "/login" },
+  ];
+
+  const tabsToShow = role === "Superuser" ? superuserTabs : role === "Admin" ? adminTabs : userTabs;
 
   return (
-    <nav className="navbar">
-      <div className="nav-header">
-        <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
+    <nav className="bg-white shadow-md p-4 flex justify-between items-center">
+      <div className="flex items-center">
+        <img src={logo} alt="Logo" className="h-10 w-auto" />
+        <button className="ml-4 text-xl" onClick={() => setMenuOpen(!menuOpen)}>
           ☰
         </button>
       </div>
-      <ul className={`nav-links ${menuOpen ? "open" : ""}`}>
+      <ul className={`flex space-x-6 ${menuOpen ? "block" : "hidden"} md:flex`}>
         {tabsToShow.map((tab) => (
-          <li key={tab.name} className={activeTab === tab.name ? "active" : ""}>
+          <li key={tab.name} className={activeTab === tab.name ? "font-bold" : ""}>
             {tab.name === "Logout" ? (
-              <span onClick={handleLogout}>{tab.name}</span>
+              <button onClick={handleLogout} className="text-red-600 hover:underline">
+                {tab.name}
+              </button>
             ) : (
-              <Link to={tab.path} onClick={() => setActiveTab(tab.name)}>
+              <Link to={tab.path} onClick={() => setActiveTab(tab.name)} className="hover:underline">
                 {tab.name}
               </Link>
             )}
