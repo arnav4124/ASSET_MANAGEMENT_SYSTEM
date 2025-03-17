@@ -26,7 +26,7 @@ import Profile from './components/Profile/Profile.jsx'
 import WelcomePage from './components/Welcome/welcome.jsx'
 import ViewProject from './components/Project/Project_view.jsx'
 import ProjectDetails from './components/Project/Project_details.jsx'
-
+import View_admin  from './components/View_admin.jsx'
 function Layout({ children }) {
   const location = useLocation();
   const hideNavbarPaths = ['/', '/login']; // Paths where Navbar should be hidden
@@ -70,6 +70,7 @@ function App() {
           <Route path="/superuser/view_location" element={<ViewLocation />} />
           <Route path="/superuser/view_category" element={<ViewCategory />} />
           <Route path="/superuser/view_programme" element={<ViewProgramme />} />
+          <Route path="/superuser/view_admin" element={<View_admin />} />
           <Route path="/admin/assets/assign_asset/:id" element={<AssignAsset />} />
           <Route path="/profile" element={<Profile />} />
         </Routes>
