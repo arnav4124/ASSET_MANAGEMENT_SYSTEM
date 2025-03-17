@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-
+import { useNavigate } from "react-router-dom";
 const AdminDashboard = () => {
   const [projectCount, setProjectCount] = useState(0);
   const [userCount, setUserCount] = useState(0);
   const [assetCount, setAssetCount] = useState(0);
+  const navigate = useNavigate();
   
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+    } else {
+      const role = JSON.parse(localStorage.getItem("user")).role;
+      if (role !== "Admin") {
+        navigate("/login");
+      }
+    }
     const fetchCounts = async () => {
       try {
         const projRes = await axios.get("http://localhost:3487/api/projects",{
