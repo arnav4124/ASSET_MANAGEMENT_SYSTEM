@@ -29,6 +29,9 @@ const ProjectEdit = () => {
   const [participants, setParticipants] = useState([]);
   const [assets, setAssets] = useState([]);
   const [programmes, setProgrammes] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [selectedLocations, setSelectedLocations] = useState([]);
+  const [availableUsers, setAvailableUsers] = useState([]);
 
   const participantsPerPage = 10;
 
@@ -76,17 +79,19 @@ const ProjectEdit = () => {
         }
 
         setProject(projectRes.data);
+        setSelectedLocations(projectRes.data.location || []);
 
         // Set form values
         setValue("projectName", projectRes.data.Project_name);
         setValue("programme", projectRes.data.programme_name);
         setValue("description", projectRes.data.description);
+        setValue("project_head", projectRes.data.project_head?._id || "");
         if (projectRes.data.deadline) {
           setValue("deadline", new Date(projectRes.data.deadline).toISOString().split('T')[0]);
         }
 
         // Fetch all data in parallel
-        const [participantsRes, assetsRes, programmesRes] = await Promise.all([
+        const [participantsRes, assetsRes, programmesRes, locationsRes, usersRes] = await Promise.all([
           axios.get(`http://localhost:3487/api/projects/${id}/participants`, {
             headers: { token: localStorage.getItem('token') }
           }),
@@ -95,12 +100,20 @@ const ProjectEdit = () => {
           }),
           axios.get('http://localhost:3487/api/programmes', {
             headers: { token: localStorage.getItem('token') }
+          }),
+          axios.get('http://localhost:3487/api/locations/get_all_cities', {
+            headers: { token: localStorage.getItem('token') }
+          }),
+          axios.get('http://localhost:3487/api/projects/users', {
+            headers: { token: localStorage.getItem('token') }
           })
         ]);
 
         setParticipants(participantsRes.data);
         setAssets(assetsRes.data);
         setProgrammes(programmesRes.data);
+        setLocations(locationsRes.data);
+        setAvailableUsers(usersRes.data);
 
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -135,7 +148,8 @@ const ProjectEdit = () => {
           programme_name: data.programme,
           description: data.description,
           deadline: data.deadline || null,
-          location: project.location // Keep existing locations
+          location: selectedLocations,
+          project_head: data.project_head
         },
         {
           headers: { token: localStorage.getItem('token') }
@@ -249,18 +263,37 @@ const ProjectEdit = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="transition-all duration-200">
                   <label className="block font-medium text-sm mb-1 text-gray-700">Project Head</label>
-                  <div className="p-3 bg-gray-50 rounded-md">
-                    {project?.project_head ? (
-                      <div className="flex items-center gap-2">
-                        <div>
-                          <p className="font-medium">{`${project.project_head.first_name} ${project.project_head.last_name}`}</p>
-                          <p className="text-sm text-gray-500">{project.project_head.email}</p>
+                  {isEditing ? (
+                    <div>
+                      <select
+                        {...register("project_head", { required: "Project head is required" })}
+                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                      >
+                        <option value="">Select Project Head</option>
+                        {availableUsers.map((user) => (
+                          <option key={user._id} value={user._id}>
+                            {`${user.first_name} ${user.last_name} (${user.email})`}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.project_head && (
+                        <p className="text-red-500 text-sm mt-1">{errors.project_head.message}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-gray-50 rounded-md">
+                      {project?.project_head ? (
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <p className="font-medium">{`${project.project_head.first_name} ${project.project_head.last_name}`}</p>
+                            <p className="text-sm text-gray-500">{project.project_head.email}</p>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <p className="text-gray-500">No project head assigned</p>
-                    )}
-                  </div>
+                      ) : (
+                        <p className="text-gray-500">No project head assigned</p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="transition-all duration-200">
@@ -289,12 +322,41 @@ const ProjectEdit = () => {
             {/* Project Locations */}
             <div>
               <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Project Locations</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {project?.location?.map((loc) => (
-                  <div key={loc} className="p-2 bg-blue-50 rounded-md text-blue-700 text-sm">
-                    {loc}
+              <div className="space-y-4">
+                {isEditing ? (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {locations.map((loc) => (
+                        <label key={loc} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            checked={selectedLocations.includes(loc)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedLocations([...selectedLocations, loc]);
+                              } else {
+                                setSelectedLocations(selectedLocations.filter(l => l !== loc));
+                              }
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{loc}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {selectedLocations.length === 0 && (
+                      <p className="text-red-500 text-sm">Please select at least one location</p>
+                    )}
+                  </>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {selectedLocations.map((loc) => (
+                      <div key={loc} className="p-2 bg-blue-50 rounded-md text-blue-700 text-sm">
+                        {loc}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
