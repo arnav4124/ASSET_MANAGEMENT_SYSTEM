@@ -198,23 +198,7 @@ function Profile() {
 
 
 
-                    <div className="bg-gray-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                        <h3 className="font-semibold text-gray-600 mb-2 flex items-center">
-                            <FaUserTag className="mr-2" />
-                            ROLE
-                        </h3>
-                        {editing ? (
-                            <input
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                                type='text'
-                                name="role"
-                                value={updatedData.role || ''}
-                                onChange={handleChange}
-                            />
-                        ) : (
-                            <p className="text-gray-800 text-lg">{data.role}</p>
-                        )}
-                    </div>
+                   
                 </div>
                 <div className="mt-8 flex justify-end">
                     {editing ? (
