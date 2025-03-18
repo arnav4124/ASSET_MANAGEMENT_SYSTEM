@@ -59,7 +59,7 @@ function Profile() {
 
     const handleSave = () => {
         const userId = JSON.parse(localStorage.getItem("user"))._id;
-        axios.put(`http://localhost:3487/update-profile/${userId}`, updatedData, 
+        axios.put(`http://localhost:3487/update-profile/${userId}`, updatedData,
             { headers: { token: localStorage.getItem("token") } }
         )
             .then(() => {
@@ -77,16 +77,18 @@ function Profile() {
         const userId = JSON.parse(localStorage.getItem("user"))._id;
         console.log("Changing password for user:", userId);
         axios.put(`http://localhost:3487/change-password/${userId}`, { currentPassword, newPassword },
-            {   withCredentials: true,
-                headers: { token: localStorage.getItem("token") }} 
+            {
+                withCredentials: true,
+                headers: { token: localStorage.getItem("token") }
+            }
         )
             .then((res) => {
                 console.log("Password change response:", res.data);
-                if(res.data.success){
+                if (res.data.success) {
                     setMessage({ type: 'success', text: 'Password changed successfully' });
                     setCurrentPassword('');
                     setNewPassword('');
-                }else{
+                } else {
                     setMessage({ type: 'error', text: res.data.message || 'Error changing password' });
                 }
             })
@@ -160,7 +162,10 @@ function Profile() {
                                 ))}
                             </select>
                         ) : (
-                            <p className="text-gray-800 text-lg">{data.location}</p>
+                            <p className="text-gray-800 text-lg">
+                                {locationOptions.find(loc => loc._id === data.location)?.location_name || data.location}
+                            </p>
+
                         )}
                     </div>
 
@@ -198,7 +203,7 @@ function Profile() {
 
 
 
-                   
+
                 </div>
                 <div className="mt-8 flex justify-end">
                     {editing ? (
