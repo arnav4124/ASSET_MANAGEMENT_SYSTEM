@@ -7,6 +7,25 @@ const AssetDetails = () => {
   const [asset, setAsset] = useState(null);
   const navigate = useNavigate();
 
+  // Helper to convert image data to base64 URL
+  const getImageUrl = (imgData) => {
+    if (!imgData) return null;
+    // if already a string, assume it's base64 encoded without data prefix
+    if (typeof imgData === "string") {
+      return `data:image/jpeg;base64,${imgData}`;
+    }
+    // if imgData is an object with a "data" property then convert
+    if (imgData.data) {
+      let binary = "";
+      imgData.data.forEach((byte) => {
+        binary += String.fromCharCode(byte);
+      });
+      const base64 = window.btoa(binary);
+      return `data:image/jpeg;base64,${base64}`;
+    }
+    return null;
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -34,6 +53,9 @@ const AssetDetails = () => {
 
   if (!asset) return <div>Loading...</div>;
 
+  // Compute the image URL (if available) from the asset.Img field
+  const imageUrl = asset.Img ? getImageUrl(asset.Img) : null;
+
   // If populated, asset.Issued_by and asset.Issued_to will have first_name and last_name
   const issuedBy =
     asset.Issued_by && asset.Issued_by.first_name
@@ -42,16 +64,17 @@ const AssetDetails = () => {
 
   const issuedTo =
     asset.Issued_to && asset.Issued_to.first_name
-      ? `${asset.Issued_to.first_name} ${asset.Issued_to.last_name}` : asset.Issued_to && asset.Issued_to.Project_name ?
-      `${asset.Issued_to.Project_name}`
+      ? `${asset.Issued_to.first_name} ${asset.Issued_to.last_name}`
+      : asset.Issued_to && asset.Issued_to.Project_name
+      ? `${asset.Issued_to.Project_name}`
       : "Unassigned";
 
   // Handler to unassign the asset
   const handleUnassign = () => {
     axios
       .put(
-        `http://localhost:3487/api/assets/${id}/unassign`, 
-        {}, 
+        `http://localhost:3487/api/assets/${id}/unassign`,
+        {},
         {
           withCredentials: true,
           headers: { token: localStorage.getItem("token") },
@@ -97,6 +120,25 @@ const AssetDetails = () => {
           <h1 className="text-3xl font-bold text-gray-800 mb-6">
             Asset Details - {asset.name}
           </h1>
+          
+          {/* Asset Image Section */}
+          {imageUrl ? (
+            <div className="mb-6">
+              <div className="relative overflow-hidden rounded-lg shadow-lg">
+                <img
+                  src={imageUrl}
+                  alt={asset.name}
+                  className="w-full h-64 object-cover transition-transform duration-300 transform hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-black opacity-25"></div>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-6 p-4 border border-dashed border-gray-300 rounded-lg text-center text-gray-500">
+              <p>No image available</p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <span className="font-semibold text-gray-600">Issued To:</span>
