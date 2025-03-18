@@ -134,6 +134,18 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
       };
 
       const newAsset = new Asset(assetData);
+      // Set invoice ID if available
+      if (invoiceId) {
+        newAsset.Invoice_id = invoiceId;
+      }
+      // set Img buffer if available
+      if (imgBuffer) {
+        newAsset.Img = imgBuffer;
+      }
+      // set additional files buffer if available
+      if (additionalFilesBuffer) {
+        newAsset.additional_files = additionalFilesBuffer;
+      }
 
       return newAsset.save();
     });
