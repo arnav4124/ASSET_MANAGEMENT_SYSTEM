@@ -208,6 +208,7 @@ router.post("/assign_asset/:assetId", async (req, res) => {
       const asset = await Asset.findById(assetId);
       asset.assignment_status = true;
       asset.Issued_to_type = "User";
+      asset.status = "Unavailable";
       asset.Issued_to = assignId;
       await asset.save();
       return res.status(200).json(newUserAsset);
@@ -221,6 +222,7 @@ router.post("/assign_asset/:assetId", async (req, res) => {
       asset.assignment_status = true;
       asset.Issued_to_type = "Project";
       asset.Issued_to = assignId;
+      asset.status = "Unavailable";
       await asset.save();
       return res.status(200).json(newAssetProject);
     }
@@ -235,6 +237,7 @@ router.put('/:id/unassign', authMiddleware, async (req, res) => {
     const asset = await Asset.findByIdAndUpdate(
       req.params.id,
       { Issued_to: null }, // or Issued_by as well if needed
+      { status : "Available", assignment_status: false },
       { new: true }
     ).populate('Issued_by', 'first_name last_name').populate('Issued_to', 'first_name last_name');
     res.status(200).json(asset);
