@@ -157,8 +157,9 @@ router.get('/', authMiddleware, async (req, res) => {
   try {
     const assets = await Asset.find({})
       .populate('Issued_by', 'first_name last_name email')
-      .populate('Issued_to', 'first_name last_name email');
+      .populate('Issued_to', 'first_name last_name email Project_name');
     res.status(200).json(assets);
+    console.log('Assets:', assets);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -194,6 +195,7 @@ router.post("/assign_asset/:assetId", async (req, res) => {
       // set assignment_status to true
       const asset = await Asset.findById(assetId);
       asset.assignment_status = true;
+      asset.Issued_to_type = "User";
       asset.Issued_to = assignId;
       await asset.save();
       return res.status(200).json(newUserAsset);
@@ -205,6 +207,7 @@ router.post("/assign_asset/:assetId", async (req, res) => {
       });
       const asset = await Asset.findById(assetId);
       asset.assignment_status = true;
+      asset.Issued_to_type = "Project";
       asset.Issued_to = assignId;
       await asset.save();
       return res.status(200).json(newAssetProject);
