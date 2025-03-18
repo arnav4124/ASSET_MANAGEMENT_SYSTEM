@@ -224,21 +224,34 @@ app.put('/change-password/:id', authMiddleware, async (req, res) => {
         console.log("User found");
 
         // check if current password and user password match, directly compare without bcrypt
-
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        console.log("isMatch", isMatch);
+        if(!isMatch){
         if (currentPassword !== user.password) {
             console.log("password mismatch");
             return res.status(400).json({ success: false, message: "Current password is incorrect" });
         }
+    else
 
+    {
+        console.log("password match");
+        if(currentPassword === newPassword){
+            return res.status(400).json({ success: false, message: "New password cannot be the same as current password" });
+        }
+        user.password = await bcrypt.hash(newPassword, 10);
+        await user.save();
+        res.json({ success: true, message: "Password changed successfully" });
+    }}
+        else{
         console.log("password match");
 
         if(currentPassword === newPassword){
             return res.status(400).json({ success: false, message: "New password cannot be the same as current password" });
         }
-        user.password = newPassword;
+        user.password = await bcrypt.hash(newPassword, 10);
         await user.save();
         res.json({ success: true, message: "Password changed successfully" });
-    } catch (error) {
+    } }catch (error) {
         console.error("Error changing password:", error);
         res.status(500).json({ success: false, message: error.message });
     }

@@ -43,14 +43,18 @@ const transporter = nodemailer.createTransport({
     const { first_name, last_name, email, location, phoneNumber } = req.body
     console.log(req.body)
     const password = crypto.randomBytes(6).toString('hex');
+    const send_password = password
     const role = "User"
     
     try {
+        // Hash the password and STORE the hash result
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
         const newUser = new User({
             first_name,
             last_name,
             email,
-            password,
+            password: hashedPassword, // Store the hashed password
             location,
             role,
             phoneNumber
@@ -68,7 +72,7 @@ const transporter = nodemailer.createTransport({
                 <h1>Welcome to Our Application</h1>
                 <p>Hello ${first_name} ${last_name},</p>
                 <p>Your account has been created successfully.</p>
-                <p>Your temporary password is: <strong>${password}</strong></p>
+                <p>Your temporary password is: <strong>${send_password}</strong></p>
                 <p>Please log in and change your password as soon as possible.</p>
                 <p>Best regards,<br/>The Admin Team</p>
               `
@@ -99,7 +103,6 @@ const transporter = nodemailer.createTransport({
           });
         }
       });
-        
 
 
 // Get users based on admin's location (including child locations)
