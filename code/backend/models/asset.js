@@ -68,8 +68,15 @@ const assetSchema = new mongoose.Schema({
 
     Issued_to: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        refPath: 'Issued_to_type'
     },
+
+    Issued_to_type: {
+        type: String,
+        enum: ['User', 'Project'],
+        //required: true
+    },
+
     vendor_name: {
         type: String,
         // required:true

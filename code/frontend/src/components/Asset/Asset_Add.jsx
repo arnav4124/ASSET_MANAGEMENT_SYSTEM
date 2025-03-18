@@ -151,6 +151,9 @@ const Asset_add = () => {
       }
 
       const formData = new FormData();
+      const user = localStorage.getItem("user");
+      // make issued by first name + last name
+      const issuedBy = JSON.parse(user)._id;
       formData.append("name", data.assetName);
       formData.append("brand_name", data.brand_name);
       formData.append("brand", data.brand);
@@ -160,7 +163,7 @@ const Asset_add = () => {
       formData.append("assignment_status", data.assignmentStatus ? "true" : "false");
       formData.append("Sticker_seq", data.stickerSeq);
       formData.append("description", data.description);
-      formData.append("Issued_by", data.issuedBy || null);
+      formData.append("Issued_by", issuedBy);
       formData.append("Issued_to", data.assignedToUser || "");
       formData.append("vendor_name", data.vendor_name);
       formData.append("vendor_email", data.vendor_email);
@@ -353,24 +356,6 @@ const Asset_add = () => {
                   onChange={handleQuantityChange}
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
                 />
-              </div>
-            </div>
-
-            <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2 pt-4">Assignment Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className="block font-medium text-sm mb-1 text-gray-700">Issued By</label>
-                <select
-                  {...register("issuedBy")}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                >
-                  <option value="">Select an Admin</option>
-                  {admins.map((admin) => (
-                    <option key={admin._id} value={admin._id}>
-                      {admin.first_name} {admin.last_name}
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
 
