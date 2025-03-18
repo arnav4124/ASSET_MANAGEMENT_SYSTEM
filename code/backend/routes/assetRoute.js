@@ -170,7 +170,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const asset = await Asset.findById(req.params.id)
       .populate('Issued_by', 'first_name last_name email')
-      .populate('Issued_to', 'first_name last_name email');
+      .populate('Issued_to', 'first_name last_name email Project_name');
     if (!asset) {
       return res.status(404).json({ error: 'Asset not found' });
     }
