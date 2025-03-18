@@ -5,7 +5,9 @@ const Location = require('../models/location')
 const authMiddleware = require('../middleware/auth')
 const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
-const nodemailer = require('nodemailer');
+const Project = require('../models/project')
+const Asset = require('../models/asset')
+const bcrypt = require('bcrypt')
 require("dotenv").config({ path: ".env" });
 
 admin_router.get('/get_manager', authMiddleware, async (req, res) => {
@@ -15,7 +17,6 @@ admin_router.get('/get_manager', authMiddleware, async (req, res) => {
         console.log(manager)
         email_list = []
         res.status(200).json(manager)
-        // res.status(200).json(email_list)
     } catch (err) {
         console.error("Error fetching manager:", err);
         res.status(500).json({
@@ -25,24 +26,14 @@ admin_router.get('/get_manager', authMiddleware, async (req, res) => {
         });
     }
 })
-console.log(process.env.EMAIL_USER)
-const transporter = nodemailer.createTransport({
-    secure: true,
-    host: 'smtp.gmail.com',
-    port: 465,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD
-    }
-  });
 
-  admin_router.post('/add_user', authMiddleware, async (req, res) => {
+admin_router.post('/add_user', authMiddleware, async (req, res) => {
     console.log("ADD USER")
     const { first_name, last_name, email, location, phoneNumber } = req.body
     console.log(req.body)
     const password = crypto.randomBytes(6).toString('hex');
     const role = "User"
-    
+
     try {
         const newUser = new User({
             first_name,
@@ -53,51 +44,23 @@ const transporter = nodemailer.createTransport({
             role,
             phoneNumber
         })
-        
+
         await newUser.save()
-        
-        try {
-            // Send email with the password
-            const mailOptions = {
-              from: process.env.EMAIL_USER,
-              to: email,
-              subject: 'Your Account Has Been Created',
-              html: `
-                <h1>Welcome to Our Application</h1>
-                <p>Hello ${first_name} ${last_name},</p>
-                <p>Your account has been created successfully.</p>
-                <p>Your temporary password is: <strong>${password}</strong></p>
-                <p>Please log in and change your password as soon as possible.</p>
-                <p>Best regards,<br/>The Admin Team</p>
-              `
-            };
-            
-            await transporter.sendMail(mailOptions);
-            
-            // If email sending succeeds, send success response
-            res.status(201).json({ 
-              success: true, 
-              message: "User created successfully and email sent" 
-            });
-          } catch (emailError) {
-            console.error("Error sending email:", emailError);
-            // If only the email part fails, still indicate user was created
-            res.status(201).json({ 
-              success: true, 
-              message: "User created successfully but email could not be sent",
-              emailError: emailError.message
-            });
-          }
-        } catch (error) {
-          console.error("Error creating user:", error);
-          res.status(500).json({ 
-            success: false, 
-            message: "Error creating user", 
-            error: error.message 
-          });
-        }
-      });
-        
+
+        res.status(201).json({
+            success: true,
+            message: "User created successfully",
+            user: newUser
+        });
+    } catch (error) {
+        console.error("Error creating user:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error creating user",
+            error: error.message
+        });
+    }
+});
 
 // Get users based on admin's location (including child locations)
 admin_router.get('/users', authMiddleware, async (req, res) => {
@@ -255,6 +218,147 @@ admin_router.put('/edit_user/:userId', authMiddleware, async (req, res) => {
             message: "Error updating user",
             error: error.message
         });
+    }
+});
+
+// Get location vs users count
+admin_router.get('/graph/location-users', authMiddleware, async (req, res) => {
+    try {
+        const adminLocation = req.user.location;
+        const adminLocationData = await Location.findOne({
+            location_name: { $regex: adminLocation, $options: 'i' }
+        });
+
+        if (!adminLocationData) {
+            return res.status(404).json({ message: "Admin location not found" });
+        }
+
+        // Get all locations to build hierarchy
+        const allLocations = await Location.find({});
+
+        // Function to get child locations
+        const getChildLocations = (parentLocation, parentLocationId) => {
+            const children = allLocations.filter(loc => loc.parent_location === parentLocationId.toString());
+            let childLocations = [...children.map(c => c.location_name)];
+            children.forEach(child => {
+                childLocations = [...childLocations, ...getChildLocations(child.location_name, child._id)];
+            });
+            return childLocations;
+        };
+
+        // Get all valid locations (admin's location and its children)
+        const validLocations = [adminLocation, ...getChildLocations(adminLocation, adminLocationData._id)];
+
+        const locationStats = await Promise.all(validLocations.map(async (locName) => {
+            const userCount = await User.countDocuments({
+                location: locName,
+                role: { $in: ["User", "Admin"] }
+            });
+            return {
+                location: locName,
+                count: userCount
+            };
+        }));
+
+        res.status(200).json(locationStats);
+    } catch (error) {
+        console.error("Error fetching location-user stats:", error);
+        res.status(500).json({ message: "Error fetching location-user statistics" });
+    }
+});
+
+// Get project vs assets count
+admin_router.get('/graph/project-assets', authMiddleware, async (req, res) => {
+    try {
+        const adminLocation = req.user.location;
+        const adminLocationData = await Location.findOne({
+            location_name: { $regex: adminLocation, $options: 'i' }
+        });
+
+        if (!adminLocationData) {
+            return res.status(404).json({ message: "Admin location not found" });
+        }
+
+        // Get all locations to build hierarchy
+        const allLocations = await Location.find({});
+
+        // Function to get child locations
+        const getChildLocations = (parentLocation, parentLocationId) => {
+            const children = allLocations.filter(loc => loc.parent_location === parentLocationId.toString());
+            let childLocations = [...children.map(c => c.location_name)];
+            children.forEach(child => {
+                childLocations = [...childLocations, ...getChildLocations(child.location_name, child._id)];
+            });
+            return childLocations;
+        };
+
+        // Get all valid locations (admin's location and its children)
+        const validLocations = [adminLocation, ...getChildLocations(adminLocation, adminLocationData._id)];
+
+        // Get projects that have any of the locations
+        const projects = await Project.find({
+            location: { $in: validLocations }
+        });
+
+        const projectStats = await Promise.all(projects.map(async (project) => {
+            const assetCount = await Asset.countDocuments({
+                project: project._id
+            });
+            return {
+                project: project.Project_name,
+                count: assetCount
+            };
+        }));
+
+        res.status(200).json(projectStats);
+    } catch (error) {
+        console.error("Error fetching project-asset stats:", error);
+        res.status(500).json({ message: "Error fetching project-asset statistics" });
+    }
+});
+
+// Get location vs assets count
+admin_router.get('/graph/location-assets', authMiddleware, async (req, res) => {
+    try {
+        const adminLocation = req.user.location;
+        const adminLocationData = await Location.findOne({
+            location_name: { $regex: adminLocation, $options: 'i' }
+        });
+
+        if (!adminLocationData) {
+            return res.status(404).json({ message: "Admin location not found" });
+        }
+
+        // Get all locations to build hierarchy
+        const allLocations = await Location.find({});
+
+        // Function to get child locations
+        const getChildLocations = (parentLocation, parentLocationId) => {
+            const children = allLocations.filter(loc => loc.parent_location === parentLocationId.toString());
+            let childLocations = [...children.map(c => c.location_name)];
+            children.forEach(child => {
+                childLocations = [...childLocations, ...getChildLocations(child.location_name, child._id)];
+            });
+            return childLocations;
+        };
+
+        // Get all valid locations (admin's location and its children)
+        const validLocations = [adminLocation, ...getChildLocations(adminLocation, adminLocationData._id)];
+
+        const locationStats = await Promise.all(validLocations.map(async (locName) => {
+            const assetCount = await Asset.countDocuments({
+                Office: locName
+            });
+            return {
+                location: locName,
+                count: assetCount
+            };
+        }));
+
+        res.status(200).json(locationStats);
+    } catch (error) {
+        console.error("Error fetching location-asset stats:", error);
+        res.status(500).json({ message: "Error fetching location-asset statistics" });
     }
 });
 
