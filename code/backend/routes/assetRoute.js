@@ -113,8 +113,8 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
 
       const assetData = {
         name: req.body.name,
-        brand_name: req.body.brand_name,
-        brand: req.body.brand,
+        brand: req.body.brand_name,
+        // brand: req.body.brand,
         asset_type: req.body.asset_type,
         status: req.body.status,
         Office: req.body.Office,

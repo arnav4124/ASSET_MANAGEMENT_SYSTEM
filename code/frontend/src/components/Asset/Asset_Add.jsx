@@ -128,7 +128,7 @@ const Asset_add = () => {
       const requiredFields = {
         assetName: 'Asset Name',
         brand_name: 'Brand Name',
-        brand: 'Brand',
+        // brand: 'Brand',
         assetType: 'Asset Type',
         status: 'Status',
         office: 'Office',
@@ -156,7 +156,7 @@ const Asset_add = () => {
       const issuedBy = JSON.parse(user)._id;
       formData.append("name", data.assetName);
       formData.append("brand_name", data.brand_name);
-      formData.append("brand", data.brand);
+      // formData.append("brand", data.brand);
       formData.append("asset_type", data.assetType);
       formData.append("status", data.status);
       formData.append("Office", data.office);
@@ -333,18 +333,7 @@ const Asset_add = () => {
               </div>
 
               {/* Brand */}
-              <div>
-                <label className="block font-medium text-sm mb-1 text-gray-700">Brand</label>
-                <input
-                  {...register("brand", { required: "Brand is required" })}
-                  type="text"
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                  placeholder="Enter brand"
-                />
-                {errors.brand && (
-                  <p className="text-red-500 text-sm mt-1">{errors.brand.message}</p>
-                )}
-              </div>
+              
 
               {/* Quantity */}
               <div>
