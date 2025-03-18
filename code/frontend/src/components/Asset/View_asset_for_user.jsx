@@ -18,11 +18,6 @@ const View_asset_for_user = () => {
         navigate("/login");
         return;
       }
-      const role = JSON.parse(localStorage.getItem("user")).role;
-    //   if (role == "User"||role =="Admin"||role == "Superuser") {
-    //     navigate("/login");
-    //     return;  
-    //   }
       
       try {
         const token_string = localStorage.getItem("token");
@@ -30,9 +25,11 @@ const View_asset_for_user = () => {
         const response = await axios.get(`http://localhost:3487/api/assets/get_user_assets/${user_id}`, {
           headers: { token: token_string }
         });
-        setAssets(response.data);
+        
+        console.log("API Response:", response.data);
+        setAssets(response.data || []);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching assets:", err);
         setError('Error fetching your assets');
       } finally {
         setLoading(false);
@@ -41,20 +38,27 @@ const View_asset_for_user = () => {
     
     getAssets();
   }, [navigate]);
+  
+  // Fixed useEffect for logging assets
+  useEffect(() => {
+    console.log("ASSETS:", assets);
+  }, [assets]);
 
   const filteredAssets = assets.filter(asset => {
+    if (!asset) return false;
+    
     // Filter based on search term
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch =
         asset.name?.toLowerCase().includes(searchLower) ||
         asset.asset_type?.toLowerCase().includes(searchLower) ||
-        asset.Issued_by?.first_name?.toLowerCase().includes(searchLower) ||
-        asset.Office?.toLowerCase().includes(searchLower);
+        (asset.Issued_by?.first_name?.toLowerCase().includes(searchLower) || false) ||
+        (asset.Office?.toLowerCase().includes(searchLower) || false);
       if (!matchesSearch) return false;
     }
     
-    // Filter based on asset type (Physical/Virtual)
+    // Filter based on asset type (physical/virtual)
     if (typeFilter && asset.asset_type?.toLowerCase() !== typeFilter.toLowerCase()) {
       return false;
     }
@@ -69,7 +73,7 @@ const View_asset_for_user = () => {
     if (role === "Admin" || role === "Superuser") {
       navigate(`/admin/assets/view/${id}`);
     }
-    // navigate(`/asset/${id}`);
+    // If not admin/superuser, maybe show a detail view for regular users?
   };
 
   if (loading) {
@@ -108,8 +112,8 @@ const View_asset_for_user = () => {
                   className="w-full border border-gray-300 p-2 rounded-md mt-1"
                 >
                   <option value="">All Types</option>
-                  <option value="Physical">Physical</option>
-                  <option value="Virtual">Virtual</option>
+                  <option value="physical">Physical</option>
+                  <option value="virtual">Virtual</option>
                 </select>
               </div>
             </div>
@@ -138,6 +142,13 @@ const View_asset_for_user = () => {
               </div>
             )}
 
+            {/* No Assets Message */}
+            {assets.length === 0 && !loading && !error && (
+              <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6 rounded-md">
+                <p className="text-yellow-700">No assets have been assigned to you yet.</p>
+              </div>
+            )}
+
             {/* Assets Table */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <table className="min-w-full">
@@ -154,15 +165,15 @@ const View_asset_for_user = () => {
                   {filteredAssets.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
-                        No assets found
+                        No assets found matching your filters
                       </td>
                     </tr>
                   ) : (
                     filteredAssets.map((asset) => (
-                        <tr
+                      <tr
                         key={asset._id}
                         onClick={() => handleRowClick(asset._id)}
-                        className={`hover:bg-gray-50 cursor-pointer transition-colors duration-200 ${
+                        className={`hover:bg-gray-50 transition-colors duration-200 ${
                           (JSON.parse(localStorage.getItem("user")).role === "Admin" || 
                            JSON.parse(localStorage.getItem("user")).role === "Superuser") 
                             ? "cursor-pointer" 
@@ -172,25 +183,33 @@ const View_asset_for_user = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <Box size={20} className="text-gray-400 mr-2" />
-                            <div className="text-sm font-medium text-gray-900">{asset.name}</div>
+                            <div className="text-sm font-medium text-gray-900">{asset.name || 'Unnamed Asset'}</div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                            {asset.asset_type}
+                            {asset.asset_type ? asset.asset_type.charAt(0).toUpperCase() + asset.asset_type.slice(1) : 'Unknown'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {asset.Office || 'Not specified'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {asset.Issued_by && asset.Issued_by.first_name
-                            ? `${asset.Issued_by.first_name} ${asset.Issued_by.last_name}`
+                          {asset.Issued_by && typeof asset.Issued_by === 'object' && asset.Issued_by.first_name
+                            ? `${asset.Issued_by.first_name} ${asset.Issued_by.last_name || ''}`
                             : 'Unassigned'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${asset.status === 'Available' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                            {asset.status}
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            asset.status === 'Available' 
+                              ? 'bg-green-100 text-green-800' 
+                              : asset.status === 'Maintenance'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : asset.status === 'Disposed'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {asset.status || 'Unknown'}
                           </span>
                         </td>
                       </tr>
