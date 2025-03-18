@@ -236,8 +236,8 @@ router.put('/:id/unassign', authMiddleware, async (req, res) => {
   try {
     const asset = await Asset.findByIdAndUpdate(
       req.params.id,
-      { Issued_to: null }, // or Issued_by as well if needed
-      { status : "Available", assignment_status: false },
+      { Issued_to: null , // or Issued_by as well if needed
+       status : "Available", assignment_status: false },
       { new: true }
     ).populate('Issued_by', 'first_name last_name').populate('Issued_to', 'first_name last_name');
     res.status(200).json(asset);
