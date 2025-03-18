@@ -293,4 +293,66 @@ router.get('/category_assets_graph', authMiddleware, async (req, res) => {
     }
 });
 
+// Get programme vs projects count data for graph
+router.get('/programme_projects_graph', authMiddleware, async (req, res) => {
+    try {
+        const programmes = await Programme.find({}).lean();
+        const projects = await Project.find({}).lean();
+
+        const programmeProjectCounts = programmes.map(programme => {
+            const projectCount = projects.filter(project =>
+                project.programme_name === programme.name
+            ).length;
+
+            return {
+                programme_name: programme.name,
+                project_count: projectCount
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            data: programmeProjectCounts
+        });
+    } catch (error) {
+        console.error('Error fetching programme projects graph data:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching programme projects graph data",
+            error: error.message
+        });
+    }
+});
+
+// Get location vs assets count data for graph
+router.get('/location_assets_graph', authMiddleware, async (req, res) => {
+    try {
+        const locations = await Location.find({}).lean();
+        const assets = await Asset.find({}).lean();
+
+        const locationAssetCounts = locations.map(location => {
+            const assetCount = assets.filter(asset =>
+                asset.Office.toLowerCase() === location.location_name.toLowerCase()
+            ).length;
+
+            return {
+                location_name: location.location_name,
+                asset_count: assetCount
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            data: locationAssetCounts
+        });
+    } catch (error) {
+        console.error('Error fetching location assets graph data:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching location assets graph data",
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;

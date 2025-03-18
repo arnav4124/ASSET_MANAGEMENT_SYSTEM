@@ -66,6 +66,8 @@ const View_asset_for_user = () => {
     return true;
   });
 
+  console.log(filteredAssets);
+
   const handleRowClick = (id) => {
     const role = JSON.parse(localStorage.getItem("user")).role;
     if (role === "Admin" || role === "Superuser") {
