@@ -31,6 +31,8 @@ import View_asset_for_user from './components/Asset/View_asset_for_user.jsx'
 import EditUser from './components/Add_user/Edit_user.jsx'
 import View_your_project from './components/Project/View_your_project.jsx'
 import NotFound from './wrong.jsx'
+import ErrorBoundary from './components/ErrorBoundary'
+
 function Layout({ children }) {
   const location = useLocation();
   const hideNavbarPaths = ['/', '/login']; // Paths where Navbar should be hidden
@@ -50,39 +52,41 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/" element={<WelcomePage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/admin/project/edit/:id" element={<ProjectEdit />} />
-          <Route path="admin/project/add" element={<Project_add />} />
-          <Route path="/admin/projects/view" element={<ViewProject />} />
-          <Route path="/admin/projects/view/:id" element={<ProjectDetails />} />
-          <Route path="/admin/add_user" element={<Add_user />} />
-          <Route path="/superuser/add_programme" element={<Add_progrmme />} />
-          <Route path="/superuser/add_location" element={<Add_location />} />
-          <Route path="/superuser/assign_admin" element={<AssignAdmin />} />
-          <Route path="/admin/asset/add" element={<AddAsset />} />
-          <Route path="/admin/asset/view" element={<ViewAsset />} />
-          <Route path="/admin/assets/view/:id" element={<AssetDetails />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/superuser/dashboard" element={<SuperUserDashboard />} />
-          <Route path="/superuser/add_category" element={<AddCategory />} />
-          <Route path="/admin/view_users" element={<ViewUsers />} />
-          <Route path="/admin/edit_user/:userId" element={<EditUser />} />
-          <Route path="/admin/view_locations" element={<ViewLocationsAdmin />} />
-          <Route path="/superuser/view_location" element={<ViewLocation />} />
-          <Route path="/superuser/view_category" element={<ViewCategory />} />
-          <Route path="/superuser/view_programme" element={<ViewProgramme />} />
-          <Route path="/superuser/view_admin" element={<View_admin />} />
-          <Route path="/admin/assets/assign_asset/:id" element={<AssignAsset />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/user/assets/view/" element={<View_asset_for_user />} />
-          <Route path="/user/projects/view/" element={<View_your_project/>}/>
-          <Route path="*" element={<NotFound/>}/>
-        </Routes>
-      </Layout>
+      <ErrorBoundary>
+        <Layout>
+          <Routes>
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/" element={<WelcomePage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/admin/project/edit/:id" element={<ProjectEdit />} />
+            <Route path="admin/project/add" element={<Project_add />} />
+            <Route path="/admin/projects/view" element={<ViewProject />} />
+            <Route path="/admin/projects/view/:id" element={<ProjectDetails />} />
+            <Route path="/admin/add_user" element={<Add_user />} />
+            <Route path="/superuser/add_programme" element={<Add_progrmme />} />
+            <Route path="/superuser/add_location" element={<Add_location />} />
+            <Route path="/superuser/assign_admin" element={<AssignAdmin />} />
+            <Route path="/admin/asset/add" element={<AddAsset />} />
+            <Route path="/admin/asset/view" element={<ViewAsset />} />
+            <Route path="/admin/assets/view/:id" element={<AssetDetails />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/superuser/dashboard" element={<SuperUserDashboard />} />
+            <Route path="/superuser/add_category" element={<AddCategory />} />
+            <Route path="/admin/view_users" element={<ViewUsers />} />
+            <Route path="/admin/edit_user/:userId" element={<EditUser />} />
+            <Route path="/admin/view_locations" element={<ViewLocationsAdmin />} />
+            <Route path="/superuser/view_location" element={<ViewLocation />} />
+            <Route path="/superuser/view_category" element={<ViewCategory />} />
+            <Route path="/superuser/view_programme" element={<ViewProgramme />} />
+            <Route path="/superuser/view_admin" element={<View_admin />} />
+            <Route path="/admin/assets/assign_asset/:id" element={<AssignAsset />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/user/assets/view/" element={<View_asset_for_user />} />
+            <Route path="/user/projects/view/" element={<View_your_project />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Layout>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

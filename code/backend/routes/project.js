@@ -222,6 +222,7 @@ router.get('/:id/assets', authMiddleware, async (req, res) => {
             });
 
         const assets = assetProjects.map(ap => ap.asset_id);
+        console.log(assets);
         res.status(200).json(assets);
     } catch (error) {
         console.error('Error fetching project assets:', error);
@@ -229,22 +230,84 @@ router.get('/:id/assets', authMiddleware, async (req, res) => {
     }
 });
 
-router.get('/get_user_projects/:id',authMiddleware, async (req, res) => {
-    try{
-        const userProjects = await UserProject.find({user_id: req.params.id});
-        const projectIds = userProjects.map(up => up.project_id);   
+router.get('/get_user_projects/:id', authMiddleware, async (req, res) => {
+    try {
+        const userProjects = await UserProject.find({ user_id: req.params.id });
+        const projectIds = userProjects.map(up => up.project_id);
         const pros = []
-        for (let i = 0 ; i < projectIds.length; i++){
+        for (let i = 0; i < projectIds.length; i++) {
             const project = await Project.findById(projectIds[i]);
             pros.push(project);
         }
         res.status(200).json(pros);
     }
-    catch(err){
+    catch (err) {
         console.error(err);
-        res.status(500).json({error: 'Error fetching user projects'});
+        res.status(500).json({ error: 'Error fetching user projects' });
     }
 })
+
+// Get all users (with search functionality)
+router.get('/users/search', authMiddleware, async (req, res) => {
+    try {
+        const { query } = req.query;
+        let searchQuery = {};
+
+        if (query) {
+            searchQuery = {
+                $or: [
+                    { first_name: { $regex: query, $options: 'i' } },
+                    { last_name: { $regex: query, $options: 'i' } },
+                    { email: { $regex: query, $options: 'i' } }
+                ]
+            };
+        }
+
+        const users = await User.find(searchQuery).select('first_name last_name email role');
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching users', error: error.message });
+    }
+});
+
+// Add participants to project
+router.post('/:projectId/participants', authMiddleware, async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const { userIds } = req.body; // Array of user IDs to add
+
+        // Validate project exists
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
+
+        // Filter out users that are already in the project
+        const existingParticipants = await UserProject.find({
+            project_id: projectId,
+            user_id: { $in: userIds }
+        });
+
+        const existingUserIds = existingParticipants.map(p => p.user_id.toString());
+        const newUserIds = userIds.filter(id => !existingUserIds.includes(id));
+
+        // Create new user-project associations
+        const userProjects = newUserIds.map(userId => ({
+            user_id: userId,
+            project_id: projectId
+        }));
+
+        await UserProject.insertMany(userProjects);
+
+        res.status(201).json({
+            message: 'Participants added successfully',
+            added: newUserIds.length,
+            skipped: userIds.length - newUserIds.length
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error adding participants', error: error.message });
+    }
+});
 
 // Add this helper function at the end of the file, before module.exports
 function isValidDate(dateString) {
