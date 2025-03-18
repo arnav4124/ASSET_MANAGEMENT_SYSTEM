@@ -42,7 +42,8 @@ const AssetDetails = () => {
 
   const issuedTo =
     asset.Issued_to && asset.Issued_to.first_name
-      ? `${asset.Issued_to.first_name} ${asset.Issued_to.last_name}`
+      ? `${asset.Issued_to.first_name} ${asset.Issued_to.last_name}` : asset.Issued_to && asset.Issued_to.Project_name ?
+      `${asset.Issued_to.Project_name}`
       : "Unassigned";
 
   // Handler to unassign the asset
@@ -58,6 +59,7 @@ const AssetDetails = () => {
       )
       .then((response) => {
         // After unassigning, refresh or update the local state
+        console.log(response.data);
         setAsset(response.data);
       })
       .catch((err) => {
@@ -76,7 +78,7 @@ const AssetDetails = () => {
             >
               &larr; Back
             </button>
-            {asset.Issued_to && asset.Issued_to.first_name ? (
+            {asset.Issued_to && (asset.Issued_to.first_name || asset.Issued_to.Project_name) ? (
               <button
                 className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200"
                 onClick={handleUnassign}
