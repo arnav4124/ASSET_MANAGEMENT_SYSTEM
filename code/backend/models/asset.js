@@ -49,7 +49,7 @@ const assetSchema = new mongoose.Schema({
     },
 
     Img: {
-        type: String,
+        type: Buffer,
     },
 
     description: {
