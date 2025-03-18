@@ -39,7 +39,7 @@ const Navbar = () => {
       "/superuser/view_location": "View Locations",
       "/superuser/view_category": "View Categories",
     };
-    setActiveTab(pathToTab[location.pathname] || "View Assets");
+    setActiveTab(pathToTab[location.pathname] || null);
   }, [location.pathname]);
 
   const handleLogout = () => {

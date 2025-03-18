@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus, Search, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { UserPlus, Search, Users, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 import axios from 'axios';
 
 const ViewUsers = () => {
@@ -143,13 +143,62 @@ const ViewUsers = () => {
     // Calculate total pages
     const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
+    // Generate page numbers with limited visible pages and ellipses
+    const getPageNumbers = () => {
+        const maxPagesToShow = 5; // Number of page buttons to show at once
+        let pageNumbers = [];
+        
+        if (totalPages <= maxPagesToShow) {
+            // Show all pages if total pages is less than maxPagesToShow
+            pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+        } else {
+            // Always include first page, last page, and pages around current page
+            const leftSiblingIndex = Math.max(currentPage - 1, 1);
+            const rightSiblingIndex = Math.min(currentPage + 1, totalPages);
+            
+            const shouldShowLeftDots = leftSiblingIndex > 2;
+            const shouldShowRightDots = rightSiblingIndex < totalPages - 1;
+            
+            if (!shouldShowLeftDots && shouldShowRightDots) {
+                // Show first 1, 2, 3, 4, 5 ... 10
+                const leftItemCount = 3 + (maxPagesToShow - 3) / 2;
+                pageNumbers = Array.from({ length: leftItemCount }, (_, i) => i + 1);
+                pageNumbers.push("dots1");
+                pageNumbers.push(totalPages);
+            } else if (shouldShowLeftDots && !shouldShowRightDots) {
+                // Show 1 ... 6, 7, 8, 9, 10
+                pageNumbers.push(1);
+                pageNumbers.push("dots1");
+                
+                const rightItemCount = maxPagesToShow - 3;
+                const startPage = totalPages - rightItemCount + 1;
+                pageNumbers = pageNumbers.concat(
+                    Array.from({ length: rightItemCount }, (_, i) => startPage + i)
+                );
+            } else if (shouldShowLeftDots && shouldShowRightDots) {
+                // Show 1 ... 4, 5, 6 ... 10
+                pageNumbers.push(1);
+                pageNumbers.push("dots1");
+                
+                pageNumbers.push(leftSiblingIndex);
+                pageNumbers.push(currentPage);
+                pageNumbers.push(rightSiblingIndex);
+                
+                pageNumbers.push("dots2");
+                pageNumbers.push(totalPages);
+            }
+        }
+        
+        return pageNumbers;
+    };
+
     // Change page
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
     const goToNextPage = () => {
         if (currentPage < totalPages) {
             setCurrentPage(currentPage + 1);
         }
     };
-
     const goToPreviousPage = () => {
         if (currentPage > 1) {
             setCurrentPage(currentPage - 1);
@@ -310,31 +359,85 @@ const ViewUsers = () => {
                         </div>
                     </div>
 
-                    {/* Pagination controls */}
-                    <div className="mt-6 flex items-center justify-between">
-                        <div className="text-sm text-gray-500">
-                            Showing {filteredUsers.length > 0 ? `${indexOfFirstUser + 1}-${Math.min(indexOfLastUser, filteredUsers.length)} of ${filteredUsers.length}` : '0'} users
+                    {/* Pagination controls - Enhanced with page numbers */}
+                    {filteredUsers.length > 0 && (
+                        <div className="mt-6 flex items-center justify-between border-t border-gray-200 bg-white p-4 rounded-lg shadow-md">
+                            {/* Mobile pagination */}
+                            <div className="flex-1 flex justify-between sm:hidden">
+                                <button
+                                    onClick={goToPreviousPage}
+                                    disabled={currentPage === 1}
+                                    className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                                >
+                                    Previous
+                                </button>
+                                <div className="mx-2 flex items-center">
+                                    <span className="text-sm text-gray-700">
+                                        {currentPage} / {totalPages}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={goToNextPage}
+                                    disabled={currentPage === totalPages || totalPages === 0}
+                                    className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${currentPage === totalPages || totalPages === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                                >
+                                    Next
+                                </button>
+                            </div>
+
+                            {/* Desktop pagination */}
+                            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-700">
+                                        Showing <span className="font-medium">{indexOfFirstUser + 1}</span> to{" "}
+                                        <span className="font-medium">{Math.min(indexOfLastUser, filteredUsers.length)}</span> of{" "}
+                                        <span className="font-medium">{filteredUsers.length}</span> users
+                                    </p>
+                                </div>
+                                <div>
+                                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                        <button
+                                            onClick={goToPreviousPage}
+                                            disabled={currentPage === 1}
+                                            className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                                        >
+                                            <span className="sr-only">Previous</span>
+                                            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                                        </button>
+
+                                        {/* Page Numbers with Ellipses */}
+                                        {getPageNumbers().map((pageNumber, index) => (
+                                            pageNumber === "dots1" || pageNumber === "dots2" ? (
+                                                <span
+                                                    key={`dots-${index}`}
+                                                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
+                                                >
+                                                    <MoreHorizontal className="h-5 w-5" aria-hidden="true" />
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    key={pageNumber}
+                                                    onClick={() => paginate(pageNumber)}
+                                                    className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${currentPage === pageNumber ? 'bg-blue-50 border-blue-500 text-blue-600 z-10' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                                                >
+                                                    {pageNumber}
+                                                </button>
+                                            )
+                                        ))}
+
+                                        <button
+                                            onClick={goToNextPage}
+                                            disabled={currentPage === totalPages || totalPages === 0}
+                                            className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 ${currentPage === totalPages || totalPages === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                                        >
+                                            <span className="sr-only">Next</span>
+                                            <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                                        </button>
+                                    </nav>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                            <button
-                                onClick={goToPreviousPage}
-                                disabled={currentPage === 1}
-                                className={`p-2 rounded-md ${currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}`}
-                            >
-                                <ChevronLeft size={20} />
-                            </button>
-                            <span className="text-gray-600">
-                                Page {currentPage} of {totalPages || 1}
-                            </span>
-                            <button
-                                onClick={goToNextPage}
-                                disabled={currentPage === totalPages || totalPages === 0}
-                                className={`p-2 rounded-md ${currentPage === totalPages || totalPages === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}`}
-                            >
-                                <ChevronRight size={20} />
-                            </button>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>

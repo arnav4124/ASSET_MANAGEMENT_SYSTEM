@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, Box } from "lucide-react";
+import { Search, Plus, Box, ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 
 const ViewAsset = () => {
   const [assets, setAssets] = useState([]);
   const [categories, setCategories] = useState([]);
   const [locations, setLocations] = useState([]);
-  const [selectedLocations, setSelectedLocations] = useState([]); // New state for checkboxes
+  const [selectedLocations, setSelectedLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [assetsPerPage] = useState(10);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -100,6 +103,71 @@ const ViewAsset = () => {
     return true;
   });
 
+  // Pagination logic
+  const indexOfLastAsset = currentPage * assetsPerPage;
+  const indexOfFirstAsset = indexOfLastAsset - assetsPerPage;
+  const currentAssets = filteredAssets.slice(indexOfFirstAsset, indexOfLastAsset);
+  const totalPages = Math.ceil(filteredAssets.length / assetsPerPage);
+
+  // Generate page numbers array with limited visible pages and ellipses
+  const getPageNumbers = () => {
+    const maxPagesToShow = 5; // Number of page buttons to show at once
+    let pageNumbers = [];
+    
+    if (totalPages <= maxPagesToShow) {
+      // Show all pages if total pages is less than maxPagesToShow
+      pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+    } else {
+      // Always include first page, last page, and pages around current page
+      const leftSiblingIndex = Math.max(currentPage - 1, 1);
+      const rightSiblingIndex = Math.min(currentPage + 1, totalPages);
+      
+      const shouldShowLeftDots = leftSiblingIndex > 2;
+      const shouldShowRightDots = rightSiblingIndex < totalPages - 1;
+      
+      if (!shouldShowLeftDots && shouldShowRightDots) {
+        // Show first 1, 2, 3, 4, 5 ... 10
+        const leftItemCount = 3 + (maxPagesToShow - 3) / 2;
+        pageNumbers = Array.from({ length: leftItemCount }, (_, i) => i + 1);
+        pageNumbers.push("dots1");
+        pageNumbers.push(totalPages);
+      } else if (shouldShowLeftDots && !shouldShowRightDots) {
+        // Show 1 ... 6, 7, 8, 9, 10
+        pageNumbers.push(1);
+        pageNumbers.push("dots1");
+        
+        const rightItemCount = maxPagesToShow - 3;
+        const startPage = totalPages - rightItemCount + 1;
+        pageNumbers = pageNumbers.concat(
+          Array.from({ length: rightItemCount }, (_, i) => startPage + i)
+        );
+      } else if (shouldShowLeftDots && shouldShowRightDots) {
+        // Show 1 ... 4, 5, 6 ... 10
+        pageNumbers.push(1);
+        pageNumbers.push("dots1");
+        
+        pageNumbers.push(leftSiblingIndex);
+        pageNumbers.push(currentPage);
+        pageNumbers.push(rightSiblingIndex);
+        
+        pageNumbers.push("dots2");
+        pageNumbers.push(totalPages);
+      }
+    }
+    
+    return pageNumbers;
+  };
+
+  // Change page
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const nextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  const prevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedLocations, categoryFilter, typeFilter]);
+
   // Handler for location checkbox toggle
   const handleLocationToggle = (locationName) => {
     setSelectedLocations(prev => {
@@ -146,7 +214,7 @@ const ViewAsset = () => {
         </div>
 
         <div className="flex gap-6">
-          {/* Left Sidebar Filters (with checkbox for Location) */}
+          {/* Left Sidebar Filters */}
           <div className="w-1/4">
             <div className="bg-white rounded-lg shadow-md p-4 mb-6">
               <h2 className="text-xl font-semibold mb-4">Filters</h2>
@@ -180,7 +248,7 @@ const ViewAsset = () => {
                   </div>
                 )}
               </div>
-              {/* Keep other filters as before */}
+              {/* Category filter */}
               <div className="mb-4">
                 <label className="block text-gray-700">Category</label>
                 <select
@@ -196,6 +264,7 @@ const ViewAsset = () => {
                   ))}
                 </select>
               </div>
+              {/* Asset Type filter */}
               <div className="mb-4">
                 <label className="block text-gray-700">Asset Type</label>
                 <select
@@ -247,14 +316,14 @@ const ViewAsset = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredAssets.length === 0 ? (
+                  {currentAssets.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
                         No assets found
                       </td>
                     </tr>
                   ) : (
-                    filteredAssets.map((asset) => (
+                    currentAssets.map((asset) => (
                       <tr
                         key={asset._id}
                         onClick={() => handleRowClick(asset._id)}
@@ -293,6 +362,83 @@ const ViewAsset = () => {
                   )}
                 </tbody>
               </table>
+              
+              {/* Pagination Controls */}
+              {filteredAssets.length > 0 && (
+                <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 bg-gray-50">
+                  <div className="flex-1 flex justify-between sm:hidden">
+                    <button
+                      onClick={prevPage}
+                      disabled={currentPage === 1}
+                      className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                    >
+                      Previous
+                    </button>
+                    <div className="mx-2 flex items-center">
+                      <span className="text-sm text-gray-700">
+                        {currentPage} / {totalPages}
+                      </span>
+                    </div>
+                    <button
+                      onClick={nextPage}
+                      disabled={currentPage === totalPages}
+                      className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Showing <span className="font-medium">{indexOfFirstAsset + 1}</span> to{" "}
+                        <span className="font-medium">{Math.min(indexOfLastAsset, filteredAssets.length)}</span> of{" "}
+                        <span className="font-medium">{filteredAssets.length}</span> assets
+                      </p>
+                    </div>
+                    <div>
+                      <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <button
+                          onClick={prevPage}
+                          disabled={currentPage === 1}
+                          className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                        >
+                          <span className="sr-only">Previous</span>
+                          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                        </button>
+
+                        {/* Limited Page Numbers with Ellipses */}
+                        {getPageNumbers().map((pageNumber, index) => (
+                          pageNumber === "dots1" || pageNumber === "dots2" ? (
+                            <span
+                              key={`dots-${index}`}
+                              className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
+                            >
+                              <MoreHorizontal className="h-5 w-5" aria-hidden="true" />
+                            </span>
+                          ) : (
+                            <button
+                              key={pageNumber}
+                              onClick={() => paginate(pageNumber)}
+                              className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${currentPage === pageNumber ? 'bg-blue-50 border-blue-500 text-blue-600 z-10' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                            >
+                              {pageNumber}
+                            </button>
+                          )
+                        ))}
+
+                        <button
+                          onClick={nextPage}
+                          disabled={currentPage === totalPages}
+                          className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                        >
+                          <span className="sr-only">Next</span>
+                          <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
