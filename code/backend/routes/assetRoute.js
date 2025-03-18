@@ -194,6 +194,7 @@ router.post("/assign_asset/:assetId", async (req, res) => {
       // set assignment_status to true
       const asset = await Asset.findById(assetId);
       asset.assignment_status = true;
+      asset.Issued_to = assignId;
       await asset.save();
       return res.status(200).json(newUserAsset);
     } else {

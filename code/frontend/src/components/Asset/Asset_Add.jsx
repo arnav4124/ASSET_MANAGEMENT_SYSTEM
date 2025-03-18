@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 const Asset_add = () => {
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
+  const [admins, setAdmins] = useState([]);
   const [categories, setCategories] = useState([]);
   const [offices, setOffices] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -41,6 +42,12 @@ const Asset_add = () => {
           headers: { token: localStorage.getItem("token") }
         });
         setUsers(usersRes.data);
+
+        // set admins list by filtering users with role as Admin
+        const adminsList = usersRes.data.filter((u) => u.role === "Admin");
+        setAdmins(adminsList);
+        console.log(admins)
+
 
         const projectsRes = await axios.get("http://localhost:3487/api/projects", {
           withCredentials: true,
@@ -346,6 +353,24 @@ const Asset_add = () => {
                   onChange={handleQuantityChange}
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
                 />
+              </div>
+            </div>
+
+            <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2 pt-4">Assignment Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label className="block font-medium text-sm mb-1 text-gray-700">Issued By</label>
+                <select
+                  {...register("issuedBy")}
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                >
+                  <option value="">Select an Admin</option>
+                  {admins.map((admin) => (
+                    <option key={admin._id} value={admin._id}>
+                      {admin.first_name} {admin.last_name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
