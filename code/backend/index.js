@@ -178,6 +178,7 @@ app.get("/api/projects", async (req, res) => {
 app.get('/my-profile/:id', async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
+        console.log("User", user);
         res.json(user);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -188,10 +189,10 @@ app.get('/my-profile/:id', async (req, res) => {
 app.put('/update-profile/:id', async (req, res) => {
     try {
         const
-            { first_name, last_name, email, location, role } = req.body;
+            { first_name, last_name, email, location, role ,phoneNumber} = req.body;
         const
             user
-                = await User.findByIdAndUpdate(req.params.id, { first_name, last_name, email, location, role }, { new: true });
+                = await User.findByIdAndUpdate(req.params.id, { first_name, last_name, email, location, role ,phoneNumber}, { new: true });
         res.json(user);
     } catch (error) {
         res.status(500).json({ error: error.message });

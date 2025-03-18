@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaUser, FaEnvelope, FaMapMarkerAlt, FaUserTag } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaMapMarkerAlt, FaUserTag, FaPhone } from 'react-icons/fa';
 
 function Profile() {
     const [data, setData] = useState({
@@ -8,7 +8,8 @@ function Profile() {
         last_name: '',
         email: '',
         location: '',
-        role: ''
+        role: '',
+        phone: ''
     });
     const [editing, setEditing] = useState(false);
     const [updatedData, setUpdatedData] = useState({});
@@ -29,7 +30,8 @@ function Profile() {
                         last_name: userData.last_name || '',
                         email: userData.email || '',
                         location: userData.location || '',
-                        role: userData.role || ''
+                        role: userData.role || '',
+                        phoneNumber: userData.phoneNumber || ''
                     });
                     setUpdatedData(userData);
 
@@ -142,6 +144,25 @@ function Profile() {
                             EMAIL
                         </h3>
                         <p className="text-gray-800 text-lg">{data.email}</p>
+                    </div>
+
+                    <div className="bg-gray-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                        <h3 className="font-semibold text-gray-600 mb-2 flex items-center">
+                            <FaPhone className="mr-2" />
+                            PHONE
+                        </h3>
+                        {editing ? (
+                            <input
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                type="tel"
+                                name="phone"
+                                value={updatedData.phone || ''}
+                                onChange={handleChange}
+                                placeholder="Enter phone number"
+                            />
+                        ) : (
+                            <p className="text-gray-800 text-lg">{data.phoneNumber || 'Not provided'}</p>
+                        )}
                     </div>
 
                     <div className="bg-gray-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
