@@ -91,98 +91,74 @@ const AssetDetails = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-md mb-8 p-6 border-l-4 border-blue-500 transition-all duration-300 hover:shadow-lg">
-          <div className="flex items-center justify-between mb-6">
+    <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
+        {/* Header Section */}
+        <div className="relative">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={asset.name}
+              className="w-full h-72 object-cover"
+            />
+          ) : (
+            <div className="w-full h-72 bg-gray-300 flex items-center justify-center">
+              <span className="text-gray-700 text-lg">No image available</span>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-50"></div>
+          <div className="absolute bottom-4 left-6">
+            <h1 className="text-3xl font-bold text-white">{asset.name}</h1>
+          </div>
+          <div className="absolute top-4 right-6 flex gap-2">
             <button
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200"
               onClick={() => navigate(-1)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md shadow hover:bg-blue-700 transition duration-200"
             >
               &larr; Back
             </button>
             {asset.Issued_to && (asset.Issued_to.first_name || asset.Issued_to.Project_name) ? (
               <button
-                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200"
                 onClick={handleUnassign}
+                className="px-4 py-2 bg-red-600 text-white rounded-md shadow hover:bg-red-700 transition duration-200"
               >
                 Unassign Asset
               </button>
             ) : (
               <button
-                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200"
                 onClick={() => navigate(`/admin/assets/assign_asset/${id}`)}
+                className="px-4 py-2 bg-green-600 text-white rounded-md shadow hover:bg-green-700 transition duration-200"
               >
                 Assign Asset
               </button>
             )}
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">
-            Asset Details - {asset.name}
-          </h1>
-          
-          {/* Asset Image Section */}
-          {imageUrl ? (
-            <div className="mb-6">
-              <div className="relative overflow-hidden rounded-lg shadow-lg">
-                <img
-                  src={imageUrl}
-                  alt={asset.name}
-                  className="w-full h-64 object-cover transition-transform duration-300 transform hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-black opacity-25"></div>
-              </div>
-            </div>
-          ) : (
-            <div className="mb-6 p-4 border border-dashed border-gray-300 rounded-lg text-center text-gray-500">
-              <p>No image available</p>
-            </div>
-          )}
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <span className="font-semibold text-gray-600">Issued To:</span>
-              <p className="text-gray-800">{issuedTo}</p>
-            </div>
-            <div>
-              <span className="font-semibold text-gray-600">Issued By:</span>
-              <p className="text-gray-800">{issuedBy}</p>
-            </div>
-            <div>
-              <span className="font-semibold text-gray-600">Asset Type:</span>
-              <p className="text-gray-800">{asset.asset_type}</p>
-            </div>
-            <div>
-              <span className="font-semibold text-gray-600">Status:</span>
-              <p className="text-gray-800">{asset.status}</p>
-            </div>
-            <div>
-              <span className="font-semibold text-gray-600">Office:</span>
-              <p className="text-gray-800">{asset.Office}</p>
-            </div>
-            <div>
-              <span className="font-semibold text-gray-600">Serial Number:</span>
-              <p className="text-gray-800">{asset.Serial_number}</p>
-            </div>
-            <div className="sm:col-span-2">
-              <span className="font-semibold text-gray-600">Sticker Sequence:</span>
-              <p className="text-gray-800">{asset.Sticker_seq}</p>
-            </div>
-            <div className="sm:col-span-2">
-              <span className="font-semibold text-gray-600">Description:</span>
-              <p className="text-gray-800">{asset.description}</p>
-            </div>
-            <div className="sm:col-span-2">
-              <span className="font-semibold text-gray-600">Invoice ID:</span>
-              <p className="text-gray-800">
-                {asset.Invoice_id ? asset.Invoice_id : "N/A"}
-              </p>
-            </div>
+        {/* Details Section */}
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <DetailItem label="Issued To" value={issuedTo} />
+            <DetailItem label="Issued By" value={issuedBy} />
+            <DetailItem label="Asset Type" value={asset.asset_type} />
+            <DetailItem label="Status" value={asset.status} />
+            <DetailItem label="Office" value={asset.Office} />
+            <DetailItem label="Serial Number" value={asset.Serial_number} />
+            <DetailItem label="Sticker Sequence" value={asset.Sticker_seq} colSpan="md:col-span-2" />
+            <DetailItem label="Description" value={asset.description} colSpan="md:col-span-2" />
+            <DetailItem label="Invoice ID" value={asset.Invoice_id ? asset.Invoice_id : "N/A"} colSpan="md:col-span-2" />
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+const DetailItem = ({ label, value, colSpan }) => (
+  <div className={`${colSpan ? colSpan : "md:col-span-1"}`}>
+    <p className="text-sm font-medium text-gray-500">{label}:</p>
+    <p className="mt-1 text-lg text-gray-800">{value}</p>
+  </div>
+);
 
 export default AssetDetails;
