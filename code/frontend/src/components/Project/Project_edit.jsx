@@ -32,6 +32,9 @@ const ProjectEdit = () => {
   const [locations, setLocations] = useState([]);
   const [selectedLocations, setSelectedLocations] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
 
   const participantsPerPage = 10;
 
@@ -69,6 +72,13 @@ const ProjectEdit = () => {
         setLoading(true);
         setError(null);
 
+        // Initialize empty arrays for safety
+        setParticipants([]);
+        setAssets([]);
+        setProgrammes([]);
+        setLocations([]);
+        setAvailableUsers([]);
+
         // Fetch project details
         const projectRes = await axios.get(`http://localhost:3487/api/projects/${id}`, {
           headers: { token: localStorage.getItem('token') }
@@ -81,39 +91,40 @@ const ProjectEdit = () => {
         setProject(projectRes.data);
         setSelectedLocations(projectRes.data.location || []);
 
-        // Set form values
-        setValue("projectName", projectRes.data.Project_name);
-        setValue("programme", projectRes.data.programme_name);
-        setValue("description", projectRes.data.description);
-        setValue("project_head", projectRes.data.project_head?._id || "");
+        // Set form values with null checks
+        setValue("projectName", projectRes.data.Project_name || '');
+        setValue("programme", projectRes.data.programme_name || '');
+        setValue("description", projectRes.data.description || '');
+        setValue("project_head", projectRes.data.project_head?._id || '');
         if (projectRes.data.deadline) {
           setValue("deadline", new Date(projectRes.data.deadline).toISOString().split('T')[0]);
         }
 
-        // Fetch all data in parallel
+        // Fetch all data in parallel with error handling for each request
         const [participantsRes, assetsRes, programmesRes, locationsRes, usersRes] = await Promise.all([
           axios.get(`http://localhost:3487/api/projects/${id}/participants`, {
             headers: { token: localStorage.getItem('token') }
-          }),
+          }).catch(err => ({ data: [] })), // Provide default empty array if request fails
           axios.get(`http://localhost:3487/api/projects/${id}/assets`, {
             headers: { token: localStorage.getItem('token') }
-          }),
+          }).catch(err => ({ data: [] })),
           axios.get('http://localhost:3487/api/programmes', {
             headers: { token: localStorage.getItem('token') }
-          }),
+          }).catch(err => ({ data: [] })),
           axios.get('http://localhost:3487/api/locations/get_all_cities', {
             headers: { token: localStorage.getItem('token') }
-          }),
+          }).catch(err => ({ data: [] })),
           axios.get('http://localhost:3487/api/projects/users', {
             headers: { token: localStorage.getItem('token') }
-          })
+          }).catch(err => ({ data: [] }))
         ]);
 
-        setParticipants(participantsRes.data);
-        setAssets(assetsRes.data);
-        setProgrammes(programmesRes.data);
-        setLocations(locationsRes.data);
-        setAvailableUsers(usersRes.data);
+        // Set state with null checks
+        setParticipants(participantsRes.data || []);
+        setAssets(assetsRes.data || []);
+        setProgrammes(programmesRes.data || []);
+        setLocations(locationsRes.data || []);
+        setAvailableUsers(usersRes.data || []);
 
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -174,6 +185,50 @@ const ProjectEdit = () => {
       setToBeDeletedParticipants(toBeDeletedParticipants.filter(pid => pid !== id));
     } else {
       setToBeDeletedParticipants([...toBeDeletedParticipants, id]);
+    }
+  };
+
+  const handleUserSearch = async (query) => {
+    try {
+      const response = await axios.get(`http://localhost:3487/api/projects/users/search?query=${query}`, {
+        headers: { token: localStorage.getItem('token') }
+      });
+      setSearchResults(response.data);
+    } catch (error) {
+      console.error('Error searching users:', error);
+    }
+  };
+
+  const handleAddParticipants = async () => {
+    try {
+      const response = await axios.post(
+        `http://localhost:3487/api/projects/${id}/participants`,
+        {
+          userIds: selectedUsers
+        },
+        {
+          headers: { token: localStorage.getItem('token') }
+        }
+      );
+
+      if (response.status === 201) {
+        // Refresh participants list
+        const participantsRes = await axios.get(`http://localhost:3487/api/projects/${id}/participants`, {
+          headers: { token: localStorage.getItem('token') }
+        });
+        setParticipants(participantsRes.data);
+
+        // Reset selection states
+        setSelectedUsers([]);
+        setShowAddParticipant(false);
+        setSearchQuery('');
+        setSearchResults([]);
+
+        alert('Participants added successfully!');
+      }
+    } catch (error) {
+      console.error('Error adding participants:', error);
+      alert('Error adding participants');
     }
   };
 
@@ -249,9 +304,16 @@ const ProjectEdit = () => {
                     className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
                     disabled={!isEditing}
                   >
-                    {programmes.map((prog) => (
-                      <option key={prog._id} value={prog.name}>{prog.name}</option>
-                    ))}
+                    <option value="">Select Programme</option>
+                    {programmes && programmes.length > 0 ? (
+                      programmes.map((prog) => (
+                        <option key={prog._id} value={prog.name}>
+                          {prog.name || 'Unnamed Programme'}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>No programmes available</option>
+                    )}
                   </select>
                 </div>
               </div>
@@ -409,29 +471,71 @@ const ProjectEdit = () => {
 
               {/* Add Participant Form */}
               {showAddParticipant && (
-                <div className="mb-4 p-3 border rounded-md bg-white">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="email"
-                      value={newParticipantEmail}
-                      onChange={(e) => setNewParticipantEmail(e.target.value)}
-                      placeholder="Enter email address"
-                      className="flex-1 p-2 border border-gray-300 rounded"
-                    />
-                    <button
-                      type="button"
-                      className="p-2 bg-blue-500 text-white rounded-md"
-                      onClick={() => {/* Add participant logic */ }}
-                    >
-                      <Check size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="p-2 text-gray-500 rounded-md"
-                      onClick={() => setShowAddParticipant(false)}
-                    >
-                      <X size={14} />
-                    </button>
+                <div className="mb-4 p-4 border rounded-md bg-white">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          handleUserSearch(e.target.value);
+                        }}
+                        placeholder="Search users by name or email"
+                        className="flex-1 p-2 border border-gray-300 rounded"
+                      />
+                      <button
+                        type="button"
+                        className="p-2 text-gray-500 rounded-md"
+                        onClick={() => setShowAddParticipant(false)}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+
+                    {searchResults.length > 0 && (
+                      <div className="mt-2 border rounded-md max-h-60 overflow-y-auto">
+                        {searchResults.map((user) => (
+                          <div
+                            key={user._id}
+                            className="flex items-center justify-between p-2 hover:bg-gray-50 border-b last:border-b-0"
+                          >
+                            <div>
+                              <p className="font-medium">{`${user.first_name} ${user.last_name}`}</p>
+                              <p className="text-sm text-gray-500">{user.email}</p>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={selectedUsers.includes(user._id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedUsers([...selectedUsers, user._id]);
+                                } else {
+                                  setSelectedUsers(selectedUsers.filter(id => id !== user._id));
+                                }
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedUsers.length > 0 && (
+                      <div className="flex justify-between items-center pt-3 border-t">
+                        <span className="text-sm text-gray-600">
+                          {selectedUsers.length} user(s) selected
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleAddParticipants}
+                          className="px-4 py-2 bg-blue-500 text-white rounded-md text-sm flex items-center gap-2"
+                        >
+                          <UserPlus size={14} />
+                          Add Selected Users
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
