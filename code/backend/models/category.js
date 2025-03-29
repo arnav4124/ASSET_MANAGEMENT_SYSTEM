@@ -8,6 +8,14 @@ const categorySchema = new Schema({
     description: {
         type: String,
         required: true
+    },
+    sticker_short_seq : {
+        type: String,
+        required: true
+    },
+    lifespan:{
+        type:Number,
+        default:null
     }
 });
 

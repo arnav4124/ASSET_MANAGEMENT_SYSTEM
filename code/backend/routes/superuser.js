@@ -11,7 +11,7 @@ const Project = require('../models/project');
 // Add a new category
 router.post('/add_category', authMiddleware, async (req, res) => {
     try {
-        const { name, description } = req.body;
+        const { name, description, sticker_short_seq,lifespan } = req.body;
 
         // Check if category already exists
         const existingCategory = await Category.findOne({ name: name.trim() });
@@ -23,17 +23,32 @@ router.post('/add_category', authMiddleware, async (req, res) => {
         }
 
         // Create new category
-        const category = new Category({
+        const categoryData = new Category({
             name: name.trim(),
-            description: description.trim()
-        });
+            description: description.trim(),
+            sticker_short_seq: sticker_short_seq.trim()
 
-        await category.save();
+        });
+        if (lifespan !== undefined && lifespan !== null && lifespan !== '') {
+            // Convert to number to ensure proper data type
+            const lifespanNumber = Number(lifespan);
+            
+            // Validate lifespan
+            if (isNaN(lifespanNumber) || lifespanNumber < 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Lifespan must be a positive number"
+                });
+            }
+            
+            categoryData.lifespan = lifespanNumber;
+        }
+        await categoryData.save();
 
         res.status(201).json({
             success: true,
             message: "Category added successfully",
-            category
+            categoryData
         });
 
     } catch (error) {

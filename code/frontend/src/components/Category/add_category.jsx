@@ -23,7 +23,7 @@ const AddCategory = () => {
             if(role!=='Superuser'){
                 navigate('/login')
             }
-        }
+        }
     })
     const {
         register,
@@ -160,6 +160,51 @@ const AddCategory = () => {
                                 <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.description.message}</p>
                             )}
                         </div>
+                        {/* Category Sticker */}
+                        <div className="mb-6">
+                            <label className="block font-medium text-sm mb-1 text-gray-700">Sticker</label>
+                            <input
+                                {...register("sticker_short_seq", {
+                                    required: "Sticker is required",
+                                    minLength: { value: 3, message: "Sticker should be of length 3 characters" },
+                                    maxLength: { value: 3, message: "Sticker should be of length 3 characters" }
+                                })}
+                                type="text"
+                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                                placeholder="Enter sticker"
+                                disabled={loading}
+                            />
+                            {errors.sticker_short_seq && (
+                                <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.sticker_short_seq.message}</p>
+                            )}
+                        </div>
+                        {/* Lifespan - updated to allow decimal values */}
+                        <div className="mb-6">
+                            <label className="block font-medium text-sm mb-1 text-gray-700">Lifespan (in years)</label>
+                            <input
+                                {...register("lifespan", {
+                                    validate: {
+                                        positive: value => {
+                                            if (!value && value !== 0) return true; // Optional field
+                                            
+                                            const numValue = parseFloat(value);
+                                            if (isNaN(numValue)) return "Please enter a valid number";
+                                            if (numValue <= 0) return "Lifespan must be greater than 0";
+                                            
+                                            return true;
+                                        }
+                                    }
+                                })}
+                                type="number"
+                                step="any"
+                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                                placeholder="Enter lifespan (e.g., 0.4, 1.5, 5)"
+                                disabled={loading}
+                            />
+                            {errors.lifespan && (
+                                <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.lifespan.message}</p>
+                            )}
+                        </div>
                     </div>
 
                     {/* Form Actions */}
@@ -209,4 +254,4 @@ const AddCategory = () => {
     );
 };
 
-export default AddCategory; 
+export default AddCategory;
