@@ -30,13 +30,14 @@ location_router.get('/get_cities', authMiddleware, async (req, res) => {
 
 location_router.post('/add_location', authMiddleware, async (req, res) => {
     try {
-        const { location_name, location_type, parent_location, address, pincode } = req.body
+        const { location_name, location_type, parent_location, address, pincode , sticker_short_seq} = req.body
         console.log("body",req.body)
         const location = new Location({
             location_name,
             location_type,
             parent_location,
             address,
+            sticker_short_seq,
             pincode
         })
         await location.save()

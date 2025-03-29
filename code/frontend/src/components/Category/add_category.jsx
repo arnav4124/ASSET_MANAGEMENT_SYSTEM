@@ -162,7 +162,7 @@ const AddCategory = () => {
                         </div>
                         {/* Category Sticker */}
                         <div className="mb-6">
-                            <label className="block font-medium text-sm mb-1 text-gray-700">Sticker</label>
+                            <label className="block font-medium text-sm mb-1 text-gray-700">Sticker Sequence Short Form</label>
                             <input
                                 {...register("sticker_short_seq", {
                                     required: "Sticker is required",

@@ -16,6 +16,10 @@ const locationSchema = new Schema({
         type:String,
         required:true
     },
+    sticker_short_seq:{
+        type:String,
+        required:true
+    },
     address:{
         //this will store the address complete adress has to be put up here
         type:String,

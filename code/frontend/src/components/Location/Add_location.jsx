@@ -21,7 +21,8 @@ const AddLocation = () => {
       address: "",
       pinCode: "",
       cityName: "",
-      parentLocation: ""
+      parentLocation: "",
+      sticker_short_seq: ""
     }
   });
 
@@ -70,7 +71,8 @@ const AddLocation = () => {
         location_type: data.locationType,
         parent_location: data.parentLocation,
         address: data.address,
-        pincode: parseInt(data.pinCode)
+        pincode: parseInt(data.pinCode),
+        sticker_short_seq: data.sticker_short_seq
       }, {
         withCredentials: true,
         headers: {
@@ -253,6 +255,30 @@ const AddLocation = () => {
                 <span>Provide a detailed address of the location</span>
               </div>
             </div>
+
+            {/* Additional Information */}
+            <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2 pt-4">Additional Information</h2>
+            
+            <div className="mb-6">
+              <label className="block font-medium text-sm mb-1 text-gray-700">Sticker Sequence</label>
+              <input
+                {...register("sticker_short_seq", {
+                  required: "Sticker sequence is required",
+                  minLength: { value: 3, message: "Sticker sequence must be at least 3 characters" },
+                  maxLength: { value: 3, message: "Sticker sequence must be at most 3 characters" }
+                })}
+                type="text"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                placeholder="Enter sticker sequence (3 characters)"
+                disabled={loading}
+              />
+              {errors.sticker_short_seq && (
+                <p className="text-red-500 text-sm mt-1">{errors.sticker_short_seq.message}</p>
+              )}
+              <div className="flex justify-end mt-1 text-gray-400 text-xs">
+                <span>3-character code used for location identification</span>
+              </div>
+            </div>
           </div>
 
           {/* Form Actions */}
@@ -282,9 +308,6 @@ const AddLocation = () => {
             </button>
           </div>
         </form>
-
-        {/* Navigation Link */}
-       
       </div>
     </div>
   );
