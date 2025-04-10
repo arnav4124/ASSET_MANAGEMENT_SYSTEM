@@ -77,6 +77,16 @@ const assetSchema = new mongoose.Schema({
         //required: true
     },
 
+    Issued_date:{
+        type: Date,
+        default: null
+    },
+
+    date_of_purchase: {
+        type: Date,
+        default: Date.now()
+    },
+
     vendor_name: {
         type: String,
         // required:true
@@ -108,6 +118,11 @@ const assetSchema = new mongoose.Schema({
     brand: {
         type: String,
         required: true,
+    },
+
+    voucher_number: {
+        type: String,
+        required:true
     },
 
 }, {

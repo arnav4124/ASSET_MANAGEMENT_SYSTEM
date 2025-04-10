@@ -38,11 +38,12 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
       category,
       price,
       quantity,
-      serialNumbers
+      serialNumbers,
+      voucher_number,
     } = req.body;
 
     // Validate required fields
-    if (!name || !brand_name || !asset_type || !status || !Office || !Sticker_seq || !description || !Issued_by) {
+    if (!name || !brand_name || !asset_type || !status || !Office || !Sticker_seq || !description || !Issued_by || !voucher_number) {
       console.error('Missing required fields');
       return res.status(400).json({
         success: false,
@@ -55,7 +56,8 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
           Office: !Office,
           Sticker_seq: !Sticker_seq,
           description: !description,
-          Issued_by: !Issued_by
+          Issued_by: !Issued_by,
+          voucher_number: !voucher_number,
         }
       });
     }
@@ -89,6 +91,13 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
       invoiceId = newInvoice._id;
     }
 
+    // check if date of purchase is provided
+    let date_of_purchase = req.body.date_of_purchase;
+    if (date_of_purchase) {
+      date_of_purchase = new Date(date_of_purchase);
+    }else {
+      date_of_purchase = new Date();
+    }
     // Parse serial numbers from the request
     let serialNumbersArray;
     try {
@@ -130,7 +139,9 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
         vendor_address: req.body.vendor_address,
         category: req.body.category,
         price: req.body.price,
-        Serial_number: serialNumber
+        Serial_number: serialNumber,
+        voucher_number: req.body.voucher_number,
+        date_of_purchase: date_of_purchase,
       };
 
       const newAsset = new Asset(assetData);
@@ -210,6 +221,7 @@ router.post("/assign_asset/:assetId", async (req, res) => {
       asset.Issued_to_type = "User";
       asset.status = "Unavailable";
       asset.Issued_to = assignId;
+      asset.Issued_date = new Date();
       await asset.save();
       return res.status(200).json(newUserAsset);
     } else {
@@ -223,6 +235,7 @@ router.post("/assign_asset/:assetId", async (req, res) => {
       asset.Issued_to_type = "Project";
       asset.Issued_to = assignId;
       asset.status = "Unavailable";
+      asset.Issued_date = new Date();
       await asset.save();
       return res.status(200).json(newAssetProject);
     }
@@ -262,5 +275,35 @@ router.get('/get_user_assets/:id',authMiddleware, async (req, res) => {
     res.status(500).json({error: 'Error fetching user assets'})
   }}
 )
+
+
+router.post('/filter', authMiddleware, async (req, res) => {
+  try {
+    const { status, issued, office } = req.body;
+    const filter = {};
+
+    if (status) {
+      filter.status = status;
+    }
+
+    console.log(issued)
+    if (issued !== undefined) {
+      filter.assignment_status = issued;
+    }
+    if (office) {
+      filter.Office = office;
+    }
+
+    const assets = await Asset.find(filter)
+      .populate('Issued_by', 'first_name last_name email')
+      .populate('Issued_to', 'first_name last_name email Project_name')
+      .populate('category', 'name')
+
+    res.status(200).json({ success: true, data: assets });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 
 module.exports = router;

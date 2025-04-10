@@ -147,6 +147,7 @@ const AssetDetails = () => {
             <DetailItem label="Sticker Sequence" value={asset.Sticker_seq} colSpan="md:col-span-2" />
             <DetailItem label="Description" value={asset.description} colSpan="md:col-span-2" />
             <DetailItem label="Invoice ID" value={asset.Invoice_id ? asset.Invoice_id : "N/A"} colSpan="md:col-span-2" />
+            <DetailItem label="Voucher Number" value={asset.voucher_number} colSpan="md:col-span-2" />
           </div>
         </div>
       </div>

@@ -139,7 +139,8 @@ const Asset_add = () => {
         vendor_phone: 'Vendor Phone',
         vendor_city: 'Vendor City',
         vendor_address: 'Vendor Address',
-        price: 'Price'
+        price: 'Price',
+        voucher_number: 'Voucher Number'
       };
 
       const missingFields = Object.entries(requiredFields)
@@ -174,6 +175,8 @@ const Asset_add = () => {
       formData.append("price", data.price);
       formData.append("quantity", quantity);
       formData.append("serialNumbers", JSON.stringify(serialNumbers));
+      formData.append("voucher_number", data.voucher_number);
+      formData.append("date_of_purchase", data.date_of_purchase);
 
       if (uploadedFiles.imageFile) {
         formData.append("Img", uploadedFiles.imageFile);
@@ -346,6 +349,31 @@ const Asset_add = () => {
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
                 />
               </div>
+
+              {/* Voucher Number */}
+              <div>
+                <label className="block font-medium text-sm mb-1 text-gray-700">Voucher Number</label>
+                <input
+                  {...register("voucher_number", { required: "Voucher number is required" })}
+                  type="text"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                  placeholder="Enter voucher number"
+                />
+                {errors.voucher_number && (
+                  <p className="text-red-500 text-sm mt-1">{errors.voucher_number.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-medium text-sm mb-1 text-gray-700">
+                Date of Purchase (optional)
+              </label>
+              <input
+                {...register("date_of_purchase")}
+                type="date"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+              />
             </div>
 
             {/* Vendor Information */}
