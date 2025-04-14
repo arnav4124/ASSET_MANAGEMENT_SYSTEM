@@ -113,7 +113,7 @@ const ViewAsset = () => {
   const getPageNumbers = () => {
     const maxPagesToShow = 5; // Number of page buttons to show at once
     let pageNumbers = [];
-    
+
     if (totalPages <= maxPagesToShow) {
       // Show all pages if total pages is less than maxPagesToShow
       pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -121,10 +121,10 @@ const ViewAsset = () => {
       // Always include first page, last page, and pages around current page
       const leftSiblingIndex = Math.max(currentPage - 1, 1);
       const rightSiblingIndex = Math.min(currentPage + 1, totalPages);
-      
+
       const shouldShowLeftDots = leftSiblingIndex > 2;
       const shouldShowRightDots = rightSiblingIndex < totalPages - 1;
-      
+
       if (!shouldShowLeftDots && shouldShowRightDots) {
         // Show first 1, 2, 3, 4, 5 ... 10
         const leftItemCount = 3 + (maxPagesToShow - 3) / 2;
@@ -135,7 +135,7 @@ const ViewAsset = () => {
         // Show 1 ... 6, 7, 8, 9, 10
         pageNumbers.push(1);
         pageNumbers.push("dots1");
-        
+
         const rightItemCount = maxPagesToShow - 3;
         const startPage = totalPages - rightItemCount + 1;
         pageNumbers = pageNumbers.concat(
@@ -145,16 +145,16 @@ const ViewAsset = () => {
         // Show 1 ... 4, 5, 6 ... 10
         pageNumbers.push(1);
         pageNumbers.push("dots1");
-        
+
         pageNumbers.push(leftSiblingIndex);
         pageNumbers.push(currentPage);
         pageNumbers.push(rightSiblingIndex);
-        
+
         pageNumbers.push("dots2");
         pageNumbers.push(totalPages);
       }
     }
-    
+
     return pageNumbers;
   };
 
@@ -353,7 +353,12 @@ const ViewAsset = () => {
                               : 'Unassigned'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${asset.status === 'Available' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${asset.status === 'Available' ? 'bg-green-100 text-green-800' :
+                              asset.status === 'Unavailable' ? 'bg-red-100 text-red-800' :
+                              asset.status === 'Maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                              asset.status === 'Inactive' ? 'bg-gray-300 text-gray-800' :
+                                    'bg-gray-100 text-gray-800'
+                            }`}>
                             {asset.status}
                           </span>
                         </td>
@@ -362,7 +367,7 @@ const ViewAsset = () => {
                   )}
                 </tbody>
               </table>
-              
+
               {/* Pagination Controls */}
               {filteredAssets.length > 0 && (
                 <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 bg-gray-50">

@@ -373,22 +373,21 @@ router.post('/filter', authMiddleware, async (req, res) => {
   }
 });
 
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.put('/:id/inactivate', authMiddleware, async (req, res) => {
   try {
     const assetId = req.params.id;
-    // Remove the asset document
-    const deletedAsset = await Asset.findByIdAndDelete(assetId);
-    if (!deletedAsset) {
+    const asset = await Asset.findByIdAndUpdate(
+      assetId,
+      { status: "Inactive" },
+      { new: true }
+    );
+    if (!asset) {
       return res.status(404).json({ message: "Asset not found" });
     }
-    // Remove related assignments in UserAsset (if used)
-    await UserAsset.deleteMany({ asset_id: assetId });
-    // Remove related assignments in AssetProject (if used)
-    await AssetProject.deleteMany({ asset_id: assetId });
-    res.status(200).json({ success: true, message: "Asset deleted successfully" });
+    res.status(200).json(asset);
   } catch (error) {
-    console.error("Error deleting asset:", error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error("Error inactivating asset:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
