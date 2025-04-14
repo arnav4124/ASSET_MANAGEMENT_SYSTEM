@@ -74,7 +74,9 @@ const AssetDetails = () => {
     axios
       .put(
         `http://localhost:3487/api/assets/${id}/unassign`,
-        {},
+        {
+          admin: JSON.parse(localStorage.getItem("user"))._id
+        },
         {
           withCredentials: true,
           headers: { token: localStorage.getItem("token") },

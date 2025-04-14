@@ -10,6 +10,35 @@ const UserAsset = require('../models/user_asset');
 const AssetProject = require('../models/asset_project');
 const authMiddleware = require('../middleware/auth');
 const Invoice = require('../models/invoice')
+const History = require('../models/history')
+const createAssetHistory = async (params) => {
+  try {
+    // Check for required fields
+    if (!params.asset_id) throw new Error('Asset ID is required');
+    if (!params.performed_by) throw new Error('Performed by (admin ID) is required');
+    if (!params.operation_type) throw new Error('Operation type is required');
+    
+    // Create new history object with all provided fields
+    const historyEntry = new History({
+      asset_id: params.asset_id,
+      performed_by: params.performed_by,
+      operation_type: params.operation_type,
+      // Optional fields
+      assignment_type: params.assignment_type,
+      issued_to: params.issued_to,
+      // operation_time will default to current time if not provided
+      operation_time: params.operation_time || Date.now()
+    });
+    
+    // Save the history record
+    await historyEntry.save();
+    console.log('Asset history recorded successfully');
+    return historyEntry;
+  } catch (error) {
+    console.error('Failed to record asset history:', error);
+    throw error;
+  }
+};
 
 // Example: POST add-asset
 router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: 'invoicePdf', maxCount: 1 }, { name: 'additionalPdf', maxCount: 1 }]), async (req, res) => {
@@ -163,6 +192,16 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
 
     const createdAssets = await Promise.all(assetPromises);
     console.log('Successfully created assets:', createdAssets.length);
+    //for all asset make history
+    for (const asset of createdAssets) {
+      await createAssetHistory({
+        asset_id: asset._id,
+        performed_by: Issued_by,
+        operation_type: 'Added',
+        assignment_type: null,
+        issued_to: null
+      });
+    }
     return res.status(201).json({ success: true, assets: createdAssets });
   } catch (error) {
     console.error('Error saving assets:', error);
@@ -207,8 +246,8 @@ router.get('/:id', authMiddleware, async (req, res) => {
 router.post("/assign_asset/:assetId", async (req, res) => {
   try {
     const { assetId } = req.params;       // from URL
-    const { assignType, assignId } = req.body; // from request body
-
+    const { assignType, assignId,admin } = req.body; // from request body
+    console.log("REQUEST BODY", req);  
     if (assignType === "user") {
       // Entry in user_asset
       const newUserAsset = await UserAsset.create({
@@ -223,6 +262,14 @@ router.post("/assign_asset/:assetId", async (req, res) => {
       asset.Issued_to = assignId;
       asset.Issued_date = new Date();
       await asset.save();
+      // create history
+      await createAssetHistory({
+        asset_id: assetId,
+        performed_by: admin,
+        operation_type: 'Assigned',
+        assignment_type: 'Individual',
+        issued_to: assignId
+      });
       return res.status(200).json(newUserAsset);
     } else {
       // Entry in asset_project
@@ -237,6 +284,14 @@ router.post("/assign_asset/:assetId", async (req, res) => {
       asset.status = "Unavailable";
       asset.Issued_date = new Date();
       await asset.save();
+      // create history
+      await createAssetHistory({
+        asset_id: assetId,
+        performed_by: admin,
+        operation_type: 'Assigned',
+        assignment_type: 'Project',
+        issued_to: assignId
+      });
       return res.status(200).json(newAssetProject);
     }
   } catch (error) {
@@ -247,14 +302,27 @@ router.post("/assign_asset/:assetId", async (req, res) => {
 
 router.put('/:id/unassign', authMiddleware, async (req, res) => {
   try {
+    const { admin } = req.body; // Get admin from request body
+    
     const asset = await Asset.findByIdAndUpdate(
       req.params.id,
       { Issued_to: null , // or Issued_by as well if needed
        status : "Available", assignment_status: false },
       { new: true }
     ).populate('Issued_by', 'first_name last_name').populate('Issued_to', 'first_name last_name');
+    console.log("Unassigned asset:", asset);
+    
+    await createAssetHistory({
+      asset_id: req.params.id,
+      performed_by: admin, // Use admin from request body
+      operation_type: 'Unassigned',
+      assignment_type: null, // Fixed: changed NULL to null
+      issued_to: null // Fixed: changed NULL to null
+    });
+  
     res.status(200).json(asset);
   } catch (error) {
+    console.error("Unassign error:", error);
     res.status(500).json({ error: 'Error unassigning asset' });
   }
 });

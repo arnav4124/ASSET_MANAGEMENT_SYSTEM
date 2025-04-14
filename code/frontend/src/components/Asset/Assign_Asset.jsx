@@ -62,7 +62,8 @@ const AssignAsset = () => {
         try {
             await axios.post(`http://localhost:3487/api/assets/assign_asset/${id}`, {
                 assignType,
-                assignId: selectedValue
+                assignId: selectedValue,
+                admin: JSON.parse(localStorage.getItem("user"))._id,
             });
             setShowSuccess(true);
             setTimeout(() => {
