@@ -66,8 +66,8 @@ const AssetDetails = () => {
     asset.Issued_to && asset.Issued_to.first_name
       ? `${asset.Issued_to.first_name} ${asset.Issued_to.last_name}`
       : asset.Issued_to && asset.Issued_to.Project_name
-      ? `${asset.Issued_to.Project_name}`
-      : "Unassigned";
+        ? `${asset.Issued_to.Project_name}`
+        : "Unassigned";
 
   // Handler to unassign the asset
   const handleUnassign = () => {
@@ -132,6 +132,35 @@ const AssetDetails = () => {
                 Assign Asset
               </button>
             )}
+          </div>
+           {/* inside the header section (where the Back, Unassign/Assign buttons are) */}
+          <div className="absolute top-4 left-6 flex gap-2">
+            <button
+              onClick={() => navigate(`/admin/assets/edit/${id}`)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md shadow hover:bg-blue-700 transition duration-200"
+            >
+              Edit Asset
+            </button>
+            <button
+              onClick={async () => {
+                if (window.confirm("Are you sure you want to delete this asset?")) {
+                  try {
+                    await fetch(`http://localhost:3487/api/assets/${id}`, {
+                      method: "DELETE",
+                      headers: { token: localStorage.getItem("token") },
+                    });
+                    // after deletion, navigate back to asset list
+                    navigate("/admin/assets");
+                  } catch (err) {
+                    console.error(err);
+                    alert("Error deleting asset");
+                  }
+                }
+              }}
+              className="px-4 py-2 bg-red-600 text-white rounded-md shadow hover:bg-red-700 transition duration-200"
+            >
+              Delete Asset
+            </button>
           </div>
         </div>
 
