@@ -237,7 +237,7 @@ admin_router.put('/edit_user/:userId', authMiddleware, async (req, res) => {
     try {
         const { userId } = req.params;
         const { location, assetSelections } = req.body;
-
+        console.log("Updating user:", userId, "with location:", location, "and asset selections:", assetSelections);
         // Get the current user data
         const user = await User.findById(userId);
         if (!user) {
@@ -255,7 +255,7 @@ admin_router.put('/edit_user/:userId', authMiddleware, async (req, res) => {
         if (oldLocation !== newLocation && assetSelections && Object.keys(assetSelections).length > 0) {
             // Get all assets assigned to the user
             const userAssets = await UserAsset.find({ user_email: userId });
-
+            
             for (const userAsset of userAssets) {
                 const assetId = userAsset.asset_id;
                 const asset = await Asset.findById(assetId);

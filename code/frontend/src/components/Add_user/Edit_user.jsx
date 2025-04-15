@@ -157,6 +157,7 @@ const EditUser = () => {
 
     const onSubmit = async (data) => {
         try {
+            console.log("user assets",userAssets)
             setLoading(true)
             setError(null)
             setShowSuccess(false)
@@ -190,7 +191,8 @@ const EditUser = () => {
 
             setLoading(true);
             setIsSubmitting(true);
-
+            console.log("Updating user location to:", newLocation);
+            console.log("Selected assets:", assetSelections);
             const response = await axios.put(`http://localhost:3487/api/admin/edit_user/${userId}`, {
                 location: newLocation,
                 assetSelections
