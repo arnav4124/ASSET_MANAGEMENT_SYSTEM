@@ -34,6 +34,8 @@ import NotFound from './wrong.jsx'
 import ErrorBoundary from './components/ErrorBoundary'
 import AssetReport from './components/Report/AssetReport.jsx'
 import AssetEdit from './components/Asset/Asset_edit.jsx'
+import Asset_maintenance from './components/Asset/Asset_maintenance.jsx'
+import Edit_maintenance from './components/Asset/Edit_maintenance.jsx'
 
 function Layout({ children }) {
   const location = useLocation();
@@ -83,6 +85,8 @@ function App() {
             <Route path="/superuser/view_programme" element={<ViewProgramme />} />
             <Route path="/superuser/view_admin" element={<View_admin />} />
             <Route path="/admin/assets/assign_asset/:id" element={<AssignAsset />} />
+            <Route path="/admin/assets/maintenance/:id" element={<Asset_maintenance />} />
+            <Route path="/admin/assets/edit-maintenance/:id" element={<Edit_maintenance />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/user/assets/view/" element={<View_asset_for_user />} />
             <Route path="/user/projects/view/" element={<View_your_project />} />

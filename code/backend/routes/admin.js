@@ -8,8 +8,10 @@ const jwt = require('jsonwebtoken')
 const Project = require('../models/project')
 const Asset = require('../models/asset')
 const UserAsset = require('../models/user_asset')
+const Maintenance = require('../models/maintenace')
 const bcrypt = require('bcrypt')
 const nodemailer = require('nodemailer');
+const History = require('../models/history')
 require("dotenv").config({ path: ".env" });
 
 admin_router.get('/get_manager', authMiddleware, async (req, res) => {
@@ -255,7 +257,7 @@ admin_router.put('/edit_user/:userId', authMiddleware, async (req, res) => {
         if (oldLocation !== newLocation && assetSelections && Object.keys(assetSelections).length > 0) {
             // Get all assets assigned to the user
             const userAssets = await UserAsset.find({ user_email: userId });
-            
+
             for (const userAsset of userAssets) {
                 const assetId = userAsset.asset_id;
                 const asset = await Asset.findById(assetId);
@@ -434,6 +436,322 @@ admin_router.get('/graph/location-assets', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error("Error fetching location-asset stats:", error);
         res.status(500).json({ message: "Error fetching location-asset statistics" });
+    }
+});
+
+// Import createAssetHistory utility function
+const createAssetHistory = async (params) => {
+    try {
+        // Check for required fields
+        if (!params.asset_id) throw new Error('Asset ID is required');
+        if (!params.performed_by) throw new Error('Performed by (admin ID) is required');
+        if (!params.operation_type) throw new Error('Operation type is required');
+
+        // Create new history object with all provided fields
+        const historyEntry = new History({
+            asset_id: params.asset_id,
+            performed_by: params.performed_by,
+            operation_type: params.operation_type,
+            // Optional fields
+            assignment_type: params.assignment_type,
+            issued_to: params.issued_to,
+            // operation_time will default to current time if not provided
+            operation_time: params.operation_time || Date.now()
+        });
+
+        // Save the history record
+        await historyEntry.save();
+        console.log('Asset history recorded successfully');
+        return historyEntry;
+    } catch (error) {
+        console.error('Failed to record asset history:', error);
+        throw error;
+    }
+};
+
+// Create a new maintenance record for an asset
+admin_router.post('/assets/maintenance', authMiddleware, async (req, res) => {
+    try {
+        const {
+            asset_id,
+            date_of_sending,
+            expected_date_of_return,
+            date_of_return,
+            description,
+            maintenance_type,
+            maintenance_cost,
+            vendor_name,
+            vendor_contact,
+            vendor_address,
+            vendor_email
+        } = req.body;
+
+        // Get admin ID from token or from request body
+        const adminId = req.user?._id || req.body.admin_id;
+
+        if (!adminId) {
+            return res.status(400).json({
+                success: false,
+                message: "Admin ID is required to create maintenance record"
+            });
+        }
+
+        console.log("Creating maintenance record:", req.body);
+        // Validate asset exists
+        const asset = await Asset.findById(asset_id);
+        if (!asset) {
+            return res.status(404).json({
+                success: false,
+                message: "Asset not found"
+            });
+        }
+
+        // Create new maintenance record
+        const newMaintenance = new Maintenance({
+            asset_id,
+            date_of_sending: new Date(date_of_sending),
+            expected_date_of_return: new Date(expected_date_of_return),
+            date_of_return: new Date(date_of_return),
+            description,
+            maintenance_type,
+            maintenance_cost,
+            vendor_name,
+            vendor_contact,
+            vendor_address,
+            vendor_email,
+            status: 'Pending'
+        });
+
+        await newMaintenance.save();
+
+        // Update asset status to Maintenance - using findByIdAndUpdate to avoid validation
+        await Asset.findByIdAndUpdate(
+            asset_id,
+            { status: "Maintenance" },
+            { runValidators: false }
+        );
+
+        // Create history record for the maintenance action
+        // await createAssetHistory({
+        //     asset_id: asset_id,
+        //     performed_by: adminId,
+        //     operation_type: 'Maintenance-Started',
+        //     assignment_type: null,
+        //     issued_to: null
+        // });
+
+        res.status(201).json({
+            success: true,
+            message: "Asset sent for maintenance successfully",
+            maintenance: newMaintenance
+        });
+    } catch (error) {
+        console.error("Error creating maintenance record:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error creating maintenance record",
+            error: error.message
+        });
+    }
+});
+
+// Get all maintenance records (with filters)
+admin_router.get('/assets/maintenance', authMiddleware, async (req, res) => {
+    try {
+        const { status, asset_id } = req.query;
+        const filter = {};
+
+        if (status) filter.status = status;
+        if (asset_id) filter.asset_id = asset_id;
+
+        const maintenanceRecords = await Maintenance.find(filter)
+            .populate({
+                path: 'asset_id',
+                select: 'name Serial_number Office'
+            });
+
+        res.status(200).json({
+            success: true,
+            count: maintenanceRecords.length,
+            data: maintenanceRecords
+        });
+    } catch (error) {
+        console.error("Error fetching maintenance records:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching maintenance records",
+            error: error.message
+        });
+    }
+});
+
+// Get a specific maintenance record
+admin_router.get('/assets/maintenance/:id', authMiddleware, async (req, res) => {
+    try {
+        const maintenanceRecord = await Maintenance.findById(req.params.id)
+            .populate({
+                path: 'asset_id',
+                select: 'name Serial_number description Sticker_seq Office'
+            });
+
+        if (!maintenanceRecord) {
+            return res.status(404).json({
+                success: false,
+                message: "Maintenance record not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: maintenanceRecord
+        });
+    } catch (error) {
+        console.error("Error fetching maintenance record:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching maintenance record",
+            error: error.message
+        });
+    }
+});
+
+// Update a maintenance record (e.g., mark as completed)
+admin_router.put('/assets/maintenance/:id', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {
+            status,
+            date_of_return,
+            maintenance_cost,
+            description,
+            admin_id: requestAdminId
+        } = req.body;
+
+        // Get admin ID from token or request body
+        const adminId = req.user?._id || requestAdminId;
+
+        if (!adminId) {
+            return res.status(400).json({
+                success: false,
+                message: "Admin ID is required to update maintenance record"
+            });
+        }
+
+        const maintenanceRecord = await Maintenance.findById(id);
+        if (!maintenanceRecord) {
+            return res.status(404).json({
+                success: false,
+                message: "Maintenance record not found"
+            });
+        }
+
+        // Update maintenance record
+        if (status) maintenanceRecord.status = status;
+        if (date_of_return) maintenanceRecord.date_of_return = new Date(date_of_return);
+        if (maintenance_cost) maintenanceRecord.maintenance_cost = maintenance_cost;
+        if (description) maintenanceRecord.description = description;
+
+        await maintenanceRecord.save();
+
+        // If maintenance is completed, update the asset status back to Available
+        if (status === 'Completed') {
+            // Using findByIdAndUpdate to bypass validation
+            await Asset.findByIdAndUpdate(
+                maintenanceRecord.asset_id,
+                { status: "Available" },
+                { runValidators: false }
+            );
+
+            // Create history record for maintenance completion
+            // await createAssetHistory({
+            //     asset_id: maintenanceRecord.asset_id,
+            //     performed_by: adminId,
+            //     operation_type: 'Maintenance-Completed',
+            //     assignment_type: null,
+            //     issued_to: null
+            // });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Maintenance record updated successfully",
+            data: maintenanceRecord
+        });
+    } catch (error) {
+        console.error("Error updating maintenance record:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error updating maintenance record",
+            error: error.message
+        });
+    }
+});
+
+// Delete a maintenance record
+admin_router.delete('/assets/maintenance/:id', authMiddleware, async (req, res) => {
+    try {
+        const { admin_id: requestAdminId } = req.body;
+
+        // Get admin ID from token or request body
+        const adminId = req.user?._id || requestAdminId;
+
+        if (!adminId) {
+            return res.status(400).json({
+                success: false,
+                message: "Admin ID is required to delete maintenance record"
+            });
+        }
+
+        const maintenanceRecord = await Maintenance.findById(req.params.id);
+
+        if (!maintenanceRecord) {
+            return res.status(404).json({
+                success: false,
+                message: "Maintenance record not found"
+            });
+        }
+
+        // Store asset_id before deleting the record
+        const assetId = maintenanceRecord.asset_id;
+
+        await Maintenance.findByIdAndDelete(req.params.id);
+
+        // Check if there are any other active maintenance records for this asset
+        const otherMaintenanceRecords = await Maintenance.find({
+            asset_id: assetId,
+            status: 'Pending'
+        });
+
+        // If no other active maintenance records, update asset status back to Available
+        if (otherMaintenanceRecords.length === 0) {
+            // Using findByIdAndUpdate to bypass validation
+            await Asset.findByIdAndUpdate(
+                assetId,
+                { status: "Available" },
+                { runValidators: false }
+            );
+
+            // Create history record for cancelling maintenance
+            await createAssetHistory({
+                asset_id: assetId,
+                performed_by: adminId,
+                operation_type: 'Maintenance-Cancelled',
+                assignment_type: null,
+                issued_to: null
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Maintenance record deleted successfully"
+        });
+    } catch (error) {
+        console.error("Error deleting maintenance record:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error deleting maintenance record",
+            error: error.message
+        });
     }
 });
 
