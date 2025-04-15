@@ -27,7 +27,9 @@ const View_asset_for_user = () => {
         });
         
         console.log("API Response:", response.data);
-        setAssets(response.data || []);
+        // Filter out inactive assets before setting state
+        const activeAssets = response.data ? response.data.filter(asset => asset && asset.status !== "Inactive") : [];
+        setAssets(activeAssets);
       } catch (err) {
         console.error("Error fetching assets:", err);
         setError('Error fetching your assets');
