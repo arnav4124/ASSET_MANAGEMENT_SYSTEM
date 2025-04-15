@@ -35,7 +35,9 @@ const ViewAsset = () => {
           headers: { token }
         });
         const data = await response.json();
-        setAssets(data);
+        // Filter out inactive assets before setting state
+        const activeAssets = data.filter(asset => asset.status !== "Inactive");
+        setAssets(activeAssets);
       } catch (err) {
         console.error(err);
         setError('Error fetching assets');
@@ -78,6 +80,9 @@ const ViewAsset = () => {
 
   // Updated filtering logic for location checkboxes:
   const filteredAssets = assets.filter(asset => {
+    // First filter out inactive assets
+    if (asset.status === "Inactive") return false;
+    
     // Filter based on search term
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
