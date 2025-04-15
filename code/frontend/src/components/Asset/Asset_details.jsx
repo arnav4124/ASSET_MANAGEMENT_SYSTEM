@@ -74,7 +74,9 @@ const AssetDetails = () => {
     axios
       .put(
         `http://localhost:3487/api/assets/${id}/unassign`,
-        {},
+        {
+          admin: JSON.parse(localStorage.getItem("user"))._id
+        },
         {
           withCredentials: true,
           headers: { token: localStorage.getItem("token") },
@@ -133,7 +135,7 @@ const AssetDetails = () => {
               </button>
             )}
           </div>
-           {/* inside the header section (where the Back, Unassign/Assign buttons are) */}
+          {/* inside the header section (where the Back, Unassign/Assign buttons are) */}
           <div className="absolute top-4 left-6 flex gap-2">
             <button
               onClick={() => navigate(`/admin/assets/edit/${id}`)}
@@ -143,23 +145,27 @@ const AssetDetails = () => {
             </button>
             <button
               onClick={async () => {
-                if (window.confirm("Are you sure you want to delete this asset?")) {
+                if (window.confirm("Are you sure you want to inactivate this asset?")) {
                   try {
-                    await fetch(`http://localhost:3487/api/assets/${id}`, {
-                      method: "DELETE",
-                      headers: { token: localStorage.getItem("token") },
-                    });
-                    // after deletion, navigate back to asset list
-                    navigate("/admin/assets");
+                    const token = localStorage.getItem("token");
+                    const adminId = JSON.parse(localStorage.getItem("user"))._id;
+                    // Update the asset status instead of deleting it.
+                    const response = await axios.put(
+                      `http://localhost:3487/api/assets/${id}/inactivate`,
+                      { admin: adminId },
+                      { withCredentials: true, headers: { token } }
+                    );
+                    // Update local state with modified asset
+                    setAsset(response.data);
                   } catch (err) {
                     console.error(err);
-                    alert("Error deleting asset");
+                    alert("Error inactivating asset");
                   }
                 }
               }}
-              className="px-4 py-2 bg-red-600 text-white rounded-md shadow hover:bg-red-700 transition duration-200"
+              className="px-4 py-2 bg-gray-600 text-white rounded-md shadow hover:bg-gray-700 transition duration-200"
             >
-              Delete Asset
+              Inactivate Asset
             </button>
           </div>
         </div>
