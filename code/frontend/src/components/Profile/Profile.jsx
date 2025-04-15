@@ -76,6 +76,12 @@ function Profile() {
     };
 
     const handlePasswordChange = () => {
+        // Validate password length
+        if (newPassword.length < 6) {
+            setMessage({ type: 'error', text: 'Password must be at least 6 characters long' });
+            return;
+        }
+
         const userId = JSON.parse(localStorage.getItem("user"))._id;
         console.log("Changing password for user:", userId);
         axios.put(`http://localhost:3487/change-password/${userId}`, { currentPassword, newPassword },
@@ -209,11 +215,16 @@ function Profile() {
                                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
+                                    placeholder="Minimum 6 characters"
                                 />
+                                {newPassword && newPassword.length < 6 && (
+                                    <p className="text-red-500 text-xs italic mt-1">Password must be at least 6 characters</p>
+                                )}
                             </div>
                             <button
                                 className="bg-red-600 text-white px-8 py-3 rounded-lg shadow-lg hover:bg-red-700 transition-colors text-lg font-semibold"
                                 onClick={handlePasswordChange}
+                                disabled={newPassword.length < 6}
                             >
                                 Update Password
                             </button>

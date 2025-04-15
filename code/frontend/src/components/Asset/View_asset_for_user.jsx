@@ -205,13 +205,15 @@ const View_asset_for_user = () => {
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                             asset.status === 'Available' 
                               ? 'bg-green-100 text-green-800' 
-                              : asset.status === 'Maintenance'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : asset.status === 'Disposed'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-gray-100 text-gray-800'
+                              : asset.status === 'Unavailable'
+                                ? 'bg-blue-100 text-blue-800'
+                                : asset.status === 'Maintenance'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : asset.status === 'Disposed'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {asset.status || 'Unknown'}
+                            {asset.status === 'Unavailable' ? 'With You' : asset.status || 'Unknown'}
                           </span>
                         </td>
                       </tr>
