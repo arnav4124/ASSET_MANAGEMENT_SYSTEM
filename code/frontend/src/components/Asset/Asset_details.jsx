@@ -167,6 +167,12 @@ const AssetDetails = () => {
             >
               Inactivate Asset
             </button>
+            <button
+              onClick={() => navigate(`/admin/assets/maintenance/${id}`)}
+              className="px-4 py-2 bg-red-600 text-white rounded-md shadow hover:bg-red-700 transition duration-200"
+            >
+              Send For Maintenance
+            </button>
           </div>
         </div>
 
