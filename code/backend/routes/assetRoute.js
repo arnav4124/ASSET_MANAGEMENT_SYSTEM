@@ -263,12 +263,14 @@ router.get('/get_user_assets/:id',authMiddleware, async (req, res) => {
   try{
     console.log(req.params.id)
     const userAssets = await UserAsset.find({user_email: req.params.id})
+    console.log(userAssets.length)
     const assetIds = userAssets.map(userAsset => userAsset.asset_id);
     const asses = []
     for (const assetId of assetIds){
       const asset = await Asset.findById(assetId)
       asses.push(asset)
     }
+    console.log(asses)
     res.status(200).json(asses)
   }catch(err){
     console.error(err)
