@@ -148,10 +148,11 @@ const AssetDetails = () => {
                 if (window.confirm("Are you sure you want to inactivate this asset?")) {
                   try {
                     const token = localStorage.getItem("token");
+                    const adminId = JSON.parse(localStorage.getItem("user"))._id;
                     // Update the asset status instead of deleting it.
                     const response = await axios.put(
                       `http://localhost:3487/api/assets/${id}/inactivate`,
-                      { status: "Inactive" },
+                      { admin: adminId },
                       { withCredentials: true, headers: { token } }
                     );
                     // Update local state with modified asset

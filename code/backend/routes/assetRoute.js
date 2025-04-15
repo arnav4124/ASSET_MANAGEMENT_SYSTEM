@@ -375,15 +375,33 @@ router.post('/filter', authMiddleware, async (req, res) => {
 
 router.put('/:id/inactivate', authMiddleware, async (req, res) => {
   try {
+    console.log("Inactivate request body:", req.body);
     const assetId = req.params.id;
+    const { admin } = req.body;
+    
+    if (!admin) {
+      return res.status(400).json({ error: 'Admin ID is required' });
+    }
+    
     const asset = await Asset.findByIdAndUpdate(
       assetId,
       { status: "Inactive" },
       { new: true }
     );
+    
     if (!asset) {
       return res.status(404).json({ message: "Asset not found" });
     }
+    
+    // Update history
+    await createAssetHistory({
+      asset_id: assetId,
+      performed_by: admin,
+      operation_type: 'Removed',
+      assignment_type: null,
+      issued_to: null
+    });
+    
     res.status(200).json(asset);
   } catch (error) {
     console.error("Error inactivating asset:", error);
