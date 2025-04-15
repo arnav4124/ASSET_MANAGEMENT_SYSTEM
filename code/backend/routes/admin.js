@@ -7,6 +7,7 @@ const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 const Project = require('../models/project')
 const Asset = require('../models/asset')
+const UserAsset = require('../models/user_asset')
 const bcrypt = require('bcrypt')
 const nodemailer = require('nodemailer');
 require("dotenv").config({ path: ".env" });
@@ -33,23 +34,23 @@ const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
     }
-  });
+});
 
-  admin_router.post('/add_user', authMiddleware, async (req, res) => {
+admin_router.post('/add_user', authMiddleware, async (req, res) => {
     console.log("ADD USER")
     const { first_name, last_name, email, location, phoneNumber } = req.body
     console.log(req.body)
     const password = crypto.randomBytes(6).toString('hex');
     const send_password = password
     const role = "User"
-    
+
     try {
         // Hash the password and STORE the hash result
         const hashedPassword = await bcrypt.hash(password, 10);
-        
+
         const newUser = new User({
             first_name,
             last_name,
@@ -59,16 +60,16 @@ const transporter = nodemailer.createTransport({
             role,
             phoneNumber
         })
-        
+
         await newUser.save()
-        
+
         try {
             // Send email with the password
             const mailOptions = {
-              from: process.env.EMAIL_USER,
-              to: email,
-              subject: 'Your Account Has Been Created',
-              html: `
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: 'Your Account Has Been Created',
+                html: `
                 <h1>Welcome to Our Application</h1>
                 <p>Hello ${first_name} ${last_name},</p>
                 <p>Your account has been created successfully.</p>
@@ -77,32 +78,32 @@ const transporter = nodemailer.createTransport({
                 <p>Best regards,<br/>The Admin Team</p>
               `
             };
-            
+
             await transporter.sendMail(mailOptions);
-            
+
             // If email sending succeeds, send success response
-            res.status(201).json({ 
-              success: true, 
-              message: "User created successfully and email sent" 
+            res.status(201).json({
+                success: true,
+                message: "User created successfully and email sent"
             });
-          } catch (emailError) {
+        } catch (emailError) {
             console.error("Error sending email:", emailError);
             // If only the email part fails, still indicate user was created
-            res.status(201).json({ 
-              success: true, 
-              message: "User created successfully but email could not be sent",
-              emailError: emailError.message
+            res.status(201).json({
+                success: true,
+                message: "User created successfully but email could not be sent",
+                emailError: emailError.message
             });
-          }
-        } catch (error) {
-          console.error("Error creating user:", error);
-          res.status(500).json({ 
-            success: false, 
-            message: "Error creating user", 
-            error: error.message 
-          });
         }
-      });
+    } catch (error) {
+        console.error("Error creating user:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error creating user",
+            error: error.message
+        });
+    }
+});
 
 
 // Get users based on admin's location (including child locations)
@@ -231,34 +232,65 @@ admin_router.get('/user/:userId', authMiddleware, async (req, res) => {
     }
 });
 
-// Update a user
+// Update a user - Updated to handle asset retention during location changes
 admin_router.put('/edit_user/:userId', authMiddleware, async (req, res) => {
     try {
-        const { location } = req.body;
-        const user = await User.findById(req.params.userId);
-
+        const { userId } = req.params;
+        const { location, assetSelections } = req.body;
+        console.log("Updating user:", userId, "with location:", location, "and asset selections:", assetSelections);
+        // Get the current user data
+        const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
+            return res.status(404).json({ message: 'User not found' });
         }
 
-        // Update only location
-        user.location = location;
+        const oldLocation = user.location;
+        const newLocation = location;
 
+        // Update the user's location
+        user.location = newLocation;
         await user.save();
+
+        // If the location changed and we have asset selections to process
+        if (oldLocation !== newLocation && assetSelections && Object.keys(assetSelections).length > 0) {
+            // Get all assets assigned to the user
+            const userAssets = await UserAsset.find({ user_email: userId });
+            
+            for (const userAsset of userAssets) {
+                const assetId = userAsset.asset_id;
+                const asset = await Asset.findById(assetId);
+
+                if (!asset) continue;
+
+                // Check if this asset is selected to keep with the user
+                if (assetSelections[assetId]) {
+                    // Update the asset's location to match the user's new location
+                    asset.Office = newLocation;
+                    await asset.save();
+                } else {
+                    // Unassign the asset but keep it at its original location
+                    asset.Issued_to = null;
+                    asset.Issued_to_type = null;
+                    asset.assignment_status = false;
+                    asset.status = "Available";
+                    await asset.save();
+
+                    // Remove the user-asset relationship
+                    await UserAsset.findByIdAndDelete(userAsset._id);
+                }
+            }
+        }
 
         res.status(200).json({
             success: true,
-            message: "User updated successfully",
+            message: 'User and assets updated successfully',
             user
         });
     } catch (error) {
-        console.error('Error updating user:', error);
+        console.error('Error in edit_user:', error);
         res.status(500).json({
             success: false,
-            message: "Error updating user",
+            message: 'Error updating user',
             error: error.message
         });
     }
