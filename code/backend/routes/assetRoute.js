@@ -335,7 +335,10 @@ router.get('/get_user_assets/:id',authMiddleware, async (req, res) => {
     const assetIds = userAssets.map(userAsset => userAsset.asset_id);
     const asses = []
     for (const assetId of assetIds){
+      // Populate the Issued_by field to get the user's name
       const asset = await Asset.findById(assetId)
+        .populate('Issued_by', 'first_name last_name email')
+        .populate('Issued_to', 'first_name last_name email Project_name');
       asses.push(asset)
     }
     console.log(asses)
