@@ -293,6 +293,7 @@ router.get('/assets/search', authMiddleware, async (req, res) => {
         
         // Add location filter to the search query
         searchQuery.Office = userLocation;
+        searchQuery.status = 'Available'; 
         
         const assets = await Asset.find(searchQuery)
             .populate({
@@ -378,8 +379,25 @@ router.post('/:projectId/assets', authMiddleware, async (req, res) => {
             asset_id: assetId,
             project_id: projectId
         }));
+        
 
         await AssetProject.insertMany(assetProjects);
+        // Update all assigned assets to Unavailable status
+        
+    console.log(newAssetIds);
+        await Asset.updateMany(
+            { _id: { $in: newAssetIds } },
+            { 
+                $set: { 
+                    status: 'Unavailable',
+                    assignment_status: true,
+                    Issued_to: projectId,
+                    Issued_to_type: 'Project',
+                    Issued_date: new Date()
+                }
+            }
+        );
+
 
         res.status(201).json({
             message: 'Assets added successfully',
