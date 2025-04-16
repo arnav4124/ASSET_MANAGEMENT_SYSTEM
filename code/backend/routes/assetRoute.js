@@ -219,7 +219,8 @@ router.get('/', authMiddleware, async (req, res) => {
   try {
     const assets = await Asset.find({})
       .populate('Issued_by', 'first_name last_name email')
-      .populate('Issued_to', 'first_name last_name email Project_name');
+      .populate('Issued_to', 'first_name last_name email Project_name')
+      .populate('category', 'name');
     res.status(200).json(assets);
     console.log('Assets:', assets);
   } catch (error) {
@@ -232,7 +233,8 @@ router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const asset = await Asset.findById(req.params.id)
       .populate('Issued_by', 'first_name last_name email')
-      .populate('Issued_to', 'first_name last_name email Project_name');
+      .populate('Issued_to', 'first_name last_name email Project_name')
+      .populate('category', 'name');
     if (!asset) {
       return res.status(404).json({ error: 'Asset not found' });
     }
@@ -413,18 +415,131 @@ router.put('/:id/deactivate', authMiddleware, async (req, res) => {
     }
     
     // Update history
-    await createAssetHistory({
-      asset_id: assetId,
-      performed_by: admin,
-      operation_type: 'Removed',
-      assignment_type: null,
-      issued_to: null
-    });
+    // await createAssetHistory({
+    //   asset_id: assetId,
+    //   performed_by: admin,
+    //   operation_type: 'Removed',
+    //   assignment_type: null,
+    //   issued_to: null
+    // });
     
     res.status(200).json(asset);
   } catch (error) {
     console.error("Error deactivating asset:", error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Add this route to handle asset updates
+
+// PUT: Update asset by id
+router.put('/:id', authMiddleware, upload.fields([
+  { name: 'Img', maxCount: 1 }, 
+  { name: 'invoicePdf', maxCount: 1 }, 
+  { name: 'additionalPdf', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const assetId = req.params.id;
+    const { admin } = req.body;
+    
+    if (!admin) {
+      return res.status(400).json({ error: 'Admin ID is required' });
+    }
+
+    // Find the asset to update
+    const asset = await Asset.findById(assetId);
+    if (!asset) {
+      return res.status(404).json({ error: 'Asset not found' });
+    }
+
+    // Prepare update object with fields from request body
+    const updateData = {
+      name: req.body.name,
+      brand_name: req.body.brand_name,
+      asset_type: req.body.asset_type,
+      status: req.body.status,
+      Office: req.body.Office,
+      Sticker_seq: req.body.Sticker_seq,
+      description: req.body.description,
+      vendor_name: req.body.vendor_name,
+      vendor_email: req.body.vendor_email,
+      vendor_phone: req.body.vendor_phone,
+      vendor_city: req.body.vendor_city,
+      vendor_address: req.body.vendor_address,
+      price: req.body.price,
+      voucher_number: req.body.voucher_number
+    };
+
+    // Only update non-empty fields
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] === undefined || updateData[key] === '') {
+        delete updateData[key];
+      }
+    });
+
+    // Handle category if provided
+    if (req.body.category && req.body.category !== '') {
+      updateData.category = req.body.category;
+    }
+
+    // Handle date_of_purchase if provided
+    if (req.body.date_of_purchase) {
+      updateData.date_of_purchase = new Date(req.body.date_of_purchase);
+    }
+
+    // Handle file uploads
+    // Update image if provided
+    if (req.files && req.files.Img) {
+      updateData.Img = req.files.Img[0].buffer;
+    }
+
+    // Handle invoice PDF update
+    if (req.files && req.files.invoicePdf) {
+      const pdfBuffer = req.files.invoicePdf[0].buffer;
+      const pdfFilename = req.files.invoicePdf[0].originalname;
+      const generatedInvoiceId = `INV-${Date.now()}`;
+
+      const newInvoice = new Invoice({
+        invoice_id: generatedInvoiceId,
+        pdf_file: pdfBuffer,
+        filename: pdfFilename,
+        uploadDate: new Date()
+      });
+      await newInvoice.save();
+
+      updateData.Invoice_id = newInvoice._id;
+    }
+
+    // Handle additional PDF update
+    if (req.files && req.files.additionalPdf) {
+      updateData.additional_files = req.files.additionalPdf[0].buffer;
+    }
+
+    // Update the asset
+    const updatedAsset = await Asset.findByIdAndUpdate(
+      assetId,
+      updateData,
+      { new: true }
+    ).populate('Issued_by', 'first_name last_name email')
+     .populate('Issued_to', 'first_name last_name email Project_name')
+     .populate('category', 'name');
+
+    // Create history record for the update
+    // await createAssetHistory({
+    //   asset_id: assetId,
+    //   performed_by: admin,
+    //   operation_type: 'Updated',
+    //   assignment_type: null,
+    //   issued_to: null
+    // });
+
+    res.status(200).json(updatedAsset);
+  } catch (error) {
+    console.error('Error updating asset:', error);
+    res.status(500).json({ 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
