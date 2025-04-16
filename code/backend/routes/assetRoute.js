@@ -69,10 +69,11 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
       quantity,
       serialNumbers,
       voucher_number,
+      grouping
     } = req.body;
 
     // Validate required fields
-    if (!name || !brand_name || !asset_type || !status || !Office || !Sticker_seq || !description || !Issued_by || !voucher_number) {
+    if (!name || !brand_name || !asset_type || !status || !Office || !Sticker_seq || !description || !Issued_by || !voucher_number || !grouping || !category || !price) {
       console.error('Missing required fields');
       return res.status(400).json({
         success: false,
@@ -87,6 +88,9 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
           description: !description,
           Issued_by: !Issued_by,
           voucher_number: !voucher_number,
+          grouping: !grouping,
+          category: !category,
+          price: !price
         }
       });
     }
@@ -171,6 +175,8 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
         Serial_number: serialNumber,
         voucher_number: req.body.voucher_number,
         date_of_purchase: date_of_purchase,
+        grouping: req.body.grouping,
+        quantity: req.body.quantity,
       };
 
       const newAsset = new Asset(assetData);
@@ -387,6 +393,8 @@ router.post('/filter', authMiddleware, async (req, res) => {
       .populate('Issued_by', 'first_name last_name email')
       .populate('Issued_to', 'first_name last_name email Project_name')
       .populate('category', 'name')
+
+    console.log("Filtered assets:", assets);
 
     res.status(200).json({ success: true, data: assets });
   } catch (error) {
