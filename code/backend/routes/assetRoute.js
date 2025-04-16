@@ -352,20 +352,34 @@ router.get('/get_user_assets/:id',authMiddleware, async (req, res) => {
 
 router.post('/filter', authMiddleware, async (req, res) => {
   try {
-    const { status, issued, office } = req.body;
+    const { status, issued, office, category } = req.body;
+    console.log("Filter request body:", req.body);
     const filter = {};
 
-    if (status) {
+    if (status != undefined && status !== '') {
       filter.status = status;
     }
 
     console.log(issued)
-    if (issued !== undefined) {
+    if (issued !== undefined && issued !== '') {
       filter.assignment_status = issued;
     }
-    if (office) {
+    console.log("Office", office);
+    if (office !== undefined && office !=='') {
       filter.Office = office;
     }
+
+    console.log("Status", status);
+
+
+    if(category!== ''){
+      console.log("Category", category);
+      filter.category = category;
+    }else{
+      console.log("Category not provided");
+    }
+
+    console.log("Filter object:", filter);
 
     const assets = await Asset.find(filter)
       .populate('Issued_by', 'first_name last_name email')
@@ -378,7 +392,7 @@ router.post('/filter', authMiddleware, async (req, res) => {
   }
 });
 
-router.put('/:id/inactivate', authMiddleware, async (req, res) => {
+router.put('/:id/deactivate', authMiddleware, async (req, res) => {
   try {
     console.log("Inactivate request body:", req.body);
     const assetId = req.params.id;
@@ -409,7 +423,7 @@ router.put('/:id/inactivate', authMiddleware, async (req, res) => {
     
     res.status(200).json(asset);
   } catch (error) {
-    console.error("Error inactivating asset:", error);
+    console.error("Error deactivating asset:", error);
     res.status(500).json({ error: error.message });
   }
 });
