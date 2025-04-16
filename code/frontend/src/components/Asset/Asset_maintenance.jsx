@@ -88,7 +88,7 @@ const Asset_maintenance = () => {
             window.scrollTo(0, 0);
             setShowSuccess(true);
             setTimeout(() => {
-                navigate(`/admin/assets/details/${id}`);
+                navigate(`/admin/assets/view/${id}`);
             }, 2000);
         } catch (err) {
             console.error(err);

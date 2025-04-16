@@ -84,7 +84,7 @@ const AddLocation = () => {
         setSuccess(true);
         reset();
         setTimeout(() => {
-          navigate("/superuser/add_location");
+          navigate("/superuser/view_location");
         }, 2000);
       }
     } catch (err) {
