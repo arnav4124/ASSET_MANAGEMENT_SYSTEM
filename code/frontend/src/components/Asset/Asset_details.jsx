@@ -145,13 +145,13 @@ const AssetDetails = () => {
             </button>
             <button
               onClick={async () => {
-                if (window.confirm("Are you sure you want to inactivate this asset?")) {
+                if (window.confirm("Are you sure you want to deactivate this asset?")) {
                   try {
                     const token = localStorage.getItem("token");
                     const adminId = JSON.parse(localStorage.getItem("user"))._id;
                     // Update the asset status instead of deleting it.
                     const response = await axios.put(
-                      `http://localhost:3487/api/assets/${id}/inactivate`,
+                      `http://localhost:3487/api/assets/${id}/deactivate`,
                       { admin: adminId },
                       { withCredentials: true, headers: { token } }
                     );
@@ -159,13 +159,13 @@ const AssetDetails = () => {
                     setAsset(response.data);
                   } catch (err) {
                     console.error(err);
-                    alert("Error inactivating asset");
+                    alert("Error deactivating asset");
                   }
                 }
               }}
               className="px-4 py-2 bg-gray-600 text-white rounded-md shadow hover:bg-gray-700 transition duration-200"
             >
-              Inactivate Asset
+              Deactivate Asset
             </button>
             {asset.status === "Maintenance" ? (
               <button

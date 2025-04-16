@@ -378,7 +378,7 @@ router.post('/filter', authMiddleware, async (req, res) => {
   }
 });
 
-router.put('/:id/inactivate', authMiddleware, async (req, res) => {
+router.put('/:id/deactivate', authMiddleware, async (req, res) => {
   try {
     console.log("Inactivate request body:", req.body);
     const assetId = req.params.id;
@@ -409,7 +409,7 @@ router.put('/:id/inactivate', authMiddleware, async (req, res) => {
     
     res.status(200).json(asset);
   } catch (error) {
-    console.error("Error inactivating asset:", error);
+    console.error("Error deactivating asset:", error);
     res.status(500).json({ error: error.message });
   }
 });
