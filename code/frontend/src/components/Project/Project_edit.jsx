@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Pencil, Trash2, UserPlus, ChevronRight, ChevronLeft, Check, X, Loader2 } from "lucide-react";
+import { Pencil, Trash2, UserPlus, ChevronRight, ChevronLeft, Check, X, Loader2, Package } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -20,6 +20,7 @@ const ProjectEdit = () => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
+  const [showAddAsset, setShowAddAsset] = useState(false);
   const [newParticipantEmail, setNewParticipantEmail] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
   const [toBeDeletedParticipants, setToBeDeletedParticipants] = useState([]);
@@ -32,9 +33,13 @@ const ProjectEdit = () => {
   const [locations, setLocations] = useState([]);
   const [selectedLocations, setSelectedLocations] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
+  const [availableAssets, setAvailableAssets] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
+  const [assetSearchQuery, setAssetSearchQuery] = useState('');
+  const [assetSearchResults, setAssetSearchResults] = useState([]);
+  const [selectedAssets, setSelectedAssets] = useState([]);
 
   const participantsPerPage = 10;
 
@@ -143,6 +148,23 @@ const ProjectEdit = () => {
     fetchData();
   }, [id, navigate, setValue]);
 
+  const fetchAvailableAssets = async () => {
+    try {
+      const response = await axios.get('http://localhost:3487/api/assets', {
+        headers: { token: localStorage.getItem('token') }
+      });
+      
+    } catch (error) {
+      console.error('Error fetching assets:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (showAddAsset) {
+      fetchAvailableAssets();
+    }
+  }, [showAddAsset]);
+
   const pageCount = Math.ceil(participants.length / participantsPerPage);
   const paginatedParticipants = participants.slice(
     currentPage * participantsPerPage,
@@ -199,6 +221,34 @@ const ProjectEdit = () => {
     }
   };
 
+  const handleAssetSearch = async (query) => {
+    try {
+      const response = await axios.get(`http://localhost:3487/api/projects/assets/search?query=${query}`, {
+        headers: { token: localStorage.getItem('token') }
+      });
+      setAssetSearchResults(response.data);
+    } catch (error) {
+      console.error('Error searching assets:', error);
+      
+      // More detailed error logging
+      if (error.response) {
+        // The server responded with a status code outside the 2xx range
+        console.error('Server error:', error.response.status, error.response.data);
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('Network error - no response received');
+      } else {
+        // Something happened in setting up the request
+        console.error('Request setup error:', error.message);
+      }
+      
+      // Continue with your fallback logic...
+      if (availableAssets.length > 0) {
+        // Your existing fallback code...
+      }
+    }
+  };
+
   const handleAddParticipants = async () => {
     try {
       const response = await axios.post(
@@ -229,6 +279,62 @@ const ProjectEdit = () => {
     } catch (error) {
       console.error('Error adding participants:', error);
       alert('Error adding participants');
+    }
+  };
+
+  const handleAddAssets = async () => {
+    try {
+      const response = await axios.post(
+        `http://localhost:3487/api/projects/${id}/assets`,
+        {
+          assetIds: selectedAssets
+        },
+        {
+          headers: { token: localStorage.getItem('token') }
+        }
+      );
+
+      if (response.status === 201) {
+        // Refresh assets list
+        const assetsRes = await axios.get(`http://localhost:3487/api/projects/${id}/assets`, {
+          headers: { token: localStorage.getItem('token') }
+        });
+        setAssets(assetsRes.data);
+
+        // Reset selection states
+        setSelectedAssets([]);
+        setShowAddAsset(false);
+        setAssetSearchQuery('');
+        setAssetSearchResults([]);
+
+        alert('Assets added successfully!');
+      }
+    } catch (error) {
+      console.error('Error adding assets:', error);
+      alert('Error adding assets');
+    }
+  };
+
+  const removeAsset = async (assetId) => {
+    try {
+      const response = await axios.delete(
+        `http://localhost:3487/api/projects/${id}/assets/${assetId}`,
+        {
+          headers: { token: localStorage.getItem('token') }
+        }
+      );
+
+      if (response.status === 200) {
+        // Refresh assets list
+        const assetsRes = await axios.get(`http://localhost:3487/api/projects/${id}/assets`, {
+          headers: { token: localStorage.getItem('token') }
+        });
+        setAssets(assetsRes.data);
+        alert('Asset removed successfully!');
+      }
+    } catch (error) {
+      console.error('Error removing asset:', error);
+      alert('Error removing asset');
     }
   };
 
@@ -424,7 +530,94 @@ const ProjectEdit = () => {
 
             {/* Project Assets */}
             <div>
-              <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Project Assets</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-medium text-gray-700 border-b pb-2">Project Assets</h2>
+                {isEditing && (
+                  <button
+                    type="button"
+                    className="px-3 py-1 bg-blue-500 text-white rounded text-sm flex items-center gap-2"
+                    onClick={() => setShowAddAsset(true)}
+                  >
+                    <Package size={14} />
+                    Add Asset
+                  </button>
+                )}
+              </div>
+
+              {/* Add Asset Form */}
+              {showAddAsset && (
+                <div className="mb-4 p-4 border rounded-md bg-white">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={assetSearchQuery}
+                        onChange={(e) => {
+                          setAssetSearchQuery(e.target.value);
+                          handleAssetSearch(e.target.value);
+                        }}
+                        placeholder="Search assets by name or category"
+                        className="flex-1 p-2 border border-gray-300 rounded"
+                      />
+                      <button
+                        type="button"
+                        className="p-2 text-gray-500 rounded-md"
+                        onClick={() => setShowAddAsset(false)}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+
+                    {assetSearchResults.length > 0 && (
+                      <div className="mt-2 border rounded-md max-h-60 overflow-y-auto">
+                        {assetSearchResults.map((asset) => (
+                          <div
+                            key={asset._id}
+                            className="flex items-center justify-between p-2 hover:bg-gray-50 border-b last:border-b-0"
+                          >
+                            <div>
+                              <p className="font-medium">{asset.name}</p>
+                              <p className="text-sm text-gray-500">
+                                {asset.category?.name || 'No Category'} • {asset.Office || 'No Location'}
+                              </p>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={selectedAssets.includes(asset._id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedAssets([...selectedAssets, asset._id]);
+                                } else {
+                                  setSelectedAssets(selectedAssets.filter(id => id !== asset._id));
+                                }
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedAssets.length > 0 && (
+                      <div className="flex justify-between items-center pt-3 border-t">
+                        <span className="text-sm text-gray-600">
+                          {selectedAssets.length} asset(s) selected
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleAddAssets}
+                          className="px-4 py-2 bg-blue-500 text-white rounded-md text-sm flex items-center gap-2"
+                        >
+                          <Package size={14} />
+                          Add Selected Assets
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Assets Table */}
               <div className="overflow-x-auto border rounded">
                 <table className="w-full bg-white">
                   <thead className="bg-gray-50 border-b">
@@ -432,19 +625,33 @@ const ProjectEdit = () => {
                       <th className="text-left p-3 text-sm font-medium text-gray-700">Asset Name</th>
                       <th className="text-left p-3 text-sm font-medium text-gray-700">Category</th>
                       <th className="text-left p-3 text-sm font-medium text-gray-700">Location</th>
+                      {isEditing && (
+                        <th className="text-right p-3 text-sm font-medium text-gray-700">Action</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
                     {assets.length === 0 ? (
                       <tr>
-                        <td colSpan="3" className="text-center py-4 text-gray-500">No assets assigned</td>
+                        <td colSpan={isEditing ? "4" : "3"} className="text-center py-4 text-gray-500">No assets assigned</td>
                       </tr>
                     ) : (
                       assets.map((asset) => (
-                        <tr key={asset._id} className="border-b hover:bg-gray-50">
+                        <tr key={asset._id} className="border-b hover:bg-gray-50 group">
                           <td className="p-3 text-sm">{asset.name}</td>
                           <td className="p-3 text-sm">{asset.category?.name || 'N/A'}</td>
                           <td className="p-3 text-sm">{asset.Office}</td>
+                          {isEditing && (
+                            <td className="p-3 text-right">
+                              <button
+                                type="button"
+                                className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                onClick={() => removeAsset(asset._id)}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))
                     )}
