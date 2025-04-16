@@ -177,6 +177,7 @@ const Asset_add = () => {
       formData.append("serialNumbers", JSON.stringify(serialNumbers));
       formData.append("voucher_number", data.voucher_number);
       formData.append("date_of_purchase", data.date_of_purchase);
+      formData.append("grouping", data.grouping);
 
       if (uploadedFiles.imageFile) {
         formData.append("Img", uploadedFiles.imageFile);
@@ -336,7 +337,7 @@ const Asset_add = () => {
               </div>
 
               {/* Brand */}
-              
+
 
               {/* Quantity */}
               <div>
@@ -364,6 +365,16 @@ const Asset_add = () => {
                 )}
               </div>
             </div>
+
+            <label className="block text-sm font-medium text-gray-700 mb-1">Grouping</label>
+            <select
+              {...register("grouping", { required: "Grouping is required" })}
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">-- Select Grouping --</option>
+              <option value="Individual">Individual</option>
+              <option value="Grouped">Grouped</option>
+            </select>
 
             <div>
               <label className="block font-medium text-sm mb-1 text-gray-700">

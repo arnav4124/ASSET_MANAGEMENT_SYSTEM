@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { CSVLink } from 'react-csv';
 import { FileDown, Filter, RefreshCcw } from 'lucide-react';
+import { set } from 'mongoose';
+import { useNavigate } from "react-router-dom";
+
 
 const AssetReport = () => {
     const [filters, setFilters] = useState({ status: '', issued: '', office: '', category: '' });
@@ -9,6 +12,36 @@ const AssetReport = () => {
     const [offices, setOffices] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [rawAssets, setRawAssets] = useState([]);
+    const [displayAssets, setDisplayAssets] = useState([]);
+    const navigate = useNavigate();
+
+    const groupAssets = (assets) => {
+        const groupedMap = new Map();
+        const result = [];
+
+        for (const item of assets){
+            if (item.grouping == "Grouped"){
+                const key = item.name;
+                if(!groupedMap.has(key)){
+                    groupedMap.set(key, { ...item, _groupedSerials: [item.Serial_number], quantity: item.qty || 1 , total_price: item.price * (item.qty || 1) });
+                }else{
+                    const existingItem = groupedMap.get(key);
+                    existingItem._groupedSerials.push(item.Serial_number);
+                    existingItem.quantity += item.qty || 1;
+                    existingItem.total_price += item.price * (item.qty || 1);
+                }
+            }else{
+                // If the asset is not grouped, we can add it directly to the result, put quantity and total_price as 1
+                item.quantity = 1;
+                item.total_price = item.price || 0;
+                result.push(item);
+            }
+        }
+
+        const groupedAssets = Array.from(groupedMap.values());
+        return [...result, ...groupedAssets];
+    }
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -47,6 +80,11 @@ const AssetReport = () => {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        const newDisplayAssets = groupAssets(rawAssets);
+        setDisplayAssets(newDisplayAssets);
+    }, [rawAssets]);
+
     const handleChange = (e) => {
         setFilters({ ...filters, [e.target.name]: e.target.value });
     };
@@ -58,9 +96,10 @@ const AssetReport = () => {
                 headers: { token: localStorage.getItem('token') },
                 withCredentials: true
             });
-            setAssets(res.data.data);
+            setRawAssets(res.data.data || []);
         } catch (error) {
             console.error("Error generating report:", error);
+            setRawAssets([]);
         } finally {
             setLoading(false);
         }
@@ -68,6 +107,8 @@ const AssetReport = () => {
 
     const handleReset = () => {
         setFilters({ status: '', issued: '', office: '', category: '' });
+        setRawAssets([]);
+        setDisplayAssets([]);
         setAssets([]);
     };
 
@@ -79,13 +120,16 @@ const AssetReport = () => {
         { label: "Location", key: "Office" },
         { label: "Category", key: "category.name" },
         { label: "Vendor", key: "vendor_name" },
+        { label: "Voucher Number", key: "voucher_number" },
+        { label: "Quantity", key: "qty" },
+        { label: "Total Price", key: "total_price" },
         { label: "Description", key: "description" },
         { label: "Date of Purchase", key: "date_of_purchase" },
         { label: "Issued By", key: "Issued_by.first_name" },
         { label: "Issued To", key: "Issued_to.first_name" }
     ];
 
-    const csvData = assets.map(asset => ({
+    const csvData = displayAssets.map(asset => ({
         name: asset.name,
         Serial_number: asset.Serial_number,
         status: asset.status,
@@ -93,6 +137,9 @@ const AssetReport = () => {
         Office: asset.Office,
         category: { name: asset.category?.name || "" },
         vendor_name: asset.vendor_name || "",
+        voucher_number: asset.voucher_number || "",
+        qty: asset.qty || 1,
+        total_price : asset.total_price,
         description: asset.description,
         date_of_purchase: new Date(asset.date_of_purchase).toLocaleDateString(),
         Issued_by: { first_name: asset.Issued_by?.first_name || "" },
@@ -118,7 +165,7 @@ const AssetReport = () => {
             <div className="flex justify-between items-center mb-6 border-b pb-4">
                 <h2 className="text-2xl font-bold text-gray-800">Asset Report Generator</h2>
                 <div className="flex space-x-2">
-                    {assets.length > 0 && (
+                    {displayAssets.length > 0 && (
                         <CSVLink
                             headers={csvHeaders}
                             data={csvData}
@@ -226,7 +273,7 @@ const AssetReport = () => {
                 <div className="flex justify-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
                 </div>
-            ) : assets.length > 0 ? (
+            ) : displayAssets.length > 0 ? (
                 <div className="overflow-x-auto rounded-lg border border-gray-200">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -238,13 +285,17 @@ const AssetReport = () => {
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Voucher Number</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Price</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purchase Date</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issued By</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issued To</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {assets.map((asset) => (
+                            {displayAssets.map((asset) => (
                                 <tr key={asset._id} className="hover:bg-gray-50">
                                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{asset.name}</td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{asset.Serial_number}</td>
@@ -261,6 +312,10 @@ const AssetReport = () => {
                                     <td className="px-4 py-3 text-sm text-gray-600">{asset.Office}</td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{asset.category?.name || "-"}</td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{asset.vendor_name || "-"}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{asset.voucher_number || "-"}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{asset.qty || "1"}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{asset.price || "-"}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{asset.total_price}</td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{new Date(asset.date_of_purchase).toLocaleDateString()}</td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{asset.Issued_by?.first_name || "-"}</td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{asset.Issued_to?.first_name || "-"}</td>

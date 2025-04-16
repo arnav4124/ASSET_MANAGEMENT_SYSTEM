@@ -125,6 +125,22 @@ const assetSchema = new mongoose.Schema({
         required:true
     },
 
+    grouping:{
+        type: String,
+        enum: ['Grouped', 'Individual'],
+        required: true
+    },
+
+    qty: {
+        type: Number,
+        default: 1
+    },
+
+    price: {
+        type: Number,
+        required: true
+    },
+
 }, {
     timestamps: true,
 });
