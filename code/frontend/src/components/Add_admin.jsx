@@ -67,7 +67,7 @@ const AssignAdmin = () => {
       );
 
       if (response.data.success) {
-        setSuccess(response.data.message);
+        setSuccess(`${data.firstName} ${data.lastName} has been successfully assigned as admin for ${response.data.user.location}.`);
         reset();
       }
     } catch (err) {

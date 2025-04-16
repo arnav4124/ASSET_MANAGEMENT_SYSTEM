@@ -15,11 +15,13 @@ router.post('/assign', authMiddleware, async (req, res) => {
         email = email.trim();
         console.log(firstName, lastName, email);
 
-        // Check if user exists with given credentials
+        // Check if user exists with given credentials - case insensitive for names
         const existingUser = await User.findOne({
             email: email,
-            first_name: firstName,
-            last_name: lastName
+            $and: [
+                { first_name: { $regex: new RegExp(`^${firstName}$`, 'i') } },
+                { last_name: { $regex: new RegExp(`^${lastName}$`, 'i') } }
+            ]
         });
 
         if (!existingUser) {
@@ -37,6 +39,19 @@ router.post('/assign', authMiddleware, async (req, res) => {
             });
         }
 
+        // Check if an admin already exists for this location
+        const existingAdmin = await User.findOne({
+            location: existingUser.location,
+            role: 'Admin'
+        });
+
+        if (existingAdmin) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot assign admin role. There's already an admin (${existingAdmin.first_name} ${existingAdmin.last_name}) for ${existingUser.location} location.`
+            });
+        }
+
         // Update user role to Admin
         existingUser.role = 'Admin';
         await existingUser.save();
@@ -48,7 +63,8 @@ router.post('/assign', authMiddleware, async (req, res) => {
                 first_name: existingUser.first_name,
                 last_name: existingUser.last_name,
                 email: existingUser.email,
-                role: existingUser.role
+                role: existingUser.role,
+                location: existingUser.location
             }
         });
 
