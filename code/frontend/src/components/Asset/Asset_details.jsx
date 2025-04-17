@@ -60,6 +60,8 @@ const AssetDetails = () => {
     </div>
   );
 
+  console.log(asset);
+
   // Compute the image URL (if available) from the asset.Img field
   const imageUrl = asset.Img ? getImageUrl(asset.Img) : null;
 
@@ -75,6 +77,12 @@ const AssetDetails = () => {
       : asset.Issued_to && asset.Issued_to.Project_name
         ? `${asset.Issued_to.Project_name}`
         : "Unassigned";
+
+  const invoiceId =
+    asset.Invoice_id && asset.Invoice_id.invoice_id
+      ? asset.Invoice_id.invoice_id
+      : "Not available";
+
 
   // Handler to unassign the asset
   const handleUnassign = () => {
@@ -437,13 +445,15 @@ const AssetDetails = () => {
                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Invoice ID</p>
-                    <p className="text-gray-700">{asset.Invoice_id ? asset.Invoice_id : "No invoice available"}</p>
+                    <p className="text-gray-700">{invoiceId ? invoiceId : "No invoice available"}</p>
                   </div>
                   {asset.Invoice_id && (
-                    <button className="bg-blue-100 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-200 transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
-                      </svg>
+                    <button
+                      onClick={() => {
+                        window.open(`http://localhost:3487/api/assets/${invoiceId}/download`, '_blank');
+                      }}
+                      className="bg-blue-100 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-200 transition-colors"
+                    >
                       Download Invoice
                     </button>
                   )}
