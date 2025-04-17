@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { CSVLink } from 'react-csv';
 import { FileDown, Filter, RefreshCcw } from 'lucide-react';
-// import { set } from 'mongoose';
 import { useNavigate } from "react-router-dom";
-
 
 const AssetReport = () => {
     const [filters, setFilters] = useState({ status: '', issued: '', office: '', category: '' });
@@ -14,34 +12,168 @@ const AssetReport = () => {
     const [loading, setLoading] = useState(false);
     const [rawAssets, setRawAssets] = useState([]);
     const [displayAssets, setDisplayAssets] = useState([]);
+    const [categoryMap, setCategoryMap] = useState({});
     const navigate = useNavigate();
+    const calculateDepreciation = (purchaseDate, totalPrice, depreciationRate) => {
+        if (!purchaseDate || !totalPrice || depreciationRate === undefined || depreciationRate === null) {
+            return 0;
+        }
+    
+        const purchase = new Date(purchaseDate);
+        const current = new Date();
+    
+        const totalDaysInYear = 365;
+    
+        const daysBetween = (start, end) => (end - start) / (1000 * 60 * 60 * 24);
+    
+        let remainingValue = totalPrice;
+        let totalDepreciation = 0;
+    
+        // Find first fiscal year end after purchase
+        let firstFiscalYearEnd = new Date(purchase.getFullYear(), 2, 31); // 31-Mar
+        if (purchase > firstFiscalYearEnd) {
+            firstFiscalYearEnd = new Date(purchase.getFullYear() + 1, 2, 31);
+        }
+    
+        // 1. First partial depreciation
+        if (purchase < firstFiscalYearEnd) {
+            const daysUsed = daysBetween(purchase, firstFiscalYearEnd);
+            const fraction = daysUsed / totalDaysInYear;
+    
+            const firstPartial = remainingValue * (depreciationRate / 100) * fraction;
+            totalDepreciation += firstPartial;
+            remainingValue -= firstPartial;
+        }
+    
+        // 2. Full fiscal years
+        let fiscalStart = new Date(firstFiscalYearEnd.getFullYear(), 3, 1); // 01-Apr
+        let lastFiscalYearEnd = new Date(current.getFullYear(), 2, 31); // 31-Mar current fiscal year
+    
+        while (fiscalStart <= lastFiscalYearEnd && remainingValue > 0) {
+            const yearDep = remainingValue * (depreciationRate / 100);
+            totalDepreciation += yearDep;
+            remainingValue -= yearDep;
+    
+            fiscalStart = new Date(fiscalStart.getFullYear() + 1, 3, 1); // Move to next fiscal year
+        }
+    
+        // 3. Final partial depreciation: from 1-Apr current fiscal year to today
+        const thisFiscalStart = new Date(current.getFullYear(), 3, 1); // 01-Apr
+        if (current > thisFiscalStart && remainingValue > 0) {
+            const daysUsed = daysBetween(thisFiscalStart, current);
+            const fraction = daysUsed / totalDaysInYear;
+    
+            const finalPartial = remainingValue * (depreciationRate / 100) * fraction;
+            totalDepreciation += finalPartial;
+            remainingValue -= finalPartial;
+        }
+    
+        return Math.min(Number(totalDepreciation.toFixed(2)), totalPrice);
+    };
+    
+    
+    // Calculate current value (total price - depreciation)
+    const calculateCurrentValue = (totalPrice, depreciation) => {
+        return Math.max(0, totalPrice - depreciation);
+    };
+
+    const getCategoryDepreciationRate = (categoryId) => {
+        if (!categoryId) return 0;
+        
+        // Handle if categoryId is an object with _id property
+        const id = typeof categoryId === 'object' ? categoryId._id : categoryId;
+        
+        if (!categoryMap[id]) {
+            console.log('Category not found in map:', id);
+            return 0;
+        }
+        
+        return categoryMap[id].depreciation_rate || 0;
+    };
+
+    const getCategoryName = (categoryId) => {
+        if (!categoryId) return "-";
+        
+        // Handle if categoryId is an object with _id property
+        const id = typeof categoryId === 'object' ? categoryId._id : categoryId;
+        
+        if (!categoryMap[id]) return "-";
+        return categoryMap[id].name || "-";
+    };
 
     const groupAssets = (assets) => {
         const groupedMap = new Map();
         const result = [];
 
         for (const item of assets){
+            // Make sure we're getting the correct category ID
+            const categoryId = item.category?._id || item.category;
+            
+            // Get depreciation rate from our category map
+            const depreciationRate = getCategoryDepreciationRate(categoryId);
+            
             if (item.grouping == "Grouped"){
                 const key = item.name;
                 if(!groupedMap.has(key)){
-                    groupedMap.set(key, { ...item, _groupedSerials: [item.Serial_number], quantity: item.qty || 1 , total_price: item.price * (item.qty || 1) });
+                    const total_price = item.price * (item.qty || 1);
+                    const depreciation = calculateDepreciation(
+                        item.date_of_purchase, 
+                        total_price, 
+                        depreciationRate
+                    );
+                    const current_value = calculateCurrentValue(total_price, depreciation);
+
+                    groupedMap.set(key, { 
+                        ...item, 
+                        _groupedSerials: [item.Serial_number], 
+                        quantity: item.qty || 1, 
+                        total_price: total_price,
+                        depreciation_rate: depreciationRate,
+                        depreciation: depreciation,
+                        current_value: current_value,
+                        category_name: getCategoryName(categoryId)
+                    });
                 }else{
                     const existingItem = groupedMap.get(key);
                     existingItem._groupedSerials.push(item.Serial_number);
                     existingItem.quantity += item.qty || 1;
-                    existingItem.total_price += item.price * (item.qty || 1);
+                    
+                    const additionalPrice = item.price * (item.qty || 1);
+                    existingItem.total_price += additionalPrice;
+                    
+                    const additionalDepreciation = calculateDepreciation(
+                        item.date_of_purchase, 
+                        additionalPrice, 
+                        depreciationRate
+                    );
+                    existingItem.depreciation += additionalDepreciation;
+                    existingItem.current_value += calculateCurrentValue(additionalPrice, additionalDepreciation);
                 }
             }else{
-                // If the asset is not grouped, we can add it directly to the result, put quantity and total_price as 1
-                item.quantity = 1;
-                item.total_price = item.price || 0;
-                result.push(item);
+                // If the asset is not grouped, we can add it directly to the result
+                const total_price = item.price || 0;
+                const depreciation = calculateDepreciation(
+                    item.date_of_purchase, 
+                    total_price, 
+                    depreciationRate
+                );
+                const current_value = calculateCurrentValue(total_price, depreciation);
+                
+                result.push({
+                    ...item,
+                    quantity: 1,
+                    total_price: total_price,
+                    depreciation_rate: depreciationRate,
+                    depreciation: depreciation,
+                    current_value: current_value,
+                    category_name: getCategoryName(categoryId)
+                });
             }
         }
 
         const groupedAssets = Array.from(groupedMap.values());
         return [...result, ...groupedAssets];
-    }
+    };
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -70,6 +202,16 @@ const AssetReport = () => {
 
                 setOffices(officeRes.data);
                 setCategories(categoryRes.data);
+                
+                // Create a map of categories by ID for easy lookup
+                const catMap = {};
+                categoryRes.data.forEach(category => {
+                    catMap[category._id] = category;
+                });
+                setCategoryMap(catMap);
+                
+                console.log("Categories loaded:", categoryRes.data);
+                console.log("Category map created:", catMap);
             } catch (error) {
                 console.error("Error fetching data:", error);
             } finally {
@@ -81,9 +223,15 @@ const AssetReport = () => {
     }, []);
 
     useEffect(() => {
+        console.log('Raw assets:', rawAssets);
+        console.log('Category map:', categoryMap);
+        
         const newDisplayAssets = groupAssets(rawAssets);
+        console.log('Display assets after grouping:', newDisplayAssets);
+        
         setDisplayAssets(newDisplayAssets);
-    }, [rawAssets]);
+        setAssets(newDisplayAssets);
+    }, [rawAssets, categoryMap]);
 
     const handleChange = (e) => {
         setFilters({ ...filters, [e.target.name]: e.target.value });
@@ -96,6 +244,7 @@ const AssetReport = () => {
                 headers: { token: localStorage.getItem('token') },
                 withCredentials: true
             });
+            console.log("API response data:", res.data);
             setRawAssets(res.data.data || []);
         } catch (error) {
             console.error("Error generating report:", error);
@@ -112,18 +261,31 @@ const AssetReport = () => {
         setAssets([]);
     };
 
+    const formatCurrency = (value) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 2
+        }).format(value);
+    };
+
     const csvHeaders = [
         { label: "Asset Name", key: "name" },
         { label: "Serial No", key: "Serial_number" },
+        { label: "Description", key: "Description" },
         { label: "Status", key: "status" },
         { label: "Assigned", key: "assignment_status" },
         { label: "Location", key: "Office" },
-        { label: "Category", key: "category.name" },
+        { label: "Category", key: "category_name" },
         { label: "Vendor", key: "vendor_name" },
         { label: "Voucher Number", key: "voucher_number" },
-        { label: "Quantity", key: "qty" },
+        { label: "Invoice ID", key: "Invoice_id" },
+        { label: "Quantity", key: "quantity" },
+        { label: "Price", key: "price" },
         { label: "Total Price", key: "total_price" },
-        { label: "Description", key: "description" },
+        { label: "Depreciation Rate (%)", key: "depreciation_rate" },
+        { label: "Total Depreciation", key: "depreciation" },
+        { label: "Current Value", key: "current_value" },
         { label: "Date of Purchase", key: "date_of_purchase" },
         { label: "Issued By", key: "Issued_by.first_name" },
         { label: "Issued To", key: "Issued_to.first_name" }
@@ -132,18 +294,23 @@ const AssetReport = () => {
     const csvData = displayAssets.map(asset => ({
         name: asset.name,
         Serial_number: asset.Serial_number,
+        Description: asset.Description || "",
         status: asset.status,
         assignment_status: asset.assignment_status ? "Issued" : "Not Issued",
         Office: asset.Office,
-        category: { name: asset.category?.name || "" },
+        category_name: asset.category_name || "",
         vendor_name: asset.vendor_name || "",
         voucher_number: asset.voucher_number || "",
-        qty: asset.qty || 1,
-        total_price : asset.total_price,
-        description: asset.description,
+        Invoice_id: asset.Invoice_id || "",
+        quantity: asset.quantity || 1,
+        price: asset.price || 0,
+        total_price: asset.total_price || 0,
+        depreciation_rate: asset.depreciation_rate || 0,
+        depreciation: asset.depreciation || 0,
+        current_value: asset.current_value || 0,
         date_of_purchase: new Date(asset.date_of_purchase).toLocaleDateString(),
-        Issued_by: { first_name: asset.Issued_by?.first_name || "" },
-        Issued_to: { first_name: asset.Issued_to?.first_name || "" }
+        "Issued_by.first_name": asset.Issued_by?.first_name || "",
+        "Issued_to.first_name": asset.Issued_to?.first_name || ""
     }));
 
     const getStatusColor = (status) => {
@@ -251,7 +418,9 @@ const AssetReport = () => {
                         >
                             <option value="">-- Select Category --</option>
                             {categories.map((cat) => (
-                                <option key={cat._id} value={cat._id}>{cat.name}</option>
+                                <option key={cat._id} value={cat._id}>
+                                    {cat.name} ({cat.depreciation_rate}% dep)
+                                </option>
                             ))}
                         </select>
                     </div>
@@ -280,25 +449,31 @@ const AssetReport = () => {
                             <tr>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Name</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial No</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Voucher Number</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice ID</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Price</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dep. Rate</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Depreciation</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Value</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purchase Date</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issued By</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issued To</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {displayAssets.map((asset) => (
-                                <tr key={asset._id} className="hover:bg-gray-50">
+                            {displayAssets.map((asset, index) => (
+                                <tr key={asset._id || index} className="hover:bg-gray-50">
                                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{asset.name}</td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{asset.Serial_number}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{asset.Description || "-"}</td>
                                     <td className="px-4 py-3 text-sm">
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(asset.status)}`}>
                                             {asset.status}
@@ -310,12 +485,16 @@ const AssetReport = () => {
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{asset.Office}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">{asset.category?.name || "-"}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{asset.category_name || "-"}</td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{asset.vendor_name || "-"}</td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{asset.voucher_number || "-"}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">{asset.qty || "1"}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">{asset.price || "-"}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">{asset.total_price}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{asset.Invoice_id || "-"}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{formatCurrency(asset.price || 0)}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{asset.quantity || "1"}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{formatCurrency(asset.total_price || 0)}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{asset.depreciation_rate || 0}%</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{formatCurrency(asset.depreciation || 0)}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{formatCurrency(asset.current_value || 0)}</td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{new Date(asset.date_of_purchase).toLocaleDateString()}</td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{asset.Issued_by?.first_name || "-"}</td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{asset.Issued_to?.first_name || "-"}</td>
