@@ -276,6 +276,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
       .populate('Issued_by', 'first_name last_name email')
       .populate('Issued_to', 'first_name last_name email Project_name')
       .populate('category', 'name')
+      .populate('Invoice_id', 'invoice_id pdf_file filename uploadDate');
     console.log("Asset:", asset);
     if (!asset) {
       return res.status(404).json({ error: 'Asset not found' });
@@ -395,6 +396,24 @@ router.get('/get_user_assets/:id', authMiddleware, async (req, res) => {
   }
 }
 )
+
+
+router.get('/:invoiceId/download', async (req, res) => {
+  try {
+    const { invoiceId } = req.params;
+    const invoice = await Invoice.findOne({ invoice_id: invoiceId });
+
+    if (!invoice || !invoice.pdf_file) {
+      return res.status(404).send('Invoice PDF not found.');
+    }
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${invoice.filename || 'invoice.pdf'}"`);
+    return res.send(invoice.pdf_file);
+  } catch (err) {
+    return res.status(500).send('Server error.');
+  }
+});
 
 
 router.post('/filter', authMiddleware, async (req, res) => {
