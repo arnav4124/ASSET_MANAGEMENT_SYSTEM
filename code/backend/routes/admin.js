@@ -11,6 +11,7 @@ const UserAsset = require('../models/user_asset')
 const Maintenance = require('../models/maintenace')
 const bcrypt = require('bcrypt')
 const nodemailer = require('nodemailer');
+const UserProject = require('../models/user_project') 
 const History = require('../models/history')
 require("dotenv").config({ path: ".env" });
 
@@ -874,6 +875,96 @@ admin_router.get('/assets/approaching-insurance', authMiddleware, async (req, re
         res.status(500).json({
             success: false,
             message: "Error fetching assets with approaching insurance dates",
+            error: error.message
+        });
+    }
+});
+
+// Add to your admin.js routes file
+admin_router.put('/deactivate_user/:userId', authMiddleware, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        console.log("Deactivating user with ID:", userId);
+
+        // 1. Find the user 
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        // 2. Find all assets assigned to this user and unassign them
+        try {
+            // First find the user-asset relationships
+            const userAssets = await UserAsset.find({ user_email: userId });
+            console.log(`Found ${userAssets.length} assets to unassign`);
+            
+            // Process each asset
+            for (const userAsset of userAssets) {
+                const assetId = userAsset.asset_id;
+                
+                // Find and update the asset directly with findByIdAndUpdate
+                const updatedAsset = await Asset.findByIdAndUpdate(
+                    assetId,
+                    {
+                        Issued_to: null,
+                        Issued_to_type: null,
+                        assignment_status: false,
+                        status: "Available"
+                    },
+                    { new: true }
+                );
+                
+                console.log(`Unassigned asset: ${assetId}`);
+                
+                // Delete the user-asset relationship
+                await UserAsset.findByIdAndDelete(userAsset._id);
+                console.log(`Deleted user-asset relationship: ${userAsset._id}`);
+            }
+        } catch (assetErr) {
+            console.error("Error processing assets:", assetErr);
+            return res.status(500).json({
+                success: false,
+                message: "Error unassigning assets",
+                error: assetErr.message
+            });
+        }
+
+        // 3. Remove user from projects
+        try {
+            const userProjects = await UserProject.find({ user_id: userId });
+            console.log(`Found ${userProjects.length} project assignments to remove`);
+            
+            for (const userProject of userProjects) {
+                await UserProject.findByIdAndDelete(userProject._id);
+                console.log(`Removed project assignment: ${userProject._id}`);
+            }
+        } catch (projectErr) {
+            console.error("Error removing user from projects:", projectErr);
+            return res.status(500).json({
+                success: false,
+                message: "Error removing user from projects",
+                error: projectErr.message
+            });
+        }
+
+        // 4. Finally mark the user as inactive
+        user.active = false;
+        await user.save();
+        console.log(`User ${userId} marked as inactive`);
+
+        res.status(200).json({
+            success: true,
+            message: 'User deactivated and all assets unassigned',
+            user
+        });
+    } catch (error) {
+        console.error('Error deactivating user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deactivating user',
             error: error.message
         });
     }
