@@ -126,8 +126,9 @@ location_router.get("/admin-locations", authMiddleware, async (req, res) => {
 location_router.get('/sticker-sequence/:locationName', authMiddleware, async (req, res) => {
     try {
         const { locationName } = req.params;
+        console.log("Location Name:", locationName);
         const location = await Location.findOne({ location_name: locationName });
-        
+        console.log("Location:", location);
         if (!location) {
             return res.status(404).json({ 
                 success: false, 
