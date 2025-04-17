@@ -238,6 +238,7 @@ const Asset_add = () => {
       formData.append("voucher_number", data.voucher_number);
       formData.append("date_of_purchase", data.date_of_purchase);
       formData.append("grouping", data.grouping);
+      formData.append("Invoice_id", data.Invoice_id || "");
 
       // Add warranty date and insurance date if provided
       if (data.warranty_date) {
@@ -434,6 +435,16 @@ const Asset_add = () => {
                 {errors.voucher_number && (
                   <p className="text-red-500 text-sm mt-1">{errors.voucher_number.message}</p>
                 )}
+              </div>
+              {/* Invoice ID */}
+              <div>
+                <label className="block font-medium text-sm mb-1 text-gray-700">Invoice ID (Optional)</label>
+                <input
+                  {...register("Invoice_id")}
+                  type="text"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                  placeholder="Enter invoice ID"
+                />
               </div>
             </div>
 
