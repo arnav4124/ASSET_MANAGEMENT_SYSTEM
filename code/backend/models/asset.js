@@ -11,8 +11,8 @@ const assetSchema = new mongoose.Schema({
     },
     Serial_number: {
         type: String,
-        required: true,
-        unique: true
+        // required: true,
+        // unique: true
     },
 
     asset_type: {
@@ -117,12 +117,12 @@ const assetSchema = new mongoose.Schema({
     },
     brand: {
         type: String,
-        required: true,
+        // required: true,
     },
 
     voucher_number: {
         type: String,
-        required:true
+        // required:true
     },
 
     grouping:{
