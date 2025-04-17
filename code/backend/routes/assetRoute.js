@@ -11,13 +11,23 @@ const AssetProject = require('../models/asset_project');
 const authMiddleware = require('../middleware/auth');
 const Invoice = require('../models/invoice')
 const History = require('../models/history')
+const User = require('../models/user')
 const createAssetHistory = async (params) => {
   try {
     // Check for required fields
     if (!params.asset_id) throw new Error('Asset ID is required');
     if (!params.performed_by) throw new Error('Performed by (admin ID) is required');
     if (!params.operation_type) throw new Error('Operation type is required');
-
+    let comment = params.comments || '';
+    
+    // For specific operations, generate automatic comments if not provided
+    if (params.operation_type === 'Location_Changed' && !params.comments) {
+      comment = `Location changed from ${params.details?.previous_location || 'unknown'} to ${params.details?.new_location || 'unknown'}`;
+    } else if (params.operation_type === 'Assigned' && !params.comments) {
+      comment = `Asset assigned to ${params.assignment_type === 'Project' ? 'project' : 'individual user'}`;
+    } else if (params.operation_type === 'Unassigned' && !params.comments) {
+      comment = params.details?.reason || 'Asset unassigned';
+    }
     // Create new history object with all provided fields
     const historyEntry = new History({
       asset_id: params.asset_id,
@@ -27,7 +37,8 @@ const createAssetHistory = async (params) => {
       assignment_type: params.assignment_type,
       issued_to: params.issued_to,
       // operation_time will default to current time if not provided
-      operation_time: params.operation_time || Date.now()
+      operation_time: params.operation_time || Date.now(),
+      comments: comment
     });
 
     // Save the history record
@@ -233,6 +244,8 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
 
     const createdAssets = await Promise.all(assetPromises);
     console.log('Successfully created assets:', createdAssets.length);
+    const user_issuer = await User.findById(Issued_by);
+    const Issued_by_name = user_issuer ? `${user_issuer.first_name} ${user_issuer.last_name}` : Issued_by; 
     //for all asset make history
     for (const asset of createdAssets) {
       await createAssetHistory({
@@ -240,7 +253,8 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
         performed_by: Issued_by,
         operation_type: 'Added',
         assignment_type: null,
-        issued_to: null
+        issued_to: null,
+        comments : `Asset added by admin ${Issued_by_name}`
       });
     }
     return res.status(201).json({ success: true, assets: createdAssets });
@@ -293,7 +307,12 @@ router.post("/assign_asset/:assetId", async (req, res) => {
     const { assetId } = req.params;       // from URL
     const { assignType, assignId, admin } = req.body; // from request body
     console.log("REQUEST BODY", req);
+    
     if (assignType === "user") {
+      // Get user name for history entry
+      const user = await User.findById(assignId);
+      const userName = user ? `${user.first_name} ${user.last_name}` : assignId;
+      
       // Entry in user_asset
       const newUserAsset = await UserAsset.create({
         asset_id: assetId,
@@ -313,10 +332,15 @@ router.post("/assign_asset/:assetId", async (req, res) => {
         performed_by: admin,
         operation_type: 'Assigned',
         assignment_type: 'Individual',
-        issued_to: assignId
+        issued_to: assignId,
+        comments: `Asset assigned to user ${userName}`
       });
       return res.status(200).json(newUserAsset);
     } else {
+      // Get project name for history entry
+      const project = await Project.findById(assignId);
+      const projectName = project ? project.Project_name : assignId;
+      
       // Entry in asset_project
       const newAssetProject = await AssetProject.create({
         asset_id: assetId,
@@ -335,7 +359,8 @@ router.post("/assign_asset/:assetId", async (req, res) => {
         performed_by: admin,
         operation_type: 'Assigned',
         assignment_type: 'Project',
-        issued_to: assignId
+        issued_to: assignId,
+        comments: `Asset assigned to project ${projectName}`
       });
       return res.status(200).json(newAssetProject);
     }
@@ -348,23 +373,34 @@ router.post("/assign_asset/:assetId", async (req, res) => {
 router.put('/:id/unassign', authMiddleware, async (req, res) => {
   try {
     const { admin } = req.body; // Get admin from request body
-
+    const user_id = await UserAsset.findOne({ asset_id: req.params.id });
+    console.log("User ID:", user_id);
+    if (!user_id) {
+      return res.status(404).json({ message: "User not found for this asset" });
+    }
+    const user = await User.findById(user_id.user_email);
+    const user_name = user.first_name + user.last_name;
+    console.log("User:", user); 
+    // const user_name = user.first_name+user.last_name
     const asset = await Asset.findByIdAndUpdate(
       req.params.id,
       {
-        Issued_to: null, // or Issued_by as well if needed
-        status: "Available", assignment_status: false
+        Issued_to: null,
+        status: "Available", 
+        assignment_status: false
       },
       { new: true }
     ).populate('Issued_by', 'first_name last_name').populate('Issued_to', 'first_name last_name');
+    
     console.log("Unassigned asset:", asset);
 
     await createAssetHistory({
       asset_id: req.params.id,
-      performed_by: admin, // Use admin from request body
+      performed_by: admin,
       operation_type: 'Unassigned',
-      assignment_type: null, // Fixed: changed NULL to null
-      issued_to: null // Fixed: changed NULL to null
+      assignment_type: null,
+      issued_to: null,
+      comments: `Asset unassigned from ${user_name}`
     });
 
     res.status(200).json(asset);
@@ -464,7 +500,7 @@ router.put('/:id/deactivate', authMiddleware, async (req, res) => {
   try {
     console.log("Inactivate request body:", req.body);
     const assetId = req.params.id;
-    const { admin } = req.body;
+    const admin = req.body.admin; // Fix: Access admin directly from req.body
 
     if (!admin) {
       return res.status(400).json({ error: 'Admin ID is required' });
@@ -479,15 +515,20 @@ router.put('/:id/deactivate', authMiddleware, async (req, res) => {
     if (!asset) {
       return res.status(404).json({ message: "Asset not found" });
     }
-
+    
+    // Fix: Use await when finding the admin user
+    const adminuser = await User.findById(admin);
+    const adminuser_name = adminuser ? `${adminuser.first_name} ${adminuser.last_name}` : admin;
+    
     // Update history
-    // await createAssetHistory({
-    //   asset_id: assetId,
-    //   performed_by: admin,
-    //   operation_type: 'Removed',
-    //   assignment_type: null,
-    //   issued_to: null
-    // });
+    await createAssetHistory({
+      asset_id: assetId,
+      performed_by: admin,
+      operation_type: 'Removed',
+      assignment_type: null,
+      issued_to: null,
+      comments: `Asset deactivated by admin ${adminuser_name}`
+    });
 
     res.status(200).json(asset);
   } catch (error) {
@@ -521,8 +562,16 @@ router.put('/:id', authMiddleware, upload.fields([
       return res.status(404).json({ error: 'Asset not found' });
     }
 
+    // Check for location change
+    const isLocationChanged = req.body.isLocationChanged === 'true';
+    const previousLocation = req.body.previousLocation;
+    const newLocation = req.body.Office;
+    
+    // Check if we need to unassign the asset due to location change
+    const unassignDueToLocationChange = req.body.unassignDueToLocationChange === 'true';
+    const previousAssignee = req.body.previousAssignee;
+    
     // Prepare update object with ONLY editable fields from request body
-    // Read-only fields (from frontend) are: name, brand_name, Serial_number, voucher_number, date_of_purchase, vendor_*
     const updateData = {
       // These fields can be edited
       asset_type: req.body.asset_type,
@@ -532,6 +581,13 @@ router.put('/:id', authMiddleware, upload.fields([
       description: req.body.description,
       price: req.body.price
     };
+    
+    // If unassigning due to location change, add unassignment data
+    if (unassignDueToLocationChange) {
+      updateData.Issued_to = null;
+      updateData.assignment_status = false;
+      updateData.status = "Available";  // Set status to Available when unassigned
+    }
 
     // Only update non-empty fields
     Object.keys(updateData).forEach(key => {
@@ -621,14 +677,59 @@ router.put('/:id', authMiddleware, upload.fields([
     console.log("Asset updated successfully. Updated warranty date:", updatedAsset.warranty_date);
     console.log("Updated insurance date:", updatedAsset.insurance_date);
 
-    // Create history record for the update
-    // await createAssetHistory({
-    //   asset_id: assetId,
-    //   performed_by: admin,
-    //   operation_type: 'Added',
-    //   assignment_type: null,
-    //   issued_to: null
-    // });
+    // Record history based on what changed
+    
+    // If asset was unassigned due to location change, record both events
+    if (unassignDueToLocationChange) {
+      // Get user name for the history entry
+      let previousAssigneeName = previousAssignee;
+      try {
+        const user = await User.findById(previousAssignee);
+        if (user) {
+          previousAssigneeName = `${user.first_name} ${user.last_name}`;
+        }
+      } catch (error) {
+        console.error("Error getting user name:", error);
+      }
+      
+      // First record the unassignment
+      await createAssetHistory({
+        asset_id: assetId,
+        performed_by: admin,
+        operation_type: 'Unassigned',
+        assignment_type: null,
+        issued_to: null,
+        comments:`Asset unassigned due to location change from user ${previousAssigneeName}`
+      });
+      
+      // Then record the location change
+      await createAssetHistory({
+        asset_id: assetId,
+        performed_by: admin,
+        operation_type: 'Location_Changed',
+        assignment_type: null,
+        issued_to: null,
+        comments: `Asset location changed from ${previousLocation} to ${newLocation}`
+      });
+      
+      console.log(`Asset unassigned and location changed: ${previousLocation} -> ${newLocation}`);
+    }
+    // If location changed but asset wasn't assigned (or other reason), just record location change
+    else if (isLocationChanged) {
+      await createAssetHistory({
+        asset_id: assetId,
+        performed_by: admin,
+        operation_type: 'Location_Changed',
+        assignment_type: null,
+        issued_to: null,
+        // details: {
+        //   previous_location: previousLocation,
+        //   new_location: newLocation
+        // }
+        comments: `Asset location changed from ${previousLocation} to ${newLocation}`
+      });
+      console.log(`Location change recorded in history: ${previousLocation} -> ${newLocation}`);
+    }
 
     res.status(200).json(updatedAsset);
   } catch (error) {

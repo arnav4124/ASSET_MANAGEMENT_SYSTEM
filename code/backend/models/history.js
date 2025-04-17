@@ -22,13 +22,17 @@ const historySchema = new Schema({
      },
    operation_type:{
       type:String,
-      enum:['Assigned','Unassigned','Added','Removed'],
+      enum:['Assigned','Unassigned','Added','Removed','Transferred','Location_Changed'],
       required:true
    },
    operation_time:{
       type:Date,
       default:Date.now
    },
+   comments:{
+      type:String,
+      default:''
+   }
 })
 
 module.exports = model('History', historySchema);

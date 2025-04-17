@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Box, ChevronLeft, Loader2, Upload, Check, Trash2 } from "lucide-react";
+import { Box, ChevronLeft, Loader2, Upload, Check, Trash2, AlertCircle } from "lucide-react";
 import axios from 'axios';
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -22,6 +22,8 @@ const Asset_edit = () => {
     const [assetData, setAssetData] = useState(null); // Store the raw asset data for debugging
     const [originalStickerSeq, setOriginalStickerSeq] = useState('');
     const [locationChanged, setLocationChanged] = useState(false);
+    const [showUnassignWarning, setShowUnassignWarning] = useState(false);
+    const [formData, setFormData] = useState(null);
 
     const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm();
 
@@ -203,6 +205,20 @@ const Asset_edit = () => {
     };
 
     const onSubmit = async (data) => {
+        // Check if asset is assigned and location is changed
+        if (assetData && assetData.assignment_status && data.office !== assetData.Office) {
+            // Store form data temporarily and show warning modal
+            setFormData(data);
+            setShowUnassignWarning(true);
+            return;
+        }
+        
+        // Otherwise proceed with normal submission
+        await submitFormData(data);
+    };
+    
+    // Function to handle the actual form submission
+    const submitFormData = async (data) => {
         setIsSubmitting(true);
         setError(null);
         setShowSuccess(false);
@@ -228,6 +244,15 @@ const Asset_edit = () => {
             const formData = new FormData();
             const issuedBy = JSON.parse(localStorage.getItem("user"))._id;
 
+            // Check if location has changed
+            const isLocationChanged = assetData && data.office !== assetData.Office;
+            
+            // Check if asset is assigned and location is changing
+            const isAssignedAndLocationChanged = 
+                assetData && 
+                assetData.assignment_status && 
+                isLocationChanged;
+
             // Keep all the existing fields in formData but don't modify them
             // These are just sent back for completeness
             formData.append("name", data.assetName);
@@ -250,6 +275,15 @@ const Asset_edit = () => {
             formData.append("category", data.category);
             formData.append("price", data.price);
             formData.append("admin", issuedBy);  // Admin who is making the edit
+            formData.append("isLocationChanged", isLocationChanged);  // Flag for location change
+            formData.append("previousLocation", assetData ? assetData.Office : "");  // Store previous location
+            
+            // Add flag to indicate if asset should be unassigned due to location change
+            formData.append("unassignDueToLocationChange", isAssignedAndLocationChanged ? "true" : "false");
+            
+            if (assetData && assetData.Issued_to) {
+                formData.append("previousAssignee", assetData.Issued_to._id || "");
+            }
 
             // Add warranty and insurance dates if provided
             console.log("Warranty date to save:", data.warranty_date);
@@ -324,6 +358,20 @@ const Asset_edit = () => {
         }
     };
 
+    // Handle confirmation to unassign
+    const handleUnassignConfirm = () => {
+        setShowUnassignWarning(false);
+        if (formData) {
+            submitFormData(formData);
+        }
+    };
+
+    // Handle cancellation
+    const handleUnassignCancel = () => {
+        setShowUnassignWarning(false);
+        setFormData(null);
+    };
+
     if (loading) {
         return (
             <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
@@ -338,6 +386,45 @@ const Asset_edit = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">
+            {/* Unassignment Warning Modal */}
+            {showUnassignWarning && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+                    <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+                        <div className="flex items-center text-amber-500 mb-4">
+                            <AlertCircle className="h-6 w-6 mr-2" />
+                            <h3 className="text-lg font-medium">Changing Location Requires Unassignment</h3>
+                        </div>
+                        
+                        <p className="mb-4 text-gray-600">
+                            This asset is currently assigned to{" "}
+                            <span className="font-medium">
+                                {assetData?.Issued_to?.first_name} {assetData?.Issued_to?.last_name || assetData?.Issued_to?.Project_name || ""}
+                            </span>. 
+                            Changing the location will unassign this asset.
+                        </p>
+                        
+                        <p className="mb-6 text-gray-600">
+                            Are you sure you want to continue?
+                        </p>
+                        
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={handleUnassignCancel}
+                                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleUnassignConfirm}
+                                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
+                            >
+                                Unassign & Update Location
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="bg-white rounded-lg shadow-md mb-8 p-6 border-l-4 border-yellow-500 transition-all duration-300 hover:shadow-lg">
