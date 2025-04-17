@@ -4,6 +4,8 @@ import { UserPlus, ChevronLeft, Check, Loader2, X, AlertCircle } from "lucide-re
 import axios from "axios";
 import { useNavigate, useParams } from 'react-router-dom';
 
+
+
 const EditUser = () => {
     const navigate = useNavigate();
     const { userId } = useParams();
@@ -20,6 +22,8 @@ const EditUser = () => {
     const [showAssetModal, setShowAssetModal] = useState(false);
     const [selectedAssets, setSelectedAssets] = useState({});
     const [selectedLocation, setSelectedLocation] = useState("");
+    const [showDeactivationModal, setShowDeactivationModal] = useState(false);
+    const [isDeactivating, setIsDeactivating] = useState(false);
 
     useEffect(() => {
         const token_st = localStorage.getItem("token");
@@ -351,6 +355,139 @@ const EditUser = () => {
         );
     };
 
+    const handleDeactivateUser = async () => {
+        try {
+            setIsDeactivating(true);
+            
+            const response = await axios.put(
+                `http://localhost:3487/api/admin/deactivate_user/${userId}`, 
+                {},
+                {
+                    headers: {
+                        token: localStorage.getItem("token")
+                    }
+                }
+            );
+    
+            if (response.status === 200) {
+                setShowSuccess(true);
+                setMessage("User deactivated successfully");
+                setShowDeactivationModal(false);
+                
+                // Increase the timeout to ensure the message is visible
+                setTimeout(() => {
+                    navigate("/admin/view_users");
+                }, 2500);
+            }
+        } catch (err) {
+            console.error("Error deactivating user:", err);
+            setError("Error deactivating user: " + (err.response?.data?.message || err.message));
+        } finally {
+            setIsDeactivating(false);
+        }
+    };
+
+    const DeactivationModal = () => {
+        if (!showDeactivationModal) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Remove User</h2>
+
+                    <div className="p-6">
+                        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                            <div className="flex">
+                                <div className="ml-3">
+                                    <p className="text-red-700 font-medium">
+                                        You are about to deactivate {userData.first_name} {userData.last_name}
+                                    </p>
+                                    <p className="text-red-700 mt-2">
+                                        This user will be marked as inactive and removed from all projects.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {userAssets.length > 0 ? (
+                            <>
+                                <p className="text-gray-700 mb-4">
+                                    The following assets will be unassigned and kept at <span className="font-semibold">{userData.location}</span>:
+                                </p>
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Asset Name
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Type
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Current Location
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {userAssets.map((asset) => (
+                                                <tr key={asset._id}>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {asset.name || 'Unnamed Asset'}
+                                                        </div>
+                                                        {asset.Serial_number && (
+                                                            <div className="text-xs text-gray-500">
+                                                                SN: {asset.Serial_number}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                            {asset.asset_type || 'Unknown'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {asset.Office || 'Unknown'}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        ) : (
+                            <p className="text-center text-gray-500 py-4">No assets assigned to this user</p>
+                        )}
+                    </div>
+
+                    <div className="flex justify-end space-x-4 mt-6">
+                        <button
+                            onClick={() => setShowDeactivationModal(false)}
+                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleDeactivateUser}
+                            disabled={isDeactivating}
+                            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isDeactivating ? (
+                                <span className="flex items-center">
+                                    <Loader2 className="animate-spin mr-2" size={16} />
+                                    Processing...
+                                </span>
+                            ) : (
+                                'Confirm Removal'
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     // Show error page if needed
     if (error && !loading && !userData) {
         return (
@@ -414,6 +551,7 @@ const EditUser = () => {
     return (
         <div className="min-h-screen bg-gray-50 p-6">
             <AssetSelectionModal />
+            <DeactivationModal />
             <div className="max-w-4xl mx-auto"></div>
             <div className="bg-white rounded-lg shadow-md mb-8 p-6 border-l-4 border-blue-500 transition-all duration-300 hover:shadow-lg">
                 <div className="flex items-center justify-between">
@@ -539,31 +677,42 @@ const EditUser = () => {
                     )}
                 </div>
 
-                <div className="bg-gray-50 p-6 flex justify-end border-t">
+                <div className="bg-gray-50 p-6 flex justify-between border-t">
                     <button
                         type="button"
-                        onClick={() => navigate('/admin/view_users')}
-                        className="px-4 py-2 mr-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition-all duration-200"
+                        onClick={() => setShowDeactivationModal(true)}
+                        className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-all duration-200 flex items-center gap-2"
                     >
-                        Cancel
+                        <X size={18} />
+                        Remove User
                     </button>
-                    <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className={`px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-200 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
-                    >
-                        {isSubmitting ? (
-                            <>
-                                <Loader2 size={18} className="animate-spin" />
-                                Updating...
-                            </>
-                        ) : (
-                            <>
-                                <Check size={18} />
-                                Update User
-                            </>
-                        )}
-                    </button>
+                    
+                    <div className="flex">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/admin/view_users')}
+                            className="px-4 py-2 mr-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition-all duration-200"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className={`px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-200 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 size={18} className="animate-spin" />
+                                    Updating...
+                                </>
+                            ) : (
+                                <>
+                                    <Check size={18} />
+                                    Update User
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </form>
 

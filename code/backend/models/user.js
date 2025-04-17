@@ -31,8 +31,11 @@ const userSchema = new Schema({
         type: String,
         required: true
     },
-   
-   
+    active: {
+        type: Boolean,
+        default: true,
+        required: true
+    },
 })
 
 const User = model('User', userSchema);
