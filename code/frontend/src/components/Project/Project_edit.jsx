@@ -150,10 +150,10 @@ const ProjectEdit = () => {
 
   const fetchAvailableAssets = async () => {
     try {
-      const response = await axios.get('http://localhost:3487/api/assets', {
+      const response = await axios.get('http://localhost:3487/api/projects/assets/search', {
         headers: { token: localStorage.getItem('token') }
       });
-      
+      setAvailableAssets(response.data);
     } catch (error) {
       console.error('Error fetching assets:', error);
     }
@@ -218,6 +218,15 @@ const ProjectEdit = () => {
       setSearchResults(response.data);
     } catch (error) {
       console.error('Error searching users:', error);
+      // Fallback to local search if API fails
+      if (availableUsers.length > 0) {
+        const filteredUsers = availableUsers.filter(user =>
+          user.first_name.toLowerCase().includes(query.toLowerCase()) ||
+          user.last_name.toLowerCase().includes(query.toLowerCase()) ||
+          user.email.toLowerCase().includes(query.toLowerCase())
+        );
+        setSearchResults(filteredUsers);
+      }
     }
   };
 
@@ -229,22 +238,25 @@ const ProjectEdit = () => {
       setAssetSearchResults(response.data);
     } catch (error) {
       console.error('Error searching assets:', error);
-      
+
       // More detailed error logging
       if (error.response) {
-        // The server responded with a status code outside the 2xx range
         console.error('Server error:', error.response.status, error.response.data);
       } else if (error.request) {
-        // The request was made but no response was received
         console.error('Network error - no response received');
       } else {
-        // Something happened in setting up the request
         console.error('Request setup error:', error.message);
       }
-      
-      // Continue with your fallback logic...
+
+      // Fallback to local search if API fails
       if (availableAssets.length > 0) {
-        // Your existing fallback code...
+        const filteredAssets = availableAssets.filter(asset =>
+          asset.name?.toLowerCase().includes(query.toLowerCase()) ||
+          asset.description?.toLowerCase().includes(query.toLowerCase()) ||
+          asset.Office?.toLowerCase().includes(query.toLowerCase()) ||
+          asset.category?.name?.toLowerCase().includes(query.toLowerCase())
+        );
+        setAssetSearchResults(filteredAssets);
       }
     }
   };
@@ -335,6 +347,34 @@ const ProjectEdit = () => {
     } catch (error) {
       console.error('Error removing asset:', error);
       alert('Error removing asset');
+    }
+  };
+
+  const deleteSelectedParticipants = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.delete(
+        `http://localhost:3487/api/projects/${id}/participants`,
+        {
+          headers: { token: localStorage.getItem('token') },
+          data: { userIds: toBeDeletedParticipants }
+        }
+      );
+
+      if (response.status === 200) {
+        // Refresh participants list
+        const participantsRes = await axios.get(`http://localhost:3487/api/projects/${id}/participants`, {
+          headers: { token: localStorage.getItem('token') }
+        });
+        setParticipants(participantsRes.data);
+        setToBeDeletedParticipants([]);
+        alert('Participants removed successfully!');
+      }
+    } catch (error) {
+      console.error('Error removing participants:', error);
+      alert('Error removing participants');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -840,7 +880,7 @@ const ProjectEdit = () => {
                     <button
                       type="button"
                       className="px-3 py-1 bg-red-500 text-white rounded text-sm"
-                      onClick={() => {/* Delete participants logic */ }}
+                      onClick={deleteSelectedParticipants}
                     >
                       Delete Selected
                     </button>

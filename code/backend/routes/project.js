@@ -287,14 +287,15 @@ router.get('/assets/search', authMiddleware, async (req, res) => {
                 ]
             };
         }
-        
+
+        // For Admin, show all assets without filtering by location or status
         const user = req.user;
-        const userLocation = user.location;
-        
-        // Add location filter to the search query
-        searchQuery.Office = userLocation;
-        searchQuery.status = 'Available'; 
-        
+        if (user.role !== 'Admin') {
+            const userLocation = user.location;
+            searchQuery.Office = userLocation;
+            searchQuery.status = 'Available';
+        }
+
         const assets = await Asset.find(searchQuery)
             .populate({
                 path: 'category',
@@ -304,15 +305,13 @@ router.get('/assets/search', authMiddleware, async (req, res) => {
                 path: 'Issued_by',
                 select: 'first_name last_name email'
             });
-            
+
         res.status(200).json(assets);
     } catch (error) {
         console.error('Error searching assets:', error);
         res.status(500).json({ message: 'Server error while searching assets' });
     }
-}); 
-
-                
+});
 
 // Add participants to project
 router.post('/:projectId/participants', authMiddleware, async (req, res) => {
@@ -379,16 +378,16 @@ router.post('/:projectId/assets', authMiddleware, async (req, res) => {
             asset_id: assetId,
             project_id: projectId
         }));
-        
+
 
         await AssetProject.insertMany(assetProjects);
         // Update all assigned assets to Unavailable status
-        
-    console.log(newAssetIds);
+
+        console.log(newAssetIds);
         await Asset.updateMany(
             { _id: { $in: newAssetIds } },
-            { 
-                $set: { 
+            {
+                $set: {
                     status: 'Unavailable',
                     assignment_status: true,
                     Issued_to: projectId,
@@ -406,6 +405,34 @@ router.post('/:projectId/assets', authMiddleware, async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ message: 'Error adding assets', error: error.message });
+    }
+});
+
+// Remove participant from project
+router.delete('/:projectId/participants', authMiddleware, async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const { userIds } = req.body; // Array of user IDs to remove
+
+        // Validate project exists
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
+
+        // Delete the user-project associations
+        const result = await UserProject.deleteMany({
+            project_id: projectId,
+            user_id: { $in: userIds }
+        });
+
+        res.status(200).json({
+            message: 'Participants removed successfully',
+            removed: result.deletedCount
+        });
+    } catch (error) {
+        console.error('Error removing participants:', error);
+        res.status(500).json({ message: 'Error removing participants', error: error.message });
     }
 });
 
