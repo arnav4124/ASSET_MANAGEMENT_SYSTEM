@@ -80,7 +80,7 @@ const assetSchema = new mongoose.Schema({
         //required: true
     },
 
-    Issued_date:{
+    Issued_date: {
         type: Date,
         default: null
     },
@@ -128,10 +128,11 @@ const assetSchema = new mongoose.Schema({
         // required:true
     },
 
-    grouping:{
+    grouping: {
         type: String,
         enum: ['Grouped', 'Individual'],
-        required: true
+        required: true,
+        default: 'Individual'
     },
 
     qty: {
@@ -141,7 +142,8 @@ const assetSchema = new mongoose.Schema({
 
     price: {
         type: Number,
-        required: true
+        required: true,
+        default: 0
     },
     warranty_date: {
         type: Date,

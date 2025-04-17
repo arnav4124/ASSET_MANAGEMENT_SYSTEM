@@ -11,7 +11,7 @@ const UserAsset = require('../models/user_asset')
 const Maintenance = require('../models/maintenace')
 const bcrypt = require('bcrypt')
 const nodemailer = require('nodemailer');
-const UserProject = require('../models/user_project') 
+const UserProject = require('../models/user_project')
 const History = require('../models/history')
 require("dotenv").config({ path: ".env" });
 
@@ -276,6 +276,11 @@ admin_router.put('/edit_user/:userId', authMiddleware, async (req, res) => {
                     asset.Issued_to_type = null;
                     asset.assignment_status = false;
                     asset.status = "Available";
+
+                    // Ensure required fields have default values
+                    if (!asset.grouping) asset.grouping = 'Individual';
+                    if (!asset.price && asset.price !== 0) asset.price = 0;
+
                     await asset.save();
 
                     // Remove the user-asset relationship
@@ -900,25 +905,29 @@ admin_router.put('/deactivate_user/:userId', authMiddleware, async (req, res) =>
             // First find the user-asset relationships
             const userAssets = await UserAsset.find({ user_email: userId });
             console.log(`Found ${userAssets.length} assets to unassign`);
-            
+
             // Process each asset
             for (const userAsset of userAssets) {
                 const assetId = userAsset.asset_id;
-                
-                // Find and update the asset directly with findByIdAndUpdate
-                const updatedAsset = await Asset.findByIdAndUpdate(
-                    assetId,
-                    {
-                        Issued_to: null,
-                        Issued_to_type: null,
-                        assignment_status: false,
-                        status: "Available"
-                    },
-                    { new: true }
-                );
-                
-                console.log(`Unassigned asset: ${assetId}`);
-                
+
+                // Find and update the asset 
+                const asset = await Asset.findById(assetId);
+
+                if (asset) {
+                    // Ensure required fields have default values
+                    if (!asset.grouping) asset.grouping = 'Individual';
+                    if (!asset.price && asset.price !== 0) asset.price = 0;
+
+                    // Update fields
+                    asset.Issued_to = null;
+                    asset.Issued_to_type = null;
+                    asset.assignment_status = false;
+                    asset.status = "Available";
+
+                    await asset.save();
+                    console.log(`Unassigned asset: ${assetId}`);
+                }
+
                 // Delete the user-asset relationship
                 await UserAsset.findByIdAndDelete(userAsset._id);
                 console.log(`Deleted user-asset relationship: ${userAsset._id}`);
@@ -936,7 +945,7 @@ admin_router.put('/deactivate_user/:userId', authMiddleware, async (req, res) =>
         try {
             const userProjects = await UserProject.find({ user_id: userId });
             console.log(`Found ${userProjects.length} project assignments to remove`);
-            
+
             for (const userProject of userProjects) {
                 await UserProject.findByIdAndDelete(userProject._id);
                 console.log(`Removed project assignment: ${userProject._id}`);
