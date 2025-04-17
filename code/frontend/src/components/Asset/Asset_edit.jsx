@@ -20,8 +20,13 @@ const Asset_edit = () => {
     });
     const [assetType, setAssetType] = useState("physical");
     const [assetData, setAssetData] = useState(null); // Store the raw asset data for debugging
+    const [originalStickerSeq, setOriginalStickerSeq] = useState('');
+    const [locationChanged, setLocationChanged] = useState(false);
 
-    const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm();
+    const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm();
+
+    // Watch for office field changes
+    const watchedOffice = watch("office");
 
     // Fetch asset data and other required data on component mount
     useEffect(() => {
@@ -49,6 +54,7 @@ const Asset_edit = () => {
                 console.log("Insurance date:", assetRes.data.insurance_date);
 
                 setAssetData(assetRes.data);
+                setOriginalStickerSeq(assetRes.data.Sticker_seq);
 
                 // Fetch categories
                 const categoriesRes = await axios.get("http://localhost:3487/api/categories", {
@@ -77,6 +83,54 @@ const Asset_edit = () => {
 
         fetchData();
     }, [id, navigate]);
+
+    // Function to update the sticker sequence when location changes
+    useEffect(() => {
+        const updateStickerSequence = async () => {
+            console.log("Watched office:", watchedOffice);
+            console.log("Asset data:", assetData);
+            console.log("Original sticker sequence:", originalStickerSeq);
+            if (watchedOffice && assetData && watchedOffice !== assetData.Office) {
+                // Location has changed
+                setLocationChanged(true);
+                
+                try {
+                    // Fetch the short sequence for the new location
+                    const response = await axios.get(`http://localhost:3487/api/locations/sticker-sequence/${watchedOffice}`, {
+                        withCredentials: true,
+                        headers: { token: localStorage.getItem("token") }
+                    });
+                    
+                    if (response.data.success && response.data.sticker_short_seq) {
+                        // We need to update only the location part of the sticker sequence
+                        // Format: EKL/CENT/CAT/MON/YR/####
+                        const newLocationShortSeq = response.data.sticker_short_seq;
+                        const currentStickerSeq = originalStickerSeq || assetData.Sticker_seq;
+                        
+                        // Split the sticker sequence by '/'
+                        const parts = currentStickerSeq.split('/');
+                        if (parts.length >= 6) {
+                            // Replace only the location part (index 1)
+                            parts[1] = newLocationShortSeq;
+                            
+                            // Join the parts back together
+                            const newStickerSeq = parts.join('/');
+                            setValue("stickerSeq", newStickerSeq);
+                            
+                            // Display notification about sequence update
+                            console.log(`Sticker sequence updated from ${currentStickerSeq} to ${newStickerSeq}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error fetching location sticker sequence:", error);
+                }
+            } else {
+                setLocationChanged(false);
+            }
+        };
+        
+        updateStickerSequence();
+    }, [watchedOffice, assetData, originalStickerSeq, setValue]);
 
     // Helper function to populate form fields with existing asset data
     const populateFormFields = (asset) => {
@@ -526,28 +580,33 @@ const Asset_edit = () => {
                                         </option>
                                     ))}
                                 </select>
+                                {locationChanged && (
+                                    <p className="text-amber-600 text-xs mt-1">
+                                        Location changed. Sticker sequence has been updated accordingly.
+                                    </p>
+                                )}
                                 {errors.office && (
                                     <p className="text-red-500 text-sm mt-1">{errors.office.message}</p>
                                 )}
                             </div>
 
-                            {/* Category */}
+                            {/* Category - Read-only */}
                             <div>
-                                <label className="block font-medium text-sm mb-1 text-gray-700">Category</label>
-                                <select
+                                <label className="block font-medium text-sm mb-1 text-gray-700">Category (Read-only)</label>
+                                <input
+                                    type="text"
+                                    value={assetData?.category?.name || ""}
+                                    className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                                    readOnly
+                                />
+                                <input
+                                    type="hidden"
                                     {...register("category")}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                                >
-                                    <option value="">Select Category</option>
-                                    {categories.map((cat) => (
-                                        <option key={cat._id} value={cat._id}>
-                                            {cat.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.category && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.category.message}</p>
-                                )}
+                                    value={assetData?.category?._id || ""}
+                                />
+                                <p className="text-amber-600 text-xs mt-1">
+                                    Category cannot be changed to maintain asset categorization integrity.
+                                </p>
                             </div>
                         </div>
 
