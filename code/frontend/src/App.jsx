@@ -36,6 +36,9 @@ import AssetReport from './components/Report/AssetReport.jsx'
 import AssetEdit from './components/Asset/Asset_edit.jsx'
 import Asset_maintenance from './components/Asset/Asset_maintenance.jsx'
 import Edit_maintenance from './components/Asset/Edit_maintenance.jsx'
+import ViewPendingMaintenance from './components/Dashboard/ViewAll/ViewPendingMaintenance.jsx'
+import ViewApproachingWarranty from './components/Dashboard/ViewAll/ViewApproachingWarranty.jsx'
+import ViewApproachingInsurance from './components/Dashboard/ViewAll/ViewApproachingInsurance.jsx'
 
 function Layout({ children }) {
   const location = useLocation();
@@ -91,6 +94,9 @@ function App() {
             <Route path="/user/assets/view/" element={<View_asset_for_user />} />
             <Route path="/user/projects/view/" element={<View_your_project />} />
             <Route path="/admin/report" element={< AssetReport />} />
+            <Route path="/admin/view-pending-maintenance" element={<ViewPendingMaintenance />} />
+            <Route path="/admin/view-approaching-warranty" element={<ViewApproachingWarranty />} />
+            <Route path="/admin/view-approaching-insurance" element={<ViewApproachingInsurance />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>
