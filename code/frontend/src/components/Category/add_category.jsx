@@ -10,17 +10,28 @@ const AddCategory = () => {
     const [showSuccess, setShowSuccess] = useState(false);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [stickerShortSeq, setStickerShortSeq] = useState('');
+    const [lifespan, setLifespan] = useState('');
+    const [depreciationRate, setDepreciationRate] = useState('');
+    const [nameError, setNameError] = useState('');
+    const [descriptionError, setDescriptionError] = useState('');
+    const [stickerError, setStickerError] = useState('');
+    const [lifespanError, setLifespanError] = useState('');
+    const [depreciationRateError, setDepreciationRateError] = useState('');
+    const [serverError, setServerError] = useState('');
 
-    useEffect(()=>{
-        const token=localStorage.getItem('token')
-        if(!token){
+    useEffect(() => {
+        const token = localStorage.getItem('token')
+        if (!token) {
             navigate('/login')
         }
-        else{
-            const role =JSON.parse(localStorage.getItem('user')).role
+        else {
+            const role = JSON.parse(localStorage.getItem('user')).role
             console.log(role)
 
-            if(role!=='Superuser'){
+            if (role !== 'Superuser') {
                 navigate('/login')
             }
         }
@@ -37,6 +48,73 @@ const AddCategory = () => {
         }
     });
 
+    const validateForm = () => {
+        let isValid = true;
+
+        // Reset errors
+        setNameError('');
+        setDescriptionError('');
+        setStickerError('');
+        setLifespanError('');
+        setDepreciationRateError('');
+
+        // Validate name
+        if (!name.trim()) {
+            setNameError('Category name is required');
+            isValid = false;
+        } else if (name.length < 2) {
+            setNameError('Category name must be at least 2 characters');
+            isValid = false;
+        }
+
+        // Validate description
+        if (!description.trim()) {
+            setDescriptionError('Description is required');
+            isValid = false;
+        } else if (description.length < 10) {
+            setDescriptionError('Description must be at least 10 characters');
+            isValid = false;
+        }
+
+        // Validate sticker short sequence
+        if (!stickerShortSeq.trim()) {
+            setStickerError('Sticker sequence is required');
+            isValid = false;
+        } else if (stickerShortSeq.length !== 3) {
+            setStickerError('Sticker sequence must be exactly 3 characters');
+            isValid = false;
+        }
+
+        // Validate lifespan (optional)
+        if (lifespan.trim() !== '') {
+            const lifespanValue = parseFloat(lifespan);
+            if (isNaN(lifespanValue)) {
+                setLifespanError('Lifespan must be a valid number');
+                isValid = false;
+            } else if (lifespanValue <= 0) {
+                setLifespanError('Lifespan must be greater than 0');
+                isValid = false;
+            }
+        }
+
+        // Validate depreciation rate
+        if (!depreciationRate.trim()) {
+            setDepreciationRateError('Depreciation rate is required');
+            isValid = false;
+        } else {
+            const depreciationRateValue = parseFloat(depreciationRate);
+            if (isNaN(depreciationRateValue)) {
+                setDepreciationRateError('Depreciation rate must be a valid number');
+                isValid = false;
+            } else if (depreciationRateValue < 0) {
+                setDepreciationRateError('Depreciation rate must be a positive number');
+                isValid = false;
+            }
+        }
+
+        return isValid;
+    };
+
     const onSubmit = async (data) => {
         try {
             setIsSubmitting(true);
@@ -49,7 +127,6 @@ const AddCategory = () => {
                 data,
                 {
                     headers: {
-                        
                         token: localStorage.getItem('token')
                     }
                 }
@@ -186,11 +263,11 @@ const AddCategory = () => {
                                     validate: {
                                         positive: value => {
                                             if (!value && value !== 0) return true; // Optional field
-                                            
+
                                             const numValue = parseFloat(value);
                                             if (isNaN(numValue)) return "Please enter a valid number";
                                             if (numValue <= 0) return "Lifespan must be greater than 0";
-                                            
+
                                             return true;
                                         }
                                     }
@@ -198,12 +275,40 @@ const AddCategory = () => {
                                 type="number"
                                 step="any"
                                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                                placeholder="Enter lifespan (e.g., 0.4, 1.5, 5)"
+                                placeholder="Enter asset lifespan in years (optional)"
                                 disabled={loading}
                             />
                             {errors.lifespan && (
                                 <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.lifespan.message}</p>
                             )}
+                        </div>
+
+                        {/* Depreciation Rate (per annum) */}
+                        <div className="mb-6">
+                            <label className="block font-medium text-sm mb-1 text-gray-700">Depreciation Rate (% per annum)<span className="text-red-500 ml-1">*</span></label>
+                            <input
+                                {...register("depreciation_rate", {
+                                    required: "Depreciation rate is required",
+                                    validate: {
+                                        positive: value => {
+                                            const numValue = parseFloat(value);
+                                            if (isNaN(numValue)) return "Please enter a valid number";
+                                            if (numValue < 0) return "Depreciation rate must be a positive number";
+                                            return true;
+                                        }
+                                    }
+                                })}
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                                placeholder="Enter annual depreciation rate (%)"
+                                disabled={loading}
+                            />
+                            {errors.depreciation_rate && (
+                                <p className="text-red-500 text-sm mt-1 animate-fadeIn">{errors.depreciation_rate.message}</p>
+                            )}
+                            <p className="text-gray-500 text-xs mt-1">Example: 10 for 10% depreciation per year</p>
                         </div>
                     </div>
 

@@ -11,7 +11,7 @@ const Project = require('../models/project');
 // Add a new category
 router.post('/add_category', authMiddleware, async (req, res) => {
     try {
-        const { name, description, sticker_short_seq,lifespan } = req.body;
+        const { name, description, sticker_short_seq, lifespan, depreciation_rate } = req.body;
 
         // Check if category already exists
         const existingCategory = await Category.findOne({ name: name.trim() });
@@ -22,17 +22,34 @@ router.post('/add_category', authMiddleware, async (req, res) => {
             });
         }
 
+        // Validate depreciation_rate
+        if (depreciation_rate === undefined || depreciation_rate === null || depreciation_rate === '') {
+            return res.status(400).json({
+                success: false,
+                message: "Depreciation rate is required"
+            });
+        }
+
+        const depreciationRateNumber = Number(depreciation_rate);
+        if (isNaN(depreciationRateNumber) || depreciationRateNumber < 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Depreciation rate must be a positive number"
+            });
+        }
+
         // Create new category
         const categoryData = new Category({
             name: name.trim(),
             description: description.trim(),
-            sticker_short_seq: sticker_short_seq.trim()
-
+            sticker_short_seq: sticker_short_seq.trim(),
+            depreciation_rate: depreciationRateNumber
         });
+
         if (lifespan !== undefined && lifespan !== null && lifespan !== '') {
             // Convert to number to ensure proper data type
             const lifespanNumber = Number(lifespan);
-            
+
             // Validate lifespan
             if (isNaN(lifespanNumber) || lifespanNumber < 0) {
                 return res.status(400).json({
@@ -40,7 +57,7 @@ router.post('/add_category', authMiddleware, async (req, res) => {
                     message: "Lifespan must be a positive number"
                 });
             }
-            
+
             categoryData.lifespan = lifespanNumber;
         }
         await categoryData.save();
@@ -56,6 +73,118 @@ router.post('/add_category', authMiddleware, async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error adding category",
+            error: error.message
+        });
+    }
+});
+
+// Update a category
+router.put('/update_category/:id', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, description, sticker_short_seq, lifespan, depreciation_rate } = req.body;
+
+        // Check if category exists
+        const category = await Category.findById(id);
+        if (!category) {
+            return res.status(404).json({
+                success: false,
+                message: "Category not found"
+            });
+        }
+
+        // Check if name already exists (but ignore the current category)
+        if (name && name.trim() !== category.name) {
+            const existingCategory = await Category.findOne({ name: name.trim() });
+            if (existingCategory) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Category with this name already exists"
+                });
+            }
+        }
+
+        // Validate depreciation_rate
+        if (depreciation_rate === undefined || depreciation_rate === null || depreciation_rate === '') {
+            return res.status(400).json({
+                success: false,
+                message: "Depreciation rate is required"
+            });
+        }
+
+        const depreciationRateNumber = Number(depreciation_rate);
+        if (isNaN(depreciationRateNumber) || depreciationRateNumber < 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Depreciation rate must be a positive number"
+            });
+        }
+
+        // Prepare update data
+        const updateData = {};
+        if (name) updateData.name = name.trim();
+        if (description) updateData.description = description.trim();
+        if (sticker_short_seq) updateData.sticker_short_seq = sticker_short_seq.trim();
+        updateData.depreciation_rate = depreciationRateNumber;
+
+        // Handle lifespan (optional field)
+        if (lifespan !== undefined && lifespan !== null && lifespan !== '') {
+            const lifespanNumber = Number(lifespan);
+            if (isNaN(lifespanNumber) || lifespanNumber < 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Lifespan must be a positive number"
+                });
+            }
+            updateData.lifespan = lifespanNumber;
+        }
+
+        // Update the category
+        const updatedCategory = await Category.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Category updated successfully",
+            category: updatedCategory
+        });
+
+    } catch (error) {
+        console.error('Error updating category:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error updating category",
+            error: error.message
+        });
+    }
+});
+
+// Get a specific category by ID
+router.get('/category/:id', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const category = await Category.findById(id);
+
+        if (!category) {
+            return res.status(404).json({
+                success: false,
+                message: "Category not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            category
+        });
+
+    } catch (error) {
+        console.error('Error fetching category:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching category",
             error: error.message
         });
     }

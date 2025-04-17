@@ -9,13 +9,18 @@ const categorySchema = new Schema({
         type: String,
         required: true
     },
-    sticker_short_seq : {
+    sticker_short_seq: {
         type: String,
         required: true
     },
-    lifespan:{
-        type:Number,
-        default:null
+    lifespan: {
+        type: Number,
+        default: null
+    },
+    depreciation_rate: {
+        type: Number,
+        required: true,
+        min: 0
     }
 });
 

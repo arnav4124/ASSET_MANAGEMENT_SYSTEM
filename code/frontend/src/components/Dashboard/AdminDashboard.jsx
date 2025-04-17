@@ -375,13 +375,13 @@ const AdminDashboard = () => {
                 <span className="ml-2 text-sm text-gray-500">Loading maintenance data...</span>
               </div>
             ) : pendingMaintenance.length > 0 ? (
-              <div className="overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
+              <div className="overflow-x-auto">
+                <table className="min-w-full table-fixed divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
-                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Office</th>
-                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[45%]">Asset</th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[25%]">Office</th>
+                      <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[30%]">Days</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -391,15 +391,15 @@ const AdminDashboard = () => {
                         className="hover:bg-gray-50 cursor-pointer"
                         onClick={() => navigate(`/admin/assets/edit-maintenance/${item.asset_id}`)}
                       >
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{item.asset_name}</div>
-                          <div className="text-xs text-gray-500">{item.serial_number}</div>
+                        <td className="px-3 py-2">
+                          <div className="text-sm font-medium text-gray-900 truncate">{item.asset_name}</div>
+                          <div className="text-xs text-gray-500 truncate">{item.serial_number}</div>
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{item.office}</div>
+                        <td className="px-3 py-2">
+                          <div className="text-sm text-gray-500 truncate">{item.office}</div>
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        <td className="px-4 py-2">
+                          <span className="block px-2 py-1 text-xs leading-5 font-semibold rounded-full text-center bg-yellow-100 text-yellow-800">
                             {new Date(item.expected_return_date) < new Date()
                               ? "Due date passed"
                               : `${item.days_in_maintenance} days`}
@@ -449,13 +449,13 @@ const AdminDashboard = () => {
                 <span className="ml-2 text-sm text-gray-500">Loading warranty data...</span>
               </div>
             ) : approachingWarranty.length > 0 ? (
-              <div className="overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
+              <div className="overflow-x-auto">
+                <table className="min-w-full table-fixed divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
-                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Office</th>
-                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires In</th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[45%]">Asset</th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[25%]">Office</th>
+                      <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[30%]">Expires In</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -465,15 +465,15 @@ const AdminDashboard = () => {
                         className="hover:bg-gray-50 cursor-pointer"
                         onClick={() => navigate(`/admin/assets/edit/${item.asset_id}`)}
                       >
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{item.asset_name}</div>
-                          <div className="text-xs text-gray-500">{item.serial_number}</div>
+                        <td className="px-3 py-2">
+                          <div className="text-sm font-medium text-gray-900 truncate">{item.asset_name}</div>
+                          <div className="text-xs text-gray-500 truncate">{item.serial_number}</div>
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{item.office}</div>
+                        <td className="px-3 py-2">
+                          <div className="text-sm text-gray-500 truncate">{item.office}</div>
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${new Date(item.warranty_date) < new Date()
+                        <td className="px-4 py-2">
+                          <span className={`block px-2 py-1 text-xs leading-5 font-semibold rounded-full text-center ${new Date(item.warranty_date) < new Date()
                             ? "bg-red-100 text-red-800"
                             : "bg-blue-100 text-blue-800"
                             }`}>
@@ -526,13 +526,13 @@ const AdminDashboard = () => {
                 <span className="ml-2 text-sm text-gray-500">Loading insurance data...</span>
               </div>
             ) : approachingInsurance.length > 0 ? (
-              <div className="overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
+              <div className="overflow-x-auto">
+                <table className="min-w-full table-fixed divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
-                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Office</th>
-                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires In</th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[45%]">Asset</th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[25%]">Office</th>
+                      <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[30%]">Expires In</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -542,15 +542,15 @@ const AdminDashboard = () => {
                         className="hover:bg-gray-50 cursor-pointer"
                         onClick={() => navigate(`/admin/assets/edit/${item.asset_id}`)}
                       >
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{item.asset_name}</div>
-                          <div className="text-xs text-gray-500">{item.serial_number}</div>
+                        <td className="px-3 py-2">
+                          <div className="text-sm font-medium text-gray-900 truncate">{item.asset_name}</div>
+                          <div className="text-xs text-gray-500 truncate">{item.serial_number}</div>
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{item.office}</div>
+                        <td className="px-3 py-2">
+                          <div className="text-sm text-gray-500 truncate">{item.office}</div>
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${new Date(item.insurance_date) < new Date()
+                        <td className="px-4 py-2">
+                          <span className={`block px-2 py-1 text-xs leading-5 font-semibold rounded-full text-center ${new Date(item.insurance_date) < new Date()
                             ? "bg-red-100 text-red-800"
                             : "bg-green-100 text-green-800"
                             }`}>
