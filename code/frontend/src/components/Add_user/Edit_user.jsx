@@ -633,6 +633,22 @@ const EditUser = () => {
                         </div>
                     </div>
 
+                    <div className="mb-6">
+                        <label className="block font-medium text-sm mb-1 text-gray-700">Status</label>
+                        <div className="flex items-center">
+                            <span 
+                                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                                    userData.active !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                }`}
+                            >
+                                <span className={`h-2 w-2 rounded-full mr-2 ${
+                                    userData.active !== false ? 'bg-green-500' : 'bg-red-500'
+                                }`}></span>
+                                {userData.active !== false ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                    </div>
+
                     <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2 pt-2">Update Information</h2>
 
                     <h2 className="text-lg font-medium text-gray-700 mb-4">Select Location</h2>
