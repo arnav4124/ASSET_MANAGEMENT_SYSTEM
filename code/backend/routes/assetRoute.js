@@ -57,6 +57,7 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
       Sticker_seq,
       description,
       Issued_by,
+      Invoice_id,
       Issued_to,
       vendor_name,
       vendor_email,
@@ -109,23 +110,40 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
     if (req.files && req.files.additionalPdf) {
       additionalFilesBuffer = req.files.additionalPdf[0].buffer;
     }
-
+ 
     // Create invoice if invoice PDF is uploaded
     let invoiceId = null;
+    let invObject = null;
+    console.log("Invoice ID from request:", Invoice_id);
+    if (Invoice_id && Invoice_id.trim() !== '') {
+      // Validate if the invoice exists in the database
+      const existingInvoice = await Invoice.find({invoice_id : Invoice_id});
+      if (!existingInvoice) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid invoice ID provided'
+        });
+      }
+      invoiceId = Invoice_id;
+      //console.log("Invoice ID from request:", invoiceId);
+
+    }else{
+      invoiceId = `INV-${Date.now()}`;
+    }
+    console.log("Invoice ID set in backend", invoiceId);
     if (req.files && req.files.invoicePdf) {
       const pdfBuffer = req.files.invoicePdf[0].buffer;
       const pdfFilename = req.files.invoicePdf[0].originalname;
-      const generatedInvoiceId = `INV-${Date.now()}`;
 
       const newInvoice = new Invoice({
-        invoice_id: generatedInvoiceId,
+        invoice_id: invoiceId,
         pdf_file: pdfBuffer,
         filename: pdfFilename,
         uploadDate: new Date()
       });
       await newInvoice.save();
 
-      invoiceId = newInvoice._id;
+      invObject = newInvoice._id;
     }
 
     // check if date of purchase is provided
@@ -199,7 +217,7 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
       const newAsset = new Asset(assetData);
       // Set invoice ID if available
       if (invoiceId) {
-        newAsset.Invoice_id = invoiceId;
+        newAsset.Invoice_id = invObject;
       }
       // set Img buffer if available
       if (imgBuffer) {
@@ -245,7 +263,7 @@ router.get('/', authMiddleware, async (req, res) => {
       .populate('Issued_to', 'first_name last_name email Project_name')
       .populate('category', 'name');
     res.status(200).json(assets);
-    console.log('Assets:', assets);
+    //console.log('Assets:', assets);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
