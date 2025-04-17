@@ -11,6 +11,7 @@ const Asset_maintenance = () => {
         date_of_sending: new Date().toISOString().split("T")[0],
         expected_date_of_return: "",
         description: "",
+        Sticker_seq: "",
         maintenance_type: "Repair",
         maintenance_cost: 0,
         vendor_name: "",
@@ -45,6 +46,10 @@ const Asset_maintenance = () => {
             .then((res) => {
                 setAsset(res.data);
                 setLoading(false);
+                setFormData({
+                    ...formData,
+                    Sticker_seq: res.data.Sticker_seq
+                });
             })
             .catch((err) => {
                 console.error(err);
@@ -225,6 +230,22 @@ const Asset_maintenance = () => {
                                     <option value="Replacement">Replacement</option>
                                 </select>
                             </div>
+                         {/* sticker_seq */}
+                         <div>
+                            <label htmlFor="sticker_seq" className="block font-medium text-sm mb-1 text-gray-700">
+                                Sticker Sequence
+                            </label>
+                            <input
+                                type="text"
+                                id="sticker_seq"
+                                name="sticker_seq"
+                                value={formData.Sticker_seq}
+                                onChange={handleChange}
+                                disabled
+                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                                required
+                            />  
+                         </div>
 
                             {/* Estimated Cost */}
                             <div>
