@@ -147,7 +147,7 @@ const ViewUsers = () => {
     const getPageNumbers = () => {
         const maxPagesToShow = 5; // Number of page buttons to show at once
         let pageNumbers = [];
-        
+
         if (totalPages <= maxPagesToShow) {
             // Show all pages if total pages is less than maxPagesToShow
             pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -155,10 +155,10 @@ const ViewUsers = () => {
             // Always include first page, last page, and pages around current page
             const leftSiblingIndex = Math.max(currentPage - 1, 1);
             const rightSiblingIndex = Math.min(currentPage + 1, totalPages);
-            
+
             const shouldShowLeftDots = leftSiblingIndex > 2;
             const shouldShowRightDots = rightSiblingIndex < totalPages - 1;
-            
+
             if (!shouldShowLeftDots && shouldShowRightDots) {
                 // Show first 1, 2, 3, 4, 5 ... 10
                 const leftItemCount = 3 + (maxPagesToShow - 3) / 2;
@@ -169,7 +169,7 @@ const ViewUsers = () => {
                 // Show 1 ... 6, 7, 8, 9, 10
                 pageNumbers.push(1);
                 pageNumbers.push("dots1");
-                
+
                 const rightItemCount = maxPagesToShow - 3;
                 const startPage = totalPages - rightItemCount + 1;
                 pageNumbers = pageNumbers.concat(
@@ -179,16 +179,16 @@ const ViewUsers = () => {
                 // Show 1 ... 4, 5, 6 ... 10
                 pageNumbers.push(1);
                 pageNumbers.push("dots1");
-                
+
                 pageNumbers.push(leftSiblingIndex);
                 pageNumbers.push(currentPage);
                 pageNumbers.push(rightSiblingIndex);
-                
+
                 pageNumbers.push("dots2");
                 pageNumbers.push(totalPages);
             }
         }
-        
+
         return pageNumbers;
     };
 
@@ -324,6 +324,7 @@ const ViewUsers = () => {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
@@ -350,6 +351,16 @@ const ViewUsers = () => {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm text-gray-500">{user.location}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span
+                                                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${user.active !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                                            }`}
+                                                    >
+                                                        <span className={`h-2 w-2 rounded-full mr-2 ${user.active !== false ? 'bg-green-500' : 'bg-red-500'
+                                                            }`}></span>
+                                                        {user.active !== false ? 'Active' : 'Inactive'}
+                                                    </span>
                                                 </td>
                                             </tr>
                                         ))
