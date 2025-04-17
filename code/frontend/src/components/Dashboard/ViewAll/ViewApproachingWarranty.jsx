@@ -203,10 +203,10 @@ const ViewApproachingWarranty = () => {
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <span
                                                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${asset.status === 'Available'
-                                                                    ? 'bg-green-100 text-green-800'
-                                                                    : asset.status === 'Maintenance'
-                                                                        ? 'bg-yellow-100 text-yellow-800'
-                                                                        : 'bg-red-100 text-red-800'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : asset.status === 'Maintenance'
+                                                                    ? 'bg-yellow-100 text-yellow-800'
+                                                                    : 'bg-red-100 text-red-800'
                                                                 }`}
                                                         >
                                                             {asset.status}
@@ -219,7 +219,14 @@ const ViewApproachingWarranty = () => {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm text-gray-500">
-                                                            {asset.days_remaining} days
+                                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${new Date(asset.warranty_date) < new Date()
+                                                                ? "bg-red-100 text-red-800"
+                                                                : "bg-blue-100 text-blue-800"
+                                                                }`}>
+                                                                {new Date(asset.warranty_date) < new Date()
+                                                                    ? "Expired"
+                                                                    : `${asset.days_remaining} days`}
+                                                            </span>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

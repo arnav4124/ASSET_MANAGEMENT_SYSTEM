@@ -212,7 +212,14 @@ const ViewPendingMaintenance = () => {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm text-gray-500">
-                                                            {asset.days_in_maintenance} days
+                                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${new Date(asset.expected_return_date) < new Date()
+                                                                ? "bg-red-100 text-red-800"
+                                                                : "bg-yellow-100 text-yellow-800"
+                                                                }`}>
+                                                                {new Date(asset.expected_return_date) < new Date()
+                                                                    ? "Due date passed"
+                                                                    : `${asset.days_in_maintenance} days`}
+                                                            </span>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

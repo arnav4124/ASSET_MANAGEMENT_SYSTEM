@@ -400,7 +400,9 @@ const AdminDashboard = () => {
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                            {item.days_in_maintenance} days
+                            {new Date(item.expected_return_date) < new Date()
+                              ? "Due date passed"
+                              : `${item.days_in_maintenance} days`}
                           </span>
                         </td>
                       </tr>
@@ -471,8 +473,13 @@ const AdminDashboard = () => {
                           <div className="text-sm text-gray-500">{item.office}</div>
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                            {item.days_remaining} days
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${new Date(item.warranty_date) < new Date()
+                            ? "bg-red-100 text-red-800"
+                            : "bg-blue-100 text-blue-800"
+                            }`}>
+                            {new Date(item.warranty_date) < new Date()
+                              ? "Expired"
+                              : `${item.days_remaining} days`}
                           </span>
                         </td>
                       </tr>
@@ -543,8 +550,13 @@ const AdminDashboard = () => {
                           <div className="text-sm text-gray-500">{item.office}</div>
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            {item.days_remaining} days
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${new Date(item.insurance_date) < new Date()
+                            ? "bg-red-100 text-red-800"
+                            : "bg-green-100 text-green-800"
+                            }`}>
+                            {new Date(item.insurance_date) < new Date()
+                              ? "Expired"
+                              : `${item.days_remaining} days`}
                           </span>
                         </td>
                       </tr>

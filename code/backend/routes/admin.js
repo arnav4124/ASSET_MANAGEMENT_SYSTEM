@@ -795,17 +795,16 @@ admin_router.get('/assets/pending-maintenance', authMiddleware, async (req, res)
     }
 });
 
-// Get assets with warranty dates approaching in 5 days
+// Get assets with warranty dates approaching in 5 days or already expired
 admin_router.get('/assets/approaching-warranty', authMiddleware, async (req, res) => {
     try {
         const today = new Date();
         const fiveDaysLater = new Date();
         fiveDaysLater.setDate(today.getDate() + 5);
 
-        // Find assets where warranty date is between today and 5 days from now
+        // Find assets where warranty date is expired or within the next 5 days
         const assets = await Asset.find({
             warranty_date: {
-                $gte: today,
                 $lte: fiveDaysLater
             }
         }).select('name Serial_number Office price Sticker_seq warranty_date status');
@@ -838,17 +837,16 @@ admin_router.get('/assets/approaching-warranty', authMiddleware, async (req, res
     }
 });
 
-// Get assets with insurance dates approaching in 5 days
+// Get assets with insurance dates approaching in 5 days or already expired
 admin_router.get('/assets/approaching-insurance', authMiddleware, async (req, res) => {
     try {
         const today = new Date();
         const fiveDaysLater = new Date();
         fiveDaysLater.setDate(today.getDate() + 5);
 
-        // Find assets where insurance date is between today and 5 days from now
+        // Find assets where insurance date is expired or within the next 5 days
         const assets = await Asset.find({
             insurance_date: {
-                $gte: today,
                 $lte: fiveDaysLater
             }
         }).select('name Serial_number Office price Sticker_seq insurance_date status');
