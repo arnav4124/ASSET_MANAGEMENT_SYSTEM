@@ -57,7 +57,10 @@ const assetSchema = new mongoose.Schema({
         required: true
     },
     Invoice_id: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Invoice',
+        // required: true
+        default: null
     },
 
     Issued_by: {
