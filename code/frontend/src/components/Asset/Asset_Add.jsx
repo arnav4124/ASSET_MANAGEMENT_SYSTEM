@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Box, ChevronLeft, Loader2, Upload, Check, Plus, Trash2 } from "lucide-react";
+import { Box, ChevronLeft, Loader2, Upload, Check, Plus, Trash2, RefreshCw } from "lucide-react";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 
@@ -22,6 +22,9 @@ const Asset_add = () => {
     invoicePdf: null,
     additionalPdf: null
   });
+  const [generatedStickerSeq, setGeneratedStickerSeq] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedOffice, setSelectedOffice] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -79,8 +82,65 @@ const Asset_add = () => {
 
   const adminUsers = users.filter((u) => u.role === "Admin");
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm();
+  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm();
   const [assetType, setAssetType] = useState("physical");
+  
+  const watchCategory = watch("category");
+  const watchOffice = watch("office");
+
+  // Watch for category and office changes to update the sticker sequence variables
+  useEffect(() => {
+    const fetchCategorySticker = async () => {
+      if (watchCategory) {
+        try {
+          const response = await axios.get(`http://localhost:3487/api/categories/sticker-sequence/${watchCategory}`, {
+            withCredentials: true,
+            headers: { token: localStorage.getItem("token") }
+          });
+          
+          if (response.data.success) {
+            setSelectedCategory(response.data.sticker_short_seq);
+          }
+        } catch (error) {
+          console.error("Error fetching category sticker sequence:", error);
+        }
+      }
+    };
+    
+    fetchCategorySticker();
+  }, [watchCategory]);
+
+  useEffect(() => {
+    const fetchLocationSticker = async () => {
+      if (watchOffice) {
+        try {
+          const response = await axios.get(`http://localhost:3487/api/locations/sticker-sequence/${watchOffice}`, {
+            withCredentials: true,
+            headers: { token: localStorage.getItem("token") }
+          });
+          
+          if (response.data.success) {
+            setSelectedOffice(response.data.sticker_short_seq);
+          }
+        } catch (error) {
+          console.error("Error fetching location sticker sequence:", error);
+        }
+      }
+    };
+    
+    fetchLocationSticker();
+  }, [watchOffice]);
+
+  const generateStickerSequence = () => {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = String(now.getFullYear()).slice(-2);
+    const randomDigits = Math.floor(1000 + Math.random() * 9000);
+    
+    const stickerSeq = `EKL/${selectedOffice || 'CENT'}/${selectedCategory || 'CAT'}/${month}/${year}/${randomDigits}`;
+    setGeneratedStickerSeq(stickerSeq);
+    setValue("stickerSeq", stickerSeq);
+  };
 
   const handleQuantityChange = (e) => {
     const newQuantity = parseInt(e.target.value) || 1;
@@ -119,20 +179,15 @@ const Asset_add = () => {
       console.log('Submitting form data:', data);
       console.log('Serial numbers:', serialNumbers);
 
-      // Validate serial numbers
-      if (serialNumbers.some(sn => !sn)) {
-        throw new Error('All serial numbers must be filled');
-      }
+      // Serial number validation is removed to make it optional
 
-      // Validate required fields
+      // Validate required fields (removing stickerSeq from required fields)
       const requiredFields = {
         assetName: 'Asset Name',
         brand_name: 'Brand Name',
-        // brand: 'Brand',
         assetType: 'Asset Type',
         status: 'Status',
         office: 'Office',
-        stickerSeq: 'Sticker Sequence',
         description: 'Description',
         vendor_name: 'Vendor Name',
         vendor_email: 'Vendor Email',
@@ -151,13 +206,18 @@ const Asset_add = () => {
         throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
       }
 
+      // If sticker sequence is not provided, generate one
+      if (!data.stickerSeq) {
+        generateStickerSequence();
+        data.stickerSeq = generatedStickerSeq;
+      }
+
       const formData = new FormData();
       const user = localStorage.getItem("user");
       // make issued by first name + last name
       const issuedBy = JSON.parse(user)._id;
       formData.append("name", data.assetName);
       formData.append("brand_name", data.brand_name);
-      // formData.append("brand", data.brand);
       formData.append("asset_type", data.assetType);
       formData.append("status", data.status);
       formData.append("Office", data.office);
@@ -481,7 +541,7 @@ const Asset_add = () => {
 
             {/* Serial Numbers */}
             <div className="mb-6">
-              <h3 className="text-md font-medium text-gray-700 mb-3">Serial Numbers</h3>
+              <h3 className="text-md font-medium text-gray-700 mb-3">Serial Numbers (Optional)</h3>
               <div className="space-y-3">
                 {serialNumbers.map((serialNumber, index) => (
                   <div key={index} className="flex items-center gap-3">
@@ -490,8 +550,7 @@ const Asset_add = () => {
                       value={serialNumber}
                       onChange={(e) => handleSerialNumberChange(index, e.target.value)}
                       className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                      placeholder={`Enter serial number ${index + 1}`}
-                      required
+                      placeholder={`Enter serial number ${index + 1} (optional)`}
                     />
                     {index === serialNumbers.length - 1 && (
                       <button
@@ -520,6 +579,7 @@ const Asset_add = () => {
                   </div>
                 ))}
               </div>
+              <p className="text-xs text-gray-500 mt-2">Serial numbers are optional. You can leave these fields blank if not available.</p>
             </div>
 
             {/* Asset Type and Status */}
@@ -636,18 +696,33 @@ const Asset_add = () => {
                 )}
               </div>
 
-              {/* Sticker Sequence */}
+              {/* Sticker Sequence - Modified to be optional with generator */}
               <div>
-                <label className="block font-medium text-sm mb-1 text-gray-700">Sticker Sequence</label>
-                <input
-                  {...register("stickerSeq", { required: "Sticker sequence is required" })}
-                  type="text"
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                  placeholder="Enter sticker sequence"
-                />
-                {errors.stickerSeq && (
-                  <p className="text-red-500 text-sm mt-1">{errors.stickerSeq.message}</p>
-                )}
+                <div className="flex justify-between mb-1">
+                  <label className="block font-medium text-sm text-gray-700">Sticker Sequence</label>
+                  <span className="text-xs text-blue-600 italic">Optional - Will be auto-generated if empty</span>
+                </div>
+                <div className="flex space-x-2">
+                  <input
+                    {...register("stickerSeq")}
+                    type="text"
+                    className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                    placeholder="Format: EKL/CENT/CAT/MON/YR/####"
+                    value={generatedStickerSeq}
+                    onChange={(e) => setGeneratedStickerSeq(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={generateStickerSequence}
+                    className="p-3 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 flex items-center justify-center transition-colors"
+                    title="Generate Sticker Sequence"
+                  >
+                    <RefreshCw size={20} />
+                  </button>
+                </div>
+                <p className="text-gray-500 text-xs mt-1">
+                  Format: EKL/[Location]/[Category]/[Month]/[Year]/[Random 4 Digits]
+                </p>
               </div>
               {/* warranty date  */}
               <div>

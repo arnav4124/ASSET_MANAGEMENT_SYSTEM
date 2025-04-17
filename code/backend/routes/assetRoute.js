@@ -165,10 +165,8 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
 
     // Create multiple assets with different serial numbers
     const assetPromises = serialNumbersArray.map(async (serialNumber) => {
-      if (!serialNumber) {
-        throw new Error('Empty serial number found');
-      }
-
+      // Removed validation that throws error for empty serial numbers
+      
       const assetData = {
         name: req.body.name,
         brand: req.body.brand_name,
@@ -188,7 +186,8 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
         vendor_address: req.body.vendor_address,
         category: req.body.category,
         price: req.body.price,
-        Serial_number: serialNumber,
+        // Only set the serial number if it's not empty
+        ...(serialNumber && { Serial_number: serialNumber }),
         voucher_number: req.body.voucher_number,
         date_of_purchase: date_of_purchase,
         grouping: req.body.grouping,

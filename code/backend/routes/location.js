@@ -123,4 +123,30 @@ location_router.get("/admin-locations", authMiddleware, async (req, res) => {
     }
 });
 
+location_router.get('/sticker-sequence/:locationName', authMiddleware, async (req, res) => {
+    try {
+        const { locationName } = req.params;
+        const location = await Location.findOne({ location_name: locationName });
+        
+        if (!location) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Location not found" 
+            });
+        }
+        
+        return res.status(200).json({ 
+            success: true, 
+            sticker_short_seq: location.sticker_short_seq 
+        });
+    } catch (error) {
+        console.error("Error fetching location sticker sequence:", error);
+        return res.status(500).json({ 
+            success: false, 
+            message: "Error fetching location sticker sequence",
+            error: error.message
+        });
+    }
+});
+
 module.exports = location_router
