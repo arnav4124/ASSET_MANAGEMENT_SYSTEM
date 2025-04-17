@@ -179,6 +179,17 @@ const Asset_add = () => {
       formData.append("date_of_purchase", data.date_of_purchase);
       formData.append("grouping", data.grouping);
 
+      // Add warranty date and insurance date if provided
+      if (data.warranty_date) {
+        console.log("Adding warranty date:", data.warranty_date);
+        formData.append("warranty_date", data.warranty_date);
+      }
+
+      if (data.insurance_date) {
+        console.log("Adding insurance date:", data.insurance_date);
+        formData.append("insurance_date", data.insurance_date);
+      }
+
       if (uploadedFiles.imageFile) {
         formData.append("Img", uploadedFiles.imageFile);
       }
@@ -638,6 +649,33 @@ const Asset_add = () => {
                   <p className="text-red-500 text-sm mt-1">{errors.stickerSeq.message}</p>
                 )}
               </div>
+              {/* warranty date  */}
+              <div>
+                <label className="block font-medium text-sm mb-1 text-gray-700">Warranty Date</label>
+                <input
+                  {...register("warranty_date")}
+                  type="date"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                  placeholder="Enter warranty date"
+                />
+                {errors.warranty_date && (
+                  <p className="text-red-500 text-sm mt-1">{errors.warranty_date.message}</p>
+                )}
+              </div>
+              {/* insurance date */}
+              <div>
+                <label className="block font-medium text-sm mb-1 text-gray-700">Insurance Date</label>
+                <input
+                  {...register("insurance_date")}
+                  type="date"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                  placeholder="Enter insurance date"
+                />
+                {errors.insurance_date && (
+                  <p className="text-red-500 text-sm mt-1">{errors.insurance_date.message}</p>
+                )}
+              </div>
+
             </div>
 
             {/* Description */}

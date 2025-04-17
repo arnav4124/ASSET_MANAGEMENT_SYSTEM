@@ -383,6 +383,36 @@ const AssetDetails = () => {
                 </div>
               </div>
 
+              {/* Warranty & Insurance Section */}
+              <div className="p-6 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" clipRule="evenodd" />
+                  </svg>
+                  Warranty & Insurance
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <EnhancedDetailItem
+                    label="Warranty Expiry"
+                    value={asset.warranty_date ? new Date(asset.warranty_date).toLocaleDateString() : "Not Available"}
+                    icon={
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                      </svg>
+                    }
+                  />
+                  <EnhancedDetailItem
+                    label="Insurance Expiry"
+                    value={asset.insurance_date ? new Date(asset.insurance_date).toLocaleDateString() : "Not Available"}
+                    icon={
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                      </svg>
+                    }
+                  />
+                </div>
+              </div>
+
               {/* Description Section */}
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">

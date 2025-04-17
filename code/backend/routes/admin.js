@@ -535,7 +535,7 @@ admin_router.post('/assets/maintenance', authMiddleware, async (req, res) => {
         // await createAssetHistory({
         //     asset_id: asset_id,
         //     performed_by: adminId,
-        //     operation_type: 'Maintenance-Started',
+        //     operation_type: 'Added',
         //     assignment_type: null,
         //     issued_to: null
         // });
@@ -666,7 +666,7 @@ admin_router.put('/assets/maintenance/:id', authMiddleware, async (req, res) => 
             // await createAssetHistory({
             //     asset_id: maintenanceRecord.asset_id,
             //     performed_by: adminId,
-            //     operation_type: 'Maintenance-Completed',
+            //     operation_type: 'Added',
             //     assignment_type: null,
             //     issued_to: null
             // });
@@ -732,13 +732,13 @@ admin_router.delete('/assets/maintenance/:id', authMiddleware, async (req, res) 
             );
 
             // Create history record for cancelling maintenance
-            await createAssetHistory({
-                asset_id: assetId,
-                performed_by: adminId,
-                operation_type: 'Maintenance-Cancelled',
-                assignment_type: null,
-                issued_to: null
-            });
+            // await createAssetHistory({
+            //     asset_id: assetId,
+            //     performed_by: adminId,
+            //     operation_type: 'Added',
+            //     assignment_type: null,
+            //     issued_to: null
+            // });
         }
 
         res.status(200).json({
@@ -750,6 +750,130 @@ admin_router.delete('/assets/maintenance/:id', authMiddleware, async (req, res) 
         res.status(500).json({
             success: false,
             message: "Error deleting maintenance record",
+            error: error.message
+        });
+    }
+});
+
+// Get assets with pending maintenance
+admin_router.get('/assets/pending-maintenance', authMiddleware, async (req, res) => {
+    try {
+        // Find pending maintenance records
+        const maintenanceRecords = await Maintenance.find({ status: 'Pending' })
+            .populate({
+                path: 'asset_id',
+                select: 'name Serial_number Office price Sticker_seq status'
+            })
+            .sort({ expected_date_of_return: 1 });
+
+        // Format the response
+        const formattedRecords = maintenanceRecords.map(record => ({
+            maintenance_id: record._id,
+            asset_id: record.asset_id?._id || null,
+            asset_name: record.asset_id?.name || 'Unknown Asset',
+            serial_number: record.asset_id?.Serial_number || 'N/A',
+            office: record.asset_id?.Office || 'N/A',
+            sticker_seq: record.asset_id?.Sticker_seq || 'N/A',
+            price: record.asset_id?.price || 0,
+            maintenance_type: record.maintenance_type,
+            expected_return_date: record.expected_date_of_return,
+            days_in_maintenance: Math.ceil((new Date() - new Date(record.date_of_sending)) / (1000 * 60 * 60 * 24))
+        }));
+
+        res.status(200).json({
+            success: true,
+            count: formattedRecords.length,
+            data: formattedRecords
+        });
+    } catch (error) {
+        console.error("Error fetching pending maintenance assets:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching pending maintenance assets",
+            error: error.message
+        });
+    }
+});
+
+// Get assets with warranty dates approaching in 5 days or already expired
+admin_router.get('/assets/approaching-warranty', authMiddleware, async (req, res) => {
+    try {
+        const today = new Date();
+        const fiveDaysLater = new Date();
+        fiveDaysLater.setDate(today.getDate() + 5);
+
+        // Find assets where warranty date is expired or within the next 5 days
+        const assets = await Asset.find({
+            warranty_date: {
+                $lte: fiveDaysLater
+            }
+        }).select('name Serial_number Office price Sticker_seq warranty_date status');
+
+        // Format the response
+        const formattedAssets = assets.map(asset => ({
+            asset_id: asset._id,
+            asset_name: asset.name,
+            serial_number: asset.Serial_number || 'N/A',
+            office: asset.Office || 'N/A',
+            sticker_seq: asset.Sticker_seq || 'N/A',
+            price: asset.price || 0,
+            warranty_date: asset.warranty_date,
+            days_remaining: Math.ceil((new Date(asset.warranty_date) - today) / (1000 * 60 * 60 * 24)),
+            status: asset.status
+        }));
+
+        res.status(200).json({
+            success: true,
+            count: formattedAssets.length,
+            data: formattedAssets
+        });
+    } catch (error) {
+        console.error("Error fetching assets with approaching warranty dates:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching assets with approaching warranty dates",
+            error: error.message
+        });
+    }
+});
+
+// Get assets with insurance dates approaching in 5 days or already expired
+admin_router.get('/assets/approaching-insurance', authMiddleware, async (req, res) => {
+    try {
+        const today = new Date();
+        const fiveDaysLater = new Date();
+        fiveDaysLater.setDate(today.getDate() + 5);
+
+        // Find assets where insurance date is expired or within the next 5 days
+        const assets = await Asset.find({
+            insurance_date: {
+                $lte: fiveDaysLater
+            }
+        }).select('name Serial_number Office price Sticker_seq insurance_date status');
+
+        // Format the response
+        const formattedAssets = assets.map(asset => ({
+            asset_id: asset._id,
+            asset_name: asset.name,
+            serial_number: asset.Serial_number || 'N/A',
+            office: asset.Office || 'N/A',
+            sticker_seq: asset.Sticker_seq || 'N/A',
+            price: asset.price || 0,
+            insurance_date: asset.insurance_date,
+            days_remaining: Math.ceil((new Date(asset.insurance_date) - today) / (1000 * 60 * 60 * 24)),
+            status: asset.status
+        }));
+
+        res.status(200).json({
+            success: true,
+            count: formattedAssets.length,
+            data: formattedAssets
+        });
+    } catch (error) {
+        console.error("Error fetching assets with approaching insurance dates:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching assets with approaching insurance dates",
             error: error.message
         });
     }

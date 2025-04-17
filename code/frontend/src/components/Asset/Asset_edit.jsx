@@ -19,6 +19,7 @@ const Asset_edit = () => {
         additionalPdf: null
     });
     const [assetType, setAssetType] = useState("physical");
+    const [assetData, setAssetData] = useState(null); // Store the raw asset data for debugging
 
     const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm();
 
@@ -42,6 +43,12 @@ const Asset_edit = () => {
                 const assetRes = await axios.get(`http://localhost:3487/api/assets/${id}`, {
                     headers: { token }
                 });
+
+                console.log("Asset data received:", assetRes.data);
+                console.log("Warranty date:", assetRes.data.warranty_date);
+                console.log("Insurance date:", assetRes.data.insurance_date);
+
+                setAssetData(assetRes.data);
 
                 // Fetch categories
                 const categoriesRes = await axios.get("http://localhost:3487/api/categories", {
@@ -85,6 +92,9 @@ const Asset_edit = () => {
         setValue("vendor_phone", asset.vendor_phone);
         setValue("vendor_city", asset.vendor_city);
         setValue("vendor_address", asset.vendor_address);
+        setValue("warranty_date", asset.warranty_date);
+        setValue("insurance_date", asset.insurance_date);
+            
         setValue("category", asset.category ? asset.category._id : "");
         setValue("price", asset.price);
         setValue("Serial_number", asset.Serial_number);
@@ -95,6 +105,30 @@ const Asset_edit = () => {
             const purchaseDate = new Date(asset.date_of_purchase);
             const formattedDate = purchaseDate.toISOString().split('T')[0];
             setValue("date_of_purchase", formattedDate);
+        }
+
+        // Format warranty date if it exists
+        if (asset.warranty_date) {
+            try {
+                const warrantyDate = new Date(asset.warranty_date);
+                const formattedWarrantyDate = warrantyDate.toISOString().split('T')[0];
+                console.log("Setting warranty date value:", formattedWarrantyDate);
+                setValue("warranty_date", formattedWarrantyDate);
+            } catch (error) {
+                console.error("Error formatting warranty date:", error);
+            }
+        }
+
+        // Format insurance date if it exists
+        if (asset.insurance_date) {
+            try {
+                const insuranceDate = new Date(asset.insurance_date);
+                const formattedInsuranceDate = insuranceDate.toISOString().split('T')[0];
+                console.log("Setting insurance date value:", formattedInsuranceDate);
+                setValue("insurance_date", formattedInsuranceDate);
+            } catch (error) {
+                console.error("Error formatting insurance date:", error);
+            }
         }
     };
 
@@ -120,23 +154,13 @@ const Asset_edit = () => {
         setShowSuccess(false);
 
         try {
-            // Validate required fields
+            // Validate required fields (only for editable fields)
             const requiredFields = {
-                assetName: 'Asset Name',
-                brand_name: 'Brand Name',
-                assetType: 'Asset Type',
                 status: 'Status',
                 office: 'Office',
                 stickerSeq: 'Sticker Sequence',
-                description: 'Description',
-                vendor_name: 'Vendor Name',
-                vendor_email: 'Vendor Email',
-                vendor_phone: 'Vendor Phone',
-                vendor_city: 'Vendor City',
-                vendor_address: 'Vendor Address',
                 price: 'Price',
-                voucher_number: 'Voucher Number',
-                Serial_number: 'Serial Number'
+                description: 'Description'
             };
 
             const missingFields = Object.entries(requiredFields)
@@ -150,24 +174,50 @@ const Asset_edit = () => {
             const formData = new FormData();
             const issuedBy = JSON.parse(localStorage.getItem("user"))._id;
 
+            // Keep all the existing fields in formData but don't modify them
+            // These are just sent back for completeness
             formData.append("name", data.assetName);
             formData.append("brand_name", data.brand_name);
-            formData.append("asset_type", data.assetType);
-            formData.append("status", data.status);
-            formData.append("Office", data.office);
-            formData.append("Sticker_seq", data.stickerSeq);
-            formData.append("description", data.description);
+            formData.append("Serial_number", data.Serial_number);
+            formData.append("voucher_number", data.voucher_number);
+            formData.append("date_of_purchase", data.date_of_purchase);
             formData.append("vendor_name", data.vendor_name);
             formData.append("vendor_email", data.vendor_email);
             formData.append("vendor_phone", data.vendor_phone);
             formData.append("vendor_city", data.vendor_city);
             formData.append("vendor_address", data.vendor_address);
+
+            // Editable fields
+            formData.append("asset_type", data.assetType);
+            formData.append("status", data.status);
+            formData.append("Office", data.office);
+            formData.append("Sticker_seq", data.stickerSeq);
+            formData.append("description", data.description);
             formData.append("category", data.category);
             formData.append("price", data.price);
-            formData.append("Serial_number", data.Serial_number);
-            formData.append("voucher_number", data.voucher_number);
-            formData.append("date_of_purchase", data.date_of_purchase);
             formData.append("admin", issuedBy);  // Admin who is making the edit
+
+            // Add warranty and insurance dates if provided
+            console.log("Warranty date to save:", data.warranty_date);
+            console.log("Insurance date to save:", data.insurance_date);
+
+            if (data.warranty_date) {
+                formData.append("warranty_date", data.warranty_date);
+            } else if (assetData && assetData.warranty_date) {
+                // If no new date is provided but there was an existing one, preserve it
+                const warrantyDate = new Date(assetData.warranty_date);
+                const formattedWarrantyDate = warrantyDate.toISOString().split('T')[0];
+                formData.append("warranty_date", formattedWarrantyDate);
+            }
+
+            if (data.insurance_date) {
+                formData.append("insurance_date", data.insurance_date);
+            } else if (assetData && assetData.insurance_date) {
+                // If no new date is provided but there was an existing one, preserve it
+                const insuranceDate = new Date(assetData.insurance_date);
+                const formattedInsuranceDate = insuranceDate.toISOString().split('T')[0];
+                formData.append("insurance_date", formattedInsuranceDate);
+            }
 
             // Add files if they exist
             if (uploadedFiles.imageFile) {
@@ -192,6 +242,7 @@ const Asset_edit = () => {
             window.scrollTo(0, 0);
             if (response.status === 200) {
                 setShowSuccess(true);
+                console.log("Asset updated successfully:", response.data);
                 setTimeout(() => {
                     navigate(`/admin/assets/view/${id}`);
                 }, 2000);
@@ -247,6 +298,14 @@ const Asset_edit = () => {
                     </div>
                 </div>
 
+                {/* Information message about editable fields */}
+                <div className="bg-blue-50 p-4 mb-6 rounded-md border-l-4 border-blue-500">
+                    <p className="text-sm text-blue-800">
+                        <strong>Note:</strong> Basic information and vendor details cannot be edited to maintain data integrity.
+                        You can update other fields like status, location, warranty date, and asset details.
+                    </p>
+                </div>
+
                 {/* Success Message */}
                 {showSuccess && (
                     <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-md shadow-md animate-fadeIn">
@@ -273,156 +332,123 @@ const Asset_edit = () => {
                 <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg">
                     <div className="p-6">
                         {/* Basic Information */}
-                        <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Basic Information</h2>
+                        <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Basic Information (Read-only)</h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             {/* Asset Name */}
                             <div>
                                 <label className="block font-medium text-sm mb-1 text-gray-700">Asset Name</label>
                                 <input
-                                    {...register("assetName", { required: "Asset name is required" })}
+                                    {...register("assetName")}
                                     type="text"
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                                    placeholder="Enter asset name"
+                                    className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                                    readOnly
                                 />
-                                {errors.assetName && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.assetName.message}</p>
-                                )}
                             </div>
 
                             {/* Brand Name */}
                             <div>
                                 <label className="block font-medium text-sm mb-1 text-gray-700">Brand Name</label>
                                 <input
-                                    {...register("brand_name", { required: "Brand name is required" })}
+                                    {...register("brand_name")}
                                     type="text"
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                                    placeholder="Enter brand name"
+                                    className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                                    readOnly
                                 />
-                                {errors.brand_name && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.brand_name.message}</p>
-                                )}
                             </div>
 
                             {/* Serial Number - Read-only */}
                             <div>
                                 <label className="block font-medium text-sm mb-1 text-gray-700">Serial Number</label>
                                 <input
-                                    {...register("Serial_number", { required: "Serial number is required" })}
+                                    {...register("Serial_number")}
                                     type="text"
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none bg-gray-50"
-                                    placeholder="Enter serial number"
-                                    readOnly  // Make it read-only as changing serial numbers could cause issues
+                                    className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                                    readOnly
                                 />
-                                {errors.Serial_number && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.Serial_number.message}</p>
-                                )}
                             </div>
 
                             {/* Voucher Number */}
                             <div>
                                 <label className="block font-medium text-sm mb-1 text-gray-700">Voucher Number</label>
                                 <input
-                                    {...register("voucher_number", { required: "Voucher number is required" })}
+                                    {...register("voucher_number")}
                                     type="text"
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                                    placeholder="Enter voucher number"
+                                    className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                                    readOnly
                                 />
-                                {errors.voucher_number && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.voucher_number.message}</p>
-                                )}
                             </div>
                         </div>
 
                         <div>
                             <label className="block font-medium text-sm mb-1 text-gray-700">
-                                Date of Purchase (optional)
+                                Date of Purchase
                             </label>
                             <input
                                 {...register("date_of_purchase")}
                                 type="date"
-                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                                className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                                readOnly
                             />
                         </div>
 
                         {/* Vendor Information */}
-                        <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2 pt-4">Vendor Information</h2>
+                        <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2 pt-4">Vendor Information (Read-only)</h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             {/* Vendor Name */}
                             <div>
                                 <label className="block font-medium text-sm mb-1 text-gray-700">Vendor Name</label>
                                 <input
-                                    {...register("vendor_name", { required: "Vendor name is required" })}
+                                    {...register("vendor_name")}
                                     type="text"
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                                    placeholder="Enter vendor name"
+                                    className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                                    readOnly
                                 />
-                                {errors.vendor_name && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.vendor_name.message}</p>
-                                )}
                             </div>
 
                             {/* Vendor Email */}
                             <div>
                                 <label className="block font-medium text-sm mb-1 text-gray-700">Vendor Email</label>
                                 <input
-                                    {...register("vendor_email", {
-                                        required: "Vendor email is required",
-                                        pattern: {
-                                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                                            message: "Invalid email address"
-                                        }
-                                    })}
+                                    {...register("vendor_email")}
                                     type="email"
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                                    placeholder="Enter vendor email"
+                                    className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                                    readOnly
                                 />
-                                {errors.vendor_email && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.vendor_email.message}</p>
-                                )}
                             </div>
 
                             {/* Vendor Phone */}
                             <div>
                                 <label className="block font-medium text-sm mb-1 text-gray-700">Vendor Phone</label>
                                 <input
-                                    {...register("vendor_phone", { required: "Vendor phone is required" })}
+                                    {...register("vendor_phone")}
                                     type="tel"
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                                    placeholder="Enter vendor phone"
+                                    className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                                    readOnly
                                 />
-                                {errors.vendor_phone && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.vendor_phone.message}</p>
-                                )}
                             </div>
 
                             {/* Vendor City */}
                             <div>
                                 <label className="block font-medium text-sm mb-1 text-gray-700">Vendor City</label>
                                 <input
-                                    {...register("vendor_city", { required: "Vendor city is required" })}
+                                    {...register("vendor_city")}
                                     type="text"
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                                    placeholder="Enter vendor city"
+                                    className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                                    readOnly
                                 />
-                                {errors.vendor_city && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.vendor_city.message}</p>
-                                )}
                             </div>
 
                             {/* Vendor Address */}
                             <div className="md:col-span-2">
                                 <label className="block font-medium text-sm mb-1 text-gray-700">Vendor Address</label>
                                 <textarea
-                                    {...register("vendor_address", { required: "Vendor address is required" })}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                                    {...register("vendor_address")}
+                                    className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
                                     rows="3"
-                                    placeholder="Enter vendor address"
+                                    readOnly
                                 />
-                                {errors.vendor_address && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.vendor_address.message}</p>
-                                )}
                             </div>
                         </div>
 
@@ -455,6 +481,9 @@ const Asset_edit = () => {
                                         <span>Virtual</span>
                                     </label>
                                 </div>
+                                <p className="text-amber-600 text-xs mt-1">
+                                    <strong>Note:</strong> Changing asset type may affect how the asset is tracked and managed.
+                                </p>
                                 {errors.assetType && (
                                     <p className="text-red-500 text-sm mt-1">{errors.assetType.message}</p>
                                 )}
@@ -552,6 +581,35 @@ const Asset_edit = () => {
                                 />
                                 {errors.stickerSeq && (
                                     <p className="text-red-500 text-sm mt-1">{errors.stickerSeq.message}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Warranty and Insurance Dates */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            {/* Warranty Date */}
+                            <div>
+                                <label className="block font-medium text-sm mb-1 text-gray-700">Warranty Date</label>
+                                <input
+                                    {...register("warranty_date")}
+                                    type="date"
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                                />
+                                {errors.warranty_date && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.warranty_date.message}</p>
+                                )}
+                            </div>
+
+                            {/* Insurance Date */}
+                            <div>
+                                <label className="block font-medium text-sm mb-1 text-gray-700">Insurance Date</label>
+                                <input
+                                    {...register("insurance_date")}
+                                    type="date"
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                                />
+                                {errors.insurance_date && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.insurance_date.message}</p>
                                 )}
                             </div>
                         </div>

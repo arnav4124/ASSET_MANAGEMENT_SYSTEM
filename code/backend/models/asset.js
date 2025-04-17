@@ -140,7 +140,14 @@ const assetSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-
+    warranty_date: {
+        type: Date,
+        default: null
+    },
+    insurance_date: {
+        type: Date,
+        default: null
+    },
 }, {
     timestamps: true,
 });

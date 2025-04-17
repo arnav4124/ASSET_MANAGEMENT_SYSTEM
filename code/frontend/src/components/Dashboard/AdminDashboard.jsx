@@ -16,6 +16,7 @@ import {
   LineElement,
 } from 'chart.js';
 import { Bar, Pie, Doughnut } from 'react-chartjs-2';
+import { Wrench, AlertTriangle, Shield, Calendar, ChevronRight, Loader2 } from 'lucide-react';
 
 ChartJS.register(
   CategoryScale,
@@ -37,7 +38,11 @@ const AdminDashboard = () => {
   const [locationUserData, setLocationUserData] = useState([]);
   const [projectAssetData, setProjectAssetData] = useState([]);
   const [locationAssetData, setLocationAssetData] = useState([]);
+  const [pendingMaintenance, setPendingMaintenance] = useState([]);
+  const [approachingWarranty, setApproachingWarranty] = useState([]);
+  const [approachingInsurance, setApproachingInsurance] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [tablesLoading, setTablesLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,19 +55,19 @@ const AdminDashboard = () => {
         navigate("/login");
       }
     }
-    
+
     const fetchData = async () => {
       setIsLoading(true);
       try {
         const token = localStorage.getItem("token");
         const headers = { token };
-        
+
         const [
-          projRes, 
-          userRes, 
-          assetRes, 
-          locationUserRes, 
-          projectAssetRes, 
+          projRes,
+          userRes,
+          assetRes,
+          locationUserRes,
+          projectAssetRes,
           locationAssetRes
         ] = await Promise.all([
           axios.get("http://localhost:3487/api/projects", { headers }),
@@ -85,8 +90,35 @@ const AdminDashboard = () => {
         setIsLoading(false);
       }
     };
-    
+
+    const fetchTableData = async () => {
+      setTablesLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        const headers = { token };
+
+        const [
+          maintenanceRes,
+          warrantyRes,
+          insuranceRes
+        ] = await Promise.all([
+          axios.get("http://localhost:3487/api/admin/assets/pending-maintenance", { headers }),
+          axios.get("http://localhost:3487/api/admin/assets/approaching-warranty", { headers }),
+          axios.get("http://localhost:3487/api/admin/assets/approaching-insurance", { headers })
+        ]);
+
+        setPendingMaintenance(maintenanceRes.data.data.slice(0, 10));
+        setApproachingWarranty(warrantyRes.data.data.slice(0, 10));
+        setApproachingInsurance(insuranceRes.data.data.slice(0, 10));
+      } catch (error) {
+        console.error("Error fetching table data:", error);
+      } finally {
+        setTablesLoading(false);
+      }
+    };
+
     fetchData();
+    fetchTableData();
   }, [navigate]);
 
   // Generate vibrant colors for charts
@@ -98,14 +130,14 @@ const AdminDashboard = () => {
       ['#EF4444', '#F87171', '#FCA5A5', '#FECACA', '#FEE2E2'],  // Red
       ['#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE', '#EDE9FE'],  // Purple
     ];
-    
+
     const colors = [];
     for (let i = 0; i < count; i++) {
       const paletteIndex = i % colorPalettes.length;
       const colorIndex = Math.floor(i / colorPalettes.length) % colorPalettes[paletteIndex].length;
       colors.push(colorPalettes[paletteIndex][colorIndex]);
     }
-    
+
     return {
       backgroundColor: colors.map(c => `${c}99`), // Adding transparency
       borderColor: colors,
@@ -279,43 +311,281 @@ const AdminDashboard = () => {
     </Link>
   );
 
+  // Format date
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header with gradient */}
-      
+
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <StatCard 
-            title="Projects" 
-            count={projectCount} 
-            color="blue" 
-            icon="📊" 
-            to="/admin/projects/view" 
+          <StatCard
+            title="Projects"
+            count={projectCount}
+            color="blue"
+            icon="📊"
+            to="/admin/projects/view"
           />
-          
-          <StatCard 
-            title="Users" 
-            count={userCount} 
-            color="green" 
-            icon="👥" 
-            to="/admin/view_users" 
+
+          <StatCard
+            title="Users"
+            count={userCount}
+            color="green"
+            icon="👥"
+            to="/admin/view_users"
           />
-          
-          <StatCard 
-            title="Assets" 
-            count={assetCount} 
-            color="red" 
-            icon="📦" 
-            to="/admin/asset/view" 
+
+          <StatCard
+            title="Assets"
+            count={assetCount}
+            color="red"
+            icon="📦"
+            to="/admin/asset/view"
           />
         </div>
-        
+
+        {/* Alert Tables Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Pending Maintenance Table */}
+          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 lg:col-span-1">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <div className="bg-yellow-100 p-2 rounded-lg mr-3">
+                  <Wrench className="h-5 w-5 text-yellow-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800">Pending Maintenance</h3>
+              </div>
+              {pendingMaintenance.length > 0 && (
+                <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                  {pendingMaintenance.length} items
+                </span>
+              )}
+            </div>
+
+            {tablesLoading ? (
+              <div className="h-48 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 text-yellow-500 animate-spin" />
+                <span className="ml-2 text-sm text-gray-500">Loading maintenance data...</span>
+              </div>
+            ) : pendingMaintenance.length > 0 ? (
+              <div className="overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Office</th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {pendingMaintenance.map((item) => (
+                      <tr
+                        key={item.maintenance_id}
+                        className="hover:bg-gray-50 cursor-pointer"
+                        onClick={() => navigate(`/admin/assets/edit-maintenance/${item.asset_id}`)}
+                      >
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{item.asset_name}</div>
+                          <div className="text-xs text-gray-500">{item.serial_number}</div>
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">{item.office}</div>
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                            {new Date(item.expected_return_date) < new Date()
+                              ? "Due date passed"
+                              : `${item.days_in_maintenance} days`}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="mt-4 text-right">
+                  <Link
+                    to="/admin/view-pending-maintenance"
+                    className="inline-flex items-center text-sm font-medium text-yellow-600 hover:text-yellow-900"
+                  >
+                    View all
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-lg p-4 text-center h-48 flex items-center justify-center">
+                <p className="text-gray-500 text-sm">No assets currently under maintenance</p>
+              </div>
+            )}
+          </div>
+
+          {/* Approaching Warranty Expiry Table */}
+          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 lg:col-span-1">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <div className="bg-blue-100 p-2 rounded-lg mr-3">
+                  <Shield className="h-5 w-5 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800">Warranty Expiring</h3>
+              </div>
+              {approachingWarranty.length > 0 && (
+                <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {approachingWarranty.length} items
+                </span>
+              )}
+            </div>
+
+            {tablesLoading ? (
+              <div className="h-48 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />
+                <span className="ml-2 text-sm text-gray-500">Loading warranty data...</span>
+              </div>
+            ) : approachingWarranty.length > 0 ? (
+              <div className="overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Office</th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires In</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {approachingWarranty.map((item) => (
+                      <tr
+                        key={item.asset_id}
+                        className="hover:bg-gray-50 cursor-pointer"
+                        onClick={() => navigate(`/admin/assets/edit/${item.asset_id}`)}
+                      >
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{item.asset_name}</div>
+                          <div className="text-xs text-gray-500">{item.serial_number}</div>
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">{item.office}</div>
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${new Date(item.warranty_date) < new Date()
+                            ? "bg-red-100 text-red-800"
+                            : "bg-blue-100 text-blue-800"
+                            }`}>
+                            {new Date(item.warranty_date) < new Date()
+                              ? "Expired"
+                              : `${item.days_remaining} days`}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="mt-4 text-right">
+                  <Link
+                    to="/admin/view-approaching-warranty"
+                    className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-900"
+                  >
+                    View all
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-lg p-4 text-center h-48 flex items-center justify-center">
+                <p className="text-gray-500 text-sm">No assets with warranty expiring soon</p>
+              </div>
+            )}
+          </div>
+
+          {/* Approaching Insurance Expiry Table */}
+          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 lg:col-span-1">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <div className="bg-green-100 p-2 rounded-lg mr-3">
+                  <Calendar className="h-5 w-5 text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800">Insurance Expiring</h3>
+              </div>
+              {approachingInsurance.length > 0 && (
+                <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  {approachingInsurance.length} items
+                </span>
+              )}
+            </div>
+
+            {tablesLoading ? (
+              <div className="h-48 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 text-green-500 animate-spin" />
+                <span className="ml-2 text-sm text-gray-500">Loading insurance data...</span>
+              </div>
+            ) : approachingInsurance.length > 0 ? (
+              <div className="overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Office</th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires In</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {approachingInsurance.map((item) => (
+                      <tr
+                        key={item.asset_id}
+                        className="hover:bg-gray-50 cursor-pointer"
+                        onClick={() => navigate(`/admin/assets/edit/${item.asset_id}`)}
+                      >
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{item.asset_name}</div>
+                          <div className="text-xs text-gray-500">{item.serial_number}</div>
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">{item.office}</div>
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${new Date(item.insurance_date) < new Date()
+                            ? "bg-red-100 text-red-800"
+                            : "bg-green-100 text-green-800"
+                            }`}>
+                            {new Date(item.insurance_date) < new Date()
+                              ? "Expired"
+                              : `${item.days_remaining} days`}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="mt-4 text-right">
+                  <Link
+                    to="/admin/view-approaching-insurance"
+                    className="inline-flex items-center text-sm font-medium text-green-600 hover:text-green-900"
+                  >
+                    View all
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-lg p-4 text-center h-48 flex items-center justify-center">
+                <p className="text-gray-500 text-sm">No assets with insurance expiring soon</p>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Charts Section */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Analytics Overview</h2>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* First row charts */}
             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
@@ -330,7 +600,7 @@ const AdminDashboard = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
               <h3 className="text-xl font-semibold text-gray-800 mb-4">Assets per Project</h3>
               {isLoading ? (
@@ -344,7 +614,7 @@ const AdminDashboard = () => {
               )}
             </div>
           </div>
-          
+
           {/* Second row with doughnut chart */}
           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
             <h3 className="text-xl font-semibold text-gray-800 mb-4">Assets Distribution by Location</h3>
@@ -359,7 +629,7 @@ const AdminDashboard = () => {
             )}
           </div>
         </div>
-        
+
         {/* Quick Actions Section */}
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Quick Actions</h2>
@@ -368,18 +638,18 @@ const AdminDashboard = () => {
               <span className="text-blue-600 text-2xl mb-2">📝</span>
               <span className="font-medium text-gray-800">New Project</span>
             </Link>
-            
+
             <Link to="/admin/add_user" className="bg-green-50 hover:bg-green-100 p-4 rounded-lg flex flex-col items-center justify-center text-center transition-colors duration-200">
               <span className="text-green-600 text-2xl mb-2">👤</span>
               <span className="font-medium text-gray-800">Add User</span>
             </Link>
-            
+
             <Link to="/admin/asset/add" className="bg-red-50 hover:bg-red-100 p-4 rounded-lg flex flex-col items-center justify-center text-center transition-colors duration-200">
               <span className="text-red-600 text-2xl mb-2">➕</span>
               <span className="font-medium text-gray-800">Create Asset</span>
             </Link>
-            
-            <Link to="/admin/reports" className="bg-purple-50 hover:bg-purple-100 p-4 rounded-lg flex flex-col items-center justify-center text-center transition-colors duration-200">
+
+            <Link to="/admin/report" className="bg-purple-50 hover:bg-purple-100 p-4 rounded-lg flex flex-col items-center justify-center text-center transition-colors duration-200">
               <span className="text-purple-600 text-2xl mb-2">📊</span>
               <span className="font-medium text-gray-800">Reports</span>
             </Link>
