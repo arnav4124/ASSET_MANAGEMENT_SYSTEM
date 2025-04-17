@@ -146,7 +146,7 @@ admin_router.get('/users', authMiddleware, async (req, res) => {
         var users = await User.find({
             role: { $in: ["User", "Admin"] },
             location: { $in: validLocations }
-        }).select('first_name last_name email location ');
+        }).select('first_name last_name email location active');
         // remove the Admin of the admin location
 
         res.status(200).json({
