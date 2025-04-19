@@ -31,6 +31,7 @@ const Navbar = () => {
       "/admin/asset/view": "View Assets",
       "/admin/projects/view": "View Projects",
       "/admin/view_users": "View Users",
+      "/admin/view_report": "View Report",
       "/admin/view_locations": "View Locations",
       "/admin/asset/add": "Add Asset",
       "/superuser/assign_admin": "Assign Admin",
@@ -62,6 +63,7 @@ const Navbar = () => {
     { name: "View Users", path: "/admin/view_users" },
     { name: "View Locations", path: "/admin/view_locations" },
     { name: "Add Asset", path: "/admin/asset/add" },
+    {name : "View Report", path: "/admin/report"},
     {name: "View your assets", path: "user/assets/view"}
   ] : [
     // { name: "Dashboard", path: "/dashboard/user" },//path

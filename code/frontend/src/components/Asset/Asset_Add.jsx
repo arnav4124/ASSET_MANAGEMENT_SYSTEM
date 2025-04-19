@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Box, ChevronLeft, Loader2, Upload, Check, Plus, Trash2, RefreshCw } from "lucide-react";
+import { Box, ChevronLeft, Loader2, Upload, Check, Plus, Trash2, RefreshCw, Search } from "lucide-react";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 
@@ -25,6 +25,12 @@ const Asset_add = () => {
   const [generatedStickerSeq, setGeneratedStickerSeq] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedOffice, setSelectedOffice] = useState('');
+  const [uniqueBrands, setUniqueBrands] = useState([]);
+  const [uniqueVendors, setUniqueVendors] = useState([]);
+  const [showBrandDropdown, setShowBrandDropdown] = useState(false);
+  const [showVendorDropdown, setShowVendorDropdown] = useState(false);
+  const [brandSearchQuery, setBrandSearchQuery] = useState('');
+  const [vendorSearchQuery, setVendorSearchQuery] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -69,6 +75,20 @@ const Asset_add = () => {
           headers: { token: localStorage.getItem("token") }
         });
         setOffices(officesRes.data);
+
+        // Fetch unique brand names
+        const brandsRes = await axios.get("http://localhost:3487/api/assets/brands/unique", {
+          withCredentials: true,
+          headers: { token: localStorage.getItem("token") }
+        });
+        setUniqueBrands(brandsRes.data.brands || []);
+
+        // Fetch unique vendors
+        const vendorsRes = await axios.get("http://localhost:3487/api/assets/vendors/unique", {
+          withCredentials: true,
+          headers: { token: localStorage.getItem("token") }
+        });
+        setUniqueVendors(vendorsRes.data.vendors || []);
 
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -168,6 +188,32 @@ const Asset_add = () => {
       ...prev,
       [type]: null
     }));
+  };
+
+  // Filter brands based on search query
+  const filteredBrands = uniqueBrands.filter(brand =>
+    brand.toLowerCase().includes(brandSearchQuery.toLowerCase())
+  );
+
+  // Filter vendors based on search query
+  const filteredVendors = uniqueVendors.filter(vendor =>
+    vendor.vendor_name.toLowerCase().includes(vendorSearchQuery.toLowerCase())
+  );
+
+  // Handle brand selection
+  const handleBrandSelect = (brand) => {
+    setValue("brand_name", brand);
+    setShowBrandDropdown(false);
+  };
+
+  // Handle vendor selection
+  const handleVendorSelect = (vendor) => {
+    setValue("vendor_name", vendor.vendor_name);
+    setValue("vendor_email", vendor.vendor_email);
+    setValue("vendor_phone", vendor.vendor_phone || "");
+    setValue("vendor_city", vendor.vendor_city || "");
+    setValue("vendor_address", vendor.vendor_address || "");
+    setShowVendorDropdown(false);
   };
 
   const onSubmit = async (data) => {
@@ -394,22 +440,53 @@ const Asset_add = () => {
                 )}
               </div>
 
-              {/* Brand Name */}
-              <div>
+              {/* Brand Name with Dropdown */}
+              <div className="relative">
                 <label className="block font-medium text-sm mb-1 text-gray-700">Brand Name</label>
-                <input
-                  {...register("brand_name", { required: "Brand name is required" })}
-                  type="text"
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                  placeholder="Enter brand name"
-                />
+                <div className="flex">
+                  <input
+                    {...register("brand_name", { required: "Brand name is required" })}
+                    type="text"
+                    className="w-full p-3 border border-gray-300 rounded-l-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                    placeholder="Enter brand name"
+                    onFocus={() => setShowBrandDropdown(true)}
+                    onChange={(e) => {
+                      setValue("brand_name", e.target.value);
+                      setBrandSearchQuery(e.target.value);
+                      setShowBrandDropdown(true);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="p-3 bg-blue-500 text-white rounded-r-md hover:bg-blue-600 transition-colors"
+                    onClick={() => setShowBrandDropdown(!showBrandDropdown)}
+                  >
+                    <Search size={20} />
+                  </button>
+                </div>
                 {errors.brand_name && (
                   <p className="text-red-500 text-sm mt-1">{errors.brand_name.message}</p>
                 )}
+
+                {/* Brand dropdown */}
+                {showBrandDropdown && uniqueBrands.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {filteredBrands.length > 0 ? (
+                      filteredBrands.map((brand, index) => (
+                        <div
+                          key={index}
+                          className="p-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100"
+                          onClick={() => handleBrandSelect(brand)}
+                        >
+                          {brand}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-2 text-gray-500">No matching brands found</div>
+                    )}
+                  </div>
+                )}
               </div>
-
-              {/* Brand */}
-
 
               {/* Quantity */}
               <div>
@@ -478,20 +555,54 @@ const Asset_add = () => {
             </div>
 
             {/* Vendor Information */}
-            <h2 className="text-lg font-medium text-gray-700 mb-4 border-b pb-2 pt-4">Vendor Information</h2>
-
+            <h2 className="text-lg font-medium text-gray-700 mt-8 mb-4 border-b pb-2">Vendor Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {/* Vendor Name */}
-              <div>
+              {/* Vendor Name with Dropdown */}
+              <div className="relative">
                 <label className="block font-medium text-sm mb-1 text-gray-700">Vendor Name</label>
-                <input
-                  {...register("vendor_name", { required: "Vendor name is required" })}
-                  type="text"
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                  placeholder="Enter vendor name"
-                />
+                <div className="flex">
+                  <input
+                    {...register("vendor_name", { required: "Vendor name is required" })}
+                    type="text"
+                    className="w-full p-3 border border-gray-300 rounded-l-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                    placeholder="Enter vendor name"
+                    onFocus={() => setShowVendorDropdown(true)}
+                    onChange={(e) => {
+                      setValue("vendor_name", e.target.value);
+                      setVendorSearchQuery(e.target.value);
+                      setShowVendorDropdown(true);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="p-3 bg-blue-500 text-white rounded-r-md hover:bg-blue-600 transition-colors"
+                    onClick={() => setShowVendorDropdown(!showVendorDropdown)}
+                  >
+                    <Search size={20} />
+                  </button>
+                </div>
                 {errors.vendor_name && (
                   <p className="text-red-500 text-sm mt-1">{errors.vendor_name.message}</p>
+                )}
+
+                {/* Vendor dropdown */}
+                {showVendorDropdown && uniqueVendors.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {filteredVendors.length > 0 ? (
+                      filteredVendors.map((vendor, index) => (
+                        <div
+                          key={index}
+                          className="p-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100"
+                          onClick={() => handleVendorSelect(vendor)}
+                        >
+                          <div className="font-medium">{vendor.vendor_name}</div>
+                          <div className="text-sm text-gray-600">{vendor.vendor_email}</div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-2 text-gray-500">No matching vendors found</div>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -502,7 +613,7 @@ const Asset_add = () => {
                   {...register("vendor_email", {
                     required: "Vendor email is required",
                     pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      value: /\S+@\S+\.\S+/,
                       message: "Invalid email address"
                     }
                   })}
@@ -520,7 +631,7 @@ const Asset_add = () => {
                 <label className="block font-medium text-sm mb-1 text-gray-700">Vendor Phone</label>
                 <input
                   {...register("vendor_phone", { required: "Vendor phone is required" })}
-                  type="tel"
+                  type="text"
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
                   placeholder="Enter vendor phone"
                 />
@@ -548,10 +659,10 @@ const Asset_add = () => {
                 <label className="block font-medium text-sm mb-1 text-gray-700">Vendor Address</label>
                 <textarea
                   {...register("vendor_address", { required: "Vendor address is required" })}
+                  rows={3}
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-                  rows="3"
                   placeholder="Enter vendor address"
-                />
+                ></textarea>
                 {errors.vendor_address && (
                   <p className="text-red-500 text-sm mt-1">{errors.vendor_address.message}</p>
                 )}

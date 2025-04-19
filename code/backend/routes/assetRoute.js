@@ -19,7 +19,7 @@ const createAssetHistory = async (params) => {
     if (!params.performed_by) throw new Error('Performed by (admin ID) is required');
     if (!params.operation_type) throw new Error('Operation type is required');
     let comment = params.comments || '';
-    
+
     // For specific operations, generate automatic comments if not provided
     if (params.operation_type === 'Location_Changed' && !params.comments) {
       comment = `Location changed from ${params.details?.previous_location || 'unknown'} to ${params.details?.new_location || 'unknown'}`;
@@ -121,14 +121,14 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
     if (req.files && req.files.additionalPdf) {
       additionalFilesBuffer = req.files.additionalPdf[0].buffer;
     }
- 
+
     // Create invoice if invoice PDF is uploaded
     let invoiceId = null;
     let invObject = null;
     console.log("Invoice ID from request:", Invoice_id);
     if (Invoice_id && Invoice_id.trim() !== '') {
       // Validate if the invoice exists in the database
-      const existingInvoice = await Invoice.find({invoice_id : Invoice_id});
+      const existingInvoice = await Invoice.find({ invoice_id: Invoice_id });
       if (!existingInvoice) {
         return res.status(400).json({
           success: false,
@@ -138,7 +138,7 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
       invoiceId = Invoice_id;
       //console.log("Invoice ID from request:", invoiceId);
 
-    }else{
+    } else {
       invoiceId = `INV-${Date.now()}`;
     }
     console.log("Invoice ID set in backend", invoiceId);
@@ -195,7 +195,7 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
     // Create multiple assets with different serial numbers
     const assetPromises = serialNumbersArray.map(async (serialNumber) => {
       // Removed validation that throws error for empty serial numbers
-      
+
       const assetData = {
         name: req.body.name,
         brand: req.body.brand_name,
@@ -245,7 +245,7 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
     const createdAssets = await Promise.all(assetPromises);
     console.log('Successfully created assets:', createdAssets.length);
     const user_issuer = await User.findById(Issued_by);
-    const Issued_by_name = user_issuer ? `${user_issuer.first_name} ${user_issuer.last_name}` : Issued_by; 
+    const Issued_by_name = user_issuer ? `${user_issuer.first_name} ${user_issuer.last_name}` : Issued_by;
     //for all asset make history
     for (const asset of createdAssets) {
       await createAssetHistory({
@@ -254,7 +254,7 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
         operation_type: 'Added',
         assignment_type: null,
         issued_to: null,
-        comments : `Asset added by admin ${Issued_by_name}`
+        comments: `Asset added by admin ${Issued_by_name}`
       });
     }
     return res.status(201).json({ success: true, assets: createdAssets });
@@ -307,12 +307,12 @@ router.post("/assign_asset/:assetId", async (req, res) => {
     const { assetId } = req.params;       // from URL
     const { assignType, assignId, admin } = req.body; // from request body
     console.log("REQUEST BODY", req);
-    
+
     if (assignType === "user") {
       // Get user name for history entry
       const user = await User.findById(assignId);
       const userName = user ? `${user.first_name} ${user.last_name}` : assignId;
-      
+
       // Entry in user_asset
       const newUserAsset = await UserAsset.create({
         asset_id: assetId,
@@ -340,7 +340,7 @@ router.post("/assign_asset/:assetId", async (req, res) => {
       // Get project name for history entry
       const project = await Project.findById(assignId);
       const projectName = project ? project.Project_name : assignId;
-      
+
       // Entry in asset_project
       const newAssetProject = await AssetProject.create({
         asset_id: assetId,
@@ -380,18 +380,18 @@ router.put('/:id/unassign', authMiddleware, async (req, res) => {
     }
     const user = await User.findById(user_id.user_email);
     const user_name = user.first_name + user.last_name;
-    console.log("User:", user); 
+    console.log("User:", user);
     // const user_name = user.first_name+user.last_name
     const asset = await Asset.findByIdAndUpdate(
       req.params.id,
       {
         Issued_to: null,
-        status: "Available", 
+        status: "Available",
         assignment_status: false
       },
       { new: true }
     ).populate('Issued_by', 'first_name last_name').populate('Issued_to', 'first_name last_name');
-    
+
     console.log("Unassigned asset:", asset);
 
     await createAssetHistory({
@@ -442,7 +442,7 @@ router.get('/:invoiceId/download', async (req, res) => {
     if (!invoice || !invoice.pdf_file) {
       return res.status(404).send('Invoice PDF not found.');
     }
-    
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${invoice.filename || 'invoice.pdf'}"`);
     return res.send(invoice.pdf_file);
@@ -515,11 +515,11 @@ router.put('/:id/deactivate', authMiddleware, async (req, res) => {
     if (!asset) {
       return res.status(404).json({ message: "Asset not found" });
     }
-    
+
     // Fix: Use await when finding the admin user
     const adminuser = await User.findById(admin);
     const adminuser_name = adminuser ? `${adminuser.first_name} ${adminuser.last_name}` : admin;
-    
+
     // Update history
     await createAssetHistory({
       asset_id: assetId,
@@ -566,11 +566,11 @@ router.put('/:id', authMiddleware, upload.fields([
     const isLocationChanged = req.body.isLocationChanged === 'true';
     const previousLocation = req.body.previousLocation;
     const newLocation = req.body.Office;
-    
+
     // Check if we need to unassign the asset due to location change
     const unassignDueToLocationChange = req.body.unassignDueToLocationChange === 'true';
     const previousAssignee = req.body.previousAssignee;
-    
+
     // Prepare update object with ONLY editable fields from request body
     const updateData = {
       // These fields can be edited
@@ -581,7 +581,7 @@ router.put('/:id', authMiddleware, upload.fields([
       description: req.body.description,
       price: req.body.price
     };
-    
+
     // If unassigning due to location change, add unassignment data
     if (unassignDueToLocationChange) {
       updateData.Issued_to = null;
@@ -678,7 +678,7 @@ router.put('/:id', authMiddleware, upload.fields([
     console.log("Updated insurance date:", updatedAsset.insurance_date);
 
     // Record history based on what changed
-    
+
     // If asset was unassigned due to location change, record both events
     if (unassignDueToLocationChange) {
       // Get user name for the history entry
@@ -691,7 +691,7 @@ router.put('/:id', authMiddleware, upload.fields([
       } catch (error) {
         console.error("Error getting user name:", error);
       }
-      
+
       // First record the unassignment
       await createAssetHistory({
         asset_id: assetId,
@@ -699,9 +699,9 @@ router.put('/:id', authMiddleware, upload.fields([
         operation_type: 'Unassigned',
         assignment_type: null,
         issued_to: null,
-        comments:`Asset unassigned due to location change from user ${previousAssigneeName}`
+        comments: `Asset unassigned due to location change from user ${previousAssigneeName}`
       });
-      
+
       // Then record the location change
       await createAssetHistory({
         asset_id: assetId,
@@ -711,7 +711,7 @@ router.put('/:id', authMiddleware, upload.fields([
         issued_to: null,
         comments: `Asset location changed from ${previousLocation} to ${newLocation}`
       });
-      
+
       console.log(`Asset unassigned and location changed: ${previousLocation} -> ${newLocation}`);
     }
     // If location changed but asset wasn't assigned (or other reason), just record location change
@@ -737,6 +737,64 @@ router.put('/:id', authMiddleware, upload.fields([
     res.status(500).json({
       error: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
+// Get unique brand names from all assets
+router.get('/brands/unique', authMiddleware, async (req, res) => {
+  try {
+    const uniqueBrands = await Asset.distinct('brand_name');
+    res.status(200).json({ success: true, brands: uniqueBrands.filter(brand => brand) });
+  } catch (error) {
+    console.error('Error fetching unique brands:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch unique brands',
+      message: error.message
+    });
+  }
+});
+
+// Get unique vendor details from all assets
+router.get('/vendors/unique', authMiddleware, async (req, res) => {
+  try {
+    const vendors = await Asset.aggregate([
+      {
+        $match: {
+          vendor_name: { $exists: true, $ne: null, $ne: "" },
+          vendor_email: { $exists: true, $ne: null, $ne: "" }
+        }
+      },
+      {
+        $group: {
+          _id: "$vendor_name",
+          vendor_name: { $first: "$vendor_name" },
+          vendor_email: { $first: "$vendor_email" },
+          vendor_phone: { $first: "$vendor_phone" },
+          vendor_city: { $first: "$vendor_city" },
+          vendor_address: { $first: "$vendor_address" }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          vendor_name: 1,
+          vendor_email: 1,
+          vendor_phone: 1,
+          vendor_city: 1,
+          vendor_address: 1
+        }
+      }
+    ]);
+
+    res.status(200).json({ success: true, vendors });
+  } catch (error) {
+    console.error('Error fetching unique vendors:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch unique vendors',
+      message: error.message
     });
   }
 });
