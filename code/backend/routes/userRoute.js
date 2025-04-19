@@ -67,9 +67,12 @@ userRouter.get("/search", async (req, res) => {
         }
 
         const users = await User.find(searchCondition);
+        // remove users with inactive sttus
+        const activeUsers = users.filter(user => user.active !== false);
+        // users = activeUsers;
         console.log(`Found ${users.length} users matching criteria`);
 
-        return res.status(200).json(users);
+        return res.status(200).json(activeUsers);
     } catch (error) {
         console.error("Error searching users:", error);
         res.status(500).json({ error: "Error searching users" });

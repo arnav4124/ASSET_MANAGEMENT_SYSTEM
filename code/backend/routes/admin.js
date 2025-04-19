@@ -148,7 +148,9 @@ admin_router.get('/users', authMiddleware, async (req, res) => {
             location: { $in: validLocations }
         }).select('first_name last_name email location active');
         // remove the Admin of the admin location
+        // remove users with status inactive
 
+        users = users.filter(user => user.active !== false);
         res.status(200).json({
             success: true,
             users
