@@ -436,6 +436,32 @@ router.delete('/:projectId/participants', authMiddleware, async (req, res) => {
     }
 });
 
+// Search projects by name
+router.get('/search', authMiddleware, async (req, res) => {
+    try {
+        const { query } = req.query;
+        console.log("Searching projects with query:", query);
+
+        let searchCondition = {};
+
+        // Add name search if query is provided
+        if (query && query.trim() !== '') {
+            searchCondition.Project_name = { $regex: query, $options: 'i' };
+        }
+
+        const projects = await Project.find(searchCondition)
+            .populate('project_head', 'first_name last_name email')
+            .sort({ createdAt: -1 });
+
+        console.log(`Found ${projects.length} projects matching criteria`);
+
+        return res.status(200).json(projects);
+    } catch (error) {
+        console.error("Error searching projects:", error);
+        res.status(500).json({ error: "Error searching projects" });
+    }
+});
+
 // Add this helper function at the end of the file, before module.exports
 function isValidDate(dateString) {
     const date = new Date(dateString);

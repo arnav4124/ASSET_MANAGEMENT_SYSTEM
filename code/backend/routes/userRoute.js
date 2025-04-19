@@ -46,6 +46,34 @@ userRouter.get("/", async (req, res) => {
     }
 });
 
+userRouter.get("/search", async (req, res) => {
+    try {
+        const { query, location } = req.query;
+        console.log("Searching users with query:", query, "in location:", location);
 
+        if (!location) {
+            return res.status(400).json({ error: "Location is required" });
+        }
+
+        let searchCondition = { location };
+
+        // Add name search if query is provided
+        if (query && query.trim() !== '') {
+            searchCondition.$or = [
+                { first_name: { $regex: query, $options: 'i' } },
+                { last_name: { $regex: query, $options: 'i' } },
+                { email: { $regex: query, $options: 'i' } }
+            ];
+        }
+
+        const users = await User.find(searchCondition);
+        console.log(`Found ${users.length} users matching criteria`);
+
+        return res.status(200).json(users);
+    } catch (error) {
+        console.error("Error searching users:", error);
+        res.status(500).json({ error: "Error searching users" });
+    }
+});
 
 module.exports = userRouter;

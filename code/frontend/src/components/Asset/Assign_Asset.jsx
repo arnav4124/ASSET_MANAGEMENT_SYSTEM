@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, ChevronLeft, Loader2, Check, Users, FolderGit2 } from 'lucide-react';
+import { Box, ChevronLeft, Loader2, Check, Users, FolderGit2, Search, X } from 'lucide-react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -8,14 +8,16 @@ const AssignAsset = () => {
     const navigate = useNavigate();
     const [assignType, setAssignType] = useState("user");
     const [assignList, setAssignList] = useState([]);
+    const [filteredList, setFilteredList] = useState([]);
     const [selectedValue, setSelectedValue] = useState("");
+    const [assetData, setAssetData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [error, setError] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
-
         const token = localStorage.getItem("token");
         if (!token) {
             navigate('/login');
@@ -25,33 +27,118 @@ const AssignAsset = () => {
                 navigate('/login');
             }
         }
-        const fetchData = async () => {
+
+        // Fetch the asset details first to get its location
+        const fetchAssetData = async () => {
             setLoading(true);
-            setError(null);
             try {
-                const adminData = JSON.parse(localStorage.getItem("user"));
-                const adminLocation = adminData.location;
-                console.log("Admin location:", adminLocation);
-                const endpoint = assignType === "user"
-                    ? `user?adminLocation=${adminLocation}`
-                    : "projects";
-                const res = await axios.get(`http://localhost:3487/api/${endpoint}`, {
-                    withCredentials: true,
-                    headers: {
-                        token: localStorage.getItem("token"),
-                    },
+                const res = await axios.get(`http://localhost:3487/api/assets/${id}`, {
+                    headers: { token: localStorage.getItem("token") }
                 });
-                setAssignList(res.data);
-                console.log(res.data);
+
+                console.log("Asset data:", res.data);
+                setAssetData(res.data);
+
+                // After getting asset data, fetch users or projects
+                await fetchAssignList(res.data);
             } catch (error) {
-                console.error("Fetch error:", error);
-                setError("Failed to fetch " + (assignType === "user" ? "users" : "projects"));
-            } finally {
+                console.error("Error fetching asset data:", error);
+                setError("Failed to fetch asset details");
                 setLoading(false);
             }
         };
-        fetchData();
+
+        fetchAssetData();
+    }, [id, navigate]);
+
+    const fetchAssignList = async (asset) => {
+        setError(null);
+        try {
+            if (assignType === "user") {
+                // Fetch users that match the asset's location
+                if (asset && asset.Office) {
+                    const res = await axios.get(`http://localhost:3487/api/user/search`, {
+                        params: { location: asset.Office },
+                        headers: { token: localStorage.getItem("token") }
+                    });
+                    setAssignList(res.data);
+                    setFilteredList(res.data);
+                    console.log("Users in asset location:", res.data);
+                }
+            } else {
+                // Fetch all projects
+                const res = await axios.get(`http://localhost:3487/api/projects`, {
+                    headers: { token: localStorage.getItem("token") }
+                });
+                setAssignList(res.data);
+                setFilteredList(res.data);
+                console.log("Projects:", res.data);
+            }
+        } catch (error) {
+            console.error("Fetch error:", error);
+            setError("Failed to fetch " + (assignType === "user" ? "users" : "projects"));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // When assignment type changes, reset selection and fetch new data
+    useEffect(() => {
+        setSelectedValue("");
+        setSearchQuery("");
+        if (assetData) {
+            fetchAssignList(assetData);
+        }
     }, [assignType]);
+
+    // Handle search input change
+    const handleSearchChange = async (e) => {
+        const query = e.target.value;
+        setSearchQuery(query);
+
+        if (query.trim() === '') {
+            // If search is cleared, show all items
+            setFilteredList(assignList);
+        } else {
+            try {
+                if (assignType === "user") {
+                    // Search users by name in the asset's location
+                    const res = await axios.get(`http://localhost:3487/api/user/search`, {
+                        params: {
+                            query: query,
+                            location: assetData.Office
+                        },
+                        headers: { token: localStorage.getItem("token") }
+                    });
+                    setFilteredList(res.data);
+                } else {
+                    // Search projects by name
+                    const res = await axios.get(`http://localhost:3487/api/projects/search`, {
+                        params: { query: query },
+                        headers: { token: localStorage.getItem("token") }
+                    });
+                    setFilteredList(res.data);
+                }
+            } catch (error) {
+                console.error("Search error:", error);
+                // Fallback to client-side filtering if API call fails
+                const filtered = assignList.filter(item => {
+                    if (assignType === "user") {
+                        return `${item.first_name} ${item.last_name}`.toLowerCase().includes(query.toLowerCase()) ||
+                            item.email.toLowerCase().includes(query.toLowerCase());
+                    } else {
+                        return item.Project_name.toLowerCase().includes(query.toLowerCase());
+                    }
+                });
+                setFilteredList(filtered);
+            }
+        }
+    };
+
+    const clearSearch = () => {
+        setSearchQuery('');
+        setFilteredList(assignList);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -97,7 +184,11 @@ const AssignAsset = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-2xl font-bold text-gray-800">Assign Asset</h1>
-                            <p className="text-gray-500 mt-1">Select a user or project to assign this asset</p>
+                            <p className="text-gray-500 mt-1">
+                                {assignType === "user"
+                                    ? `Select a user in ${assetData?.Office || 'this location'} to assign this asset`
+                                    : 'Select a project to assign this asset'}
+                            </p>
                         </div>
                         <div className="bg-blue-50 p-3 rounded-full">
                             <Box size={24} className="text-blue-500" />
@@ -163,27 +254,66 @@ const AssignAsset = () => {
                                 </div>
                             </div>
 
-                            {/* Selection Dropdown */}
+                            {/* Search Bar */}
+                            <div className="flex flex-col items-center w-full">
+                                <div className="w-full max-w-2xl relative">
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder={`Search ${assignType === "user" ? "users" : "projects"}...`}
+                                            value={searchQuery}
+                                            onChange={handleSearchChange}
+                                            className="w-full p-4 pl-12 text-lg border-2 border-gray-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 outline-none hover:border-blue-300"
+                                        />
+                                        <Search size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                        {searchQuery && (
+                                            <button
+                                                type="button"
+                                                onClick={clearSearch}
+                                                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            >
+                                                <X size={20} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Selection List */}
                             <div className="flex flex-col items-center">
                                 <label className="block font-medium text-base mb-3 text-gray-700">
                                     {assignType === "user" ? "Select User" : "Select Project"}
                                 </label>
-                                <div className="w-full max-w-2xl">
-                                    <select
-                                        value={selectedValue}
-                                        onChange={(e) => setSelectedValue(e.target.value)}
-                                        className="w-full p-4 text-lg border-2 border-gray-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 outline-none hover:border-blue-300"
-                                        required
-                                    >
-                                        <option value="">--Choose {assignType === "user" ? "a user" : "a project"}--</option>
-                                        {assignList.map((item) => (
-                                            <option key={item._id} value={item._id}>
-                                                {assignType === "user"
-                                                    ? `${item.first_name} ${item.last_name}`
-                                                    : item.Project_name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                <div className="w-full max-w-2xl max-h-60 overflow-y-auto border-2 border-gray-200 rounded-lg">
+                                    {filteredList.length === 0 ? (
+                                        <div className="p-4 text-center text-gray-500">
+                                            No {assignType === "user" ? "users" : "projects"} found
+                                        </div>
+                                    ) : (
+                                        filteredList.map((item) => (
+                                            <div
+                                                key={item._id}
+                                                onClick={() => setSelectedValue(item._id)}
+                                                className={`p-4 border-b last:border-b-0 cursor-pointer hover:bg-blue-50 transition-colors ${selectedValue === item._id ? "bg-blue-100" : ""
+                                                    }`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-4 h-4 rounded-full border ${selectedValue === item._id ? "border-blue-500 bg-blue-500" : "border-gray-300"
+                                                        }`}></div>
+                                                    <div>
+                                                        <p className="font-medium text-gray-800">
+                                                            {assignType === "user"
+                                                                ? `${item.first_name} ${item.last_name}`
+                                                                : item.Project_name}
+                                                        </p>
+                                                        <p className="text-sm text-gray-500">
+                                                            {assignType === "user" ? item.email : `Created: ${new Date(item.createdAt).toLocaleDateString()}`}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         </div>
