@@ -84,7 +84,7 @@ const Asset_add = () => {
 
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm();
   const [assetType, setAssetType] = useState("physical");
-  
+
   const watchCategory = watch("category");
   const watchOffice = watch("office");
 
@@ -97,7 +97,7 @@ const Asset_add = () => {
             withCredentials: true,
             headers: { token: localStorage.getItem("token") }
           });
-          
+
           if (response.data.success) {
             setSelectedCategory(response.data.sticker_short_seq);
           }
@@ -106,7 +106,7 @@ const Asset_add = () => {
         }
       }
     };
-    
+
     fetchCategorySticker();
   }, [watchCategory]);
 
@@ -118,7 +118,7 @@ const Asset_add = () => {
             withCredentials: true,
             headers: { token: localStorage.getItem("token") }
           });
-          
+
           if (response.data.success) {
             setSelectedOffice(response.data.sticker_short_seq);
           }
@@ -127,7 +127,7 @@ const Asset_add = () => {
         }
       }
     };
-    
+
     fetchLocationSticker();
   }, [watchOffice]);
 
@@ -136,7 +136,7 @@ const Asset_add = () => {
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const year = String(now.getFullYear()).slice(-2);
     const randomDigits = Math.floor(1000 + Math.random() * 9000);
-    
+
     const stickerSeq = `EKL/${selectedOffice || 'CENT'}/${selectedCategory || 'CAT'}/${month}/${year}/${randomDigits}`;
     setGeneratedStickerSeq(stickerSeq);
     setValue("stickerSeq", stickerSeq);
@@ -436,6 +436,7 @@ const Asset_add = () => {
                   <p className="text-red-500 text-sm mt-1">{errors.voucher_number.message}</p>
                 )}
               </div>
+
               {/* Invoice ID */}
               <div>
                 <label className="block font-medium text-sm mb-1 text-gray-700">Invoice ID (Optional)</label>
@@ -446,27 +447,34 @@ const Asset_add = () => {
                   placeholder="Enter invoice ID"
                 />
               </div>
-            </div>
 
-            <label className="block text-sm font-medium text-gray-700 mb-1">Grouping</label>
-            <select
-              {...register("grouping", { required: "Grouping is required" })}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">-- Select Grouping --</option>
-              <option value="Individual">Individual</option>
-              <option value="Grouped">Grouped</option>
-            </select>
+              {/* Grouping */}
+              <div>
+                <label className="block font-medium text-sm mb-1 text-gray-700">Grouping</label>
+                <select
+                  {...register("grouping", { required: "Grouping is required" })}
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                >
+                  <option value="">-- Select Grouping --</option>
+                  <option value="Individual">Individual</option>
+                  <option value="Grouped">Grouped</option>
+                </select>
+                {errors.grouping && (
+                  <p className="text-red-500 text-sm mt-1">{errors.grouping.message}</p>
+                )}
+              </div>
 
-            <div>
-              <label className="block font-medium text-sm mb-1 text-gray-700">
-                Date of Purchase (optional)
-              </label>
-              <input
-                {...register("date_of_purchase")}
-                type="date"
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
-              />
+              {/* Date of Purchase */}
+              <div>
+                <label className="block font-medium text-sm mb-1 text-gray-700">
+                  Date of Purchase (optional)
+                </label>
+                <input
+                  {...register("date_of_purchase")}
+                  type="date"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                />
+              </div>
             </div>
 
             {/* Vendor Information */}
