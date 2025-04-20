@@ -499,4 +499,34 @@ router.get('/location_assets_graph', authMiddleware, async (req, res) => {
     }
 });
 
+
+router.put('/remove_admin', authMiddleware, async (req, res) => {
+    try {
+        console.log("Removing admin role");
+        const { userId } = req.body;
+        console.log("User ID to remove admin role:", userId);
+        const user = await User.findById(userId);
+        if (!user) {
+            console.log("User not found");
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        if (user.role !== 'Admin') {
+            console.log("User is not an admin");
+            return res.status(400).json({ success: false, message: 'User is not an admin' });
+        }
+        // Revert user to normal user role
+        console.log("Reverting user to normal role");
+        user.role = 'User';
+        await user.save();
+        return res.status(200).json({
+            success: true,
+            message: 'User has been reverted to normal user status',
+            user
+        });
+    } catch (error) {
+        console.error('Error removing admin role:', error);
+        return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+  });
+
 module.exports = router;
