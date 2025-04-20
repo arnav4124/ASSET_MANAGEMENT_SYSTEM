@@ -17,7 +17,7 @@ const AddEmployee = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [managers, setManagers] = useState([]);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(null);
   const [locations, setLocations] = useState([]);
   useEffect(() => {
     const token_st = localStorage.getItem("token")
@@ -154,7 +154,7 @@ const AddEmployee = () => {
     catch (err) {
       console.error("Error adding employee:", err);
       setMessage(err)
-      setError("Error adding employee")
+      setError(err.response?.data?.message || "Error adding employee");
     }
     finally {
       setLoading(false)

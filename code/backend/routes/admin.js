@@ -64,6 +64,15 @@ admin_router.post('/add_user', authMiddleware, async (req, res) => {
             phoneNumber
         })
 
+        // check if email is already in use
+        const existingUser = await User.findOne({ email })
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: "Email already in use"
+            })
+        }
+
         await newUser.save()
 
         try {
