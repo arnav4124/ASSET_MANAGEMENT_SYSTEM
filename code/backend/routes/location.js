@@ -32,6 +32,12 @@ location_router.post('/add_location', authMiddleware, async (req, res) => {
     try {
         const { location_name, location_type, parent_location, address, pincode , sticker_short_seq} = req.body
         console.log("body",req.body)
+        // Check if location_name already exists
+        const existingLocation = await Location.find
+            ({ location_name })
+        if (existingLocation.length > 0) {
+            return res.status(400).json({ success: false, message: "Location name already exists" })
+        }
         const location = new Location({
             location_name,
             location_type,

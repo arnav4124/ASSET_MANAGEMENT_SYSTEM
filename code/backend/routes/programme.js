@@ -34,6 +34,13 @@ router.post('/',  async (req, res) => {
                 message: "Invalid programme type. Must be one of: " + allowedTypes.join(', ')
             });
         }
+        // Check if programme with the same name already exists
+        const existingProgramme = await Programme.findOne({ name: name.trim() });
+        if (existingProgramme) {
+            return res.status(409).json({
+                message: "A programme with this name already exists"
+            });
+        }
 
         // Create new programme with trimmed values
         const programme = new Programme({
