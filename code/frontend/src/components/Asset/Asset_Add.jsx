@@ -160,6 +160,7 @@ const Asset_add = () => {
     const stickerSeq = `EKL/${selectedOffice || 'CENT'}/${selectedCategory || 'CAT'}/${month}/${year}/${randomDigits}`;
     setGeneratedStickerSeq(stickerSeq);
     setValue("stickerSeq", stickerSeq);
+    return stickerSeq;
   };
 
   const handleQuantityChange = (e) => {
@@ -206,7 +207,14 @@ const Asset_add = () => {
     setShowBrandDropdown(false);
   };
 
-  // Handle vendor selection
+  // Add this to update brand_name when typing in the input
+  const handleBrandInputChange = (e) => {
+    setValue("brand_name", e.target.value);
+    setBrandSearchQuery(e.target.value);
+    setShowBrandDropdown(true);
+  };
+
+  // Vendor selection and input change
   const handleVendorSelect = (vendor) => {
     setValue("vendor_name", vendor.vendor_name);
     setValue("vendor_email", vendor.vendor_email);
@@ -214,6 +222,12 @@ const Asset_add = () => {
     setValue("vendor_city", vendor.vendor_city || "");
     setValue("vendor_address", vendor.vendor_address || "");
     setShowVendorDropdown(false);
+  };
+
+  const handleVendorInputChange = (e) => {
+    setValue("vendor_name", e.target.value);
+    setVendorSearchQuery(e.target.value);
+    setShowVendorDropdown(true);
   };
 
   const onSubmit = async (data) => {
@@ -227,7 +241,12 @@ const Asset_add = () => {
 
       // Serial number validation is removed to make it optional
 
-      // Validate required fields (removing stickerSeq from required fields)
+      // Make sure sticker sequence is generated if it's not provided
+      if (!data.stickerSeq) {
+        data.stickerSeq = generateStickerSequence();
+      }
+
+      // Validate required fields (removed Sticker_seq since we'll generate it automatically)
       const requiredFields = {
         assetName: 'Asset Name',
         brand_name: 'Brand Name',
@@ -250,12 +269,6 @@ const Asset_add = () => {
 
       if (missingFields.length > 0) {
         throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
-      }
-
-      // If sticker sequence is not provided, generate one
-      if (!data.stickerSeq) {
-        generateStickerSequence();
-        data.stickerSeq = generatedStickerSeq;
       }
 
       const formData = new FormData();
@@ -322,7 +335,6 @@ const Asset_add = () => {
       });
 
       console.log('Backend response:', response.data);
-
 
       window.scrollTo(0, 0);
       if (response.data.success) {
@@ -450,11 +462,7 @@ const Asset_add = () => {
                     className="w-full p-3 border border-gray-300 rounded-l-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
                     placeholder="Enter brand name"
                     onFocus={() => setShowBrandDropdown(true)}
-                    onChange={(e) => {
-                      setValue("brand_name", e.target.value);
-                      setBrandSearchQuery(e.target.value);
-                      setShowBrandDropdown(true);
-                    }}
+                    onChange={handleBrandInputChange}
                   />
                   <button
                     type="button"
@@ -567,11 +575,7 @@ const Asset_add = () => {
                     className="w-full p-3 border border-gray-300 rounded-l-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
                     placeholder="Enter vendor name"
                     onFocus={() => setShowVendorDropdown(true)}
-                    onChange={(e) => {
-                      setValue("vendor_name", e.target.value);
-                      setVendorSearchQuery(e.target.value);
-                      setShowVendorDropdown(true);
-                    }}
+                    onChange={handleVendorInputChange}
                   />
                   <button
                     type="button"
@@ -839,7 +843,10 @@ const Asset_add = () => {
                     className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
                     placeholder="Format: EKL/CENT/CAT/MON/YR/####"
                     value={generatedStickerSeq}
-                    onChange={(e) => setGeneratedStickerSeq(e.target.value)}
+                    onChange={(e) => {
+                      setGeneratedStickerSeq(e.target.value);
+                      setValue("stickerSeq", e.target.value);
+                    }}
                   />
                   <button
                     type="button"
