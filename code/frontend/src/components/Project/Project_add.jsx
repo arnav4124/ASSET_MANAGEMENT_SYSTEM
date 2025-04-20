@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useForm } from "react-hook-form";
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; 
 import { FaProjectDiagram, FaUsers, FaCalendarAlt, FaMapMarkerAlt, FaUserTie, FaChevronLeft, FaSpinner } from 'react-icons/fa';
 
 // Create axios instance
@@ -23,7 +24,7 @@ const Project_add = () => {
   const [participantSearchTerm, setParticipantSearchTerm] = useState('');
   const [selectedParticipants, setSelectedParticipants] = useState([]);
   const [selectedLocations, setSelectedLocations] = useState([]);
-
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const participantsPerPage = 10;
 
@@ -141,6 +142,7 @@ const Project_add = () => {
         setSelectedManager(null);
         setSelectedParticipants([]);
         setSelectedLocations([]);
+        navigate('/admin/projects/view');
       }
     } catch (err) {
       console.error('Error creating project:', err);

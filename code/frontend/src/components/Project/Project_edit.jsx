@@ -320,6 +320,9 @@ const ProjectEdit = () => {
         setAssetSearchResults([]);
 
         alert('Assets added successfully!');
+        
+        // Navigate to the assets view page
+        navigate('/admin/projects/view');
       }
     } catch (error) {
       console.error('Error adding assets:', error);
