@@ -9,10 +9,108 @@ const AssetProject = require('../models/asset_project');
 const Asset = require('../models/asset');
 const mongoose = require('mongoose');
 
+// Improved function to find all sublocations in the hierarchy
+async function findAllSublocations(parentLocationName) {
+    try {
+        console.log(`Finding sublocations for: ${parentLocationName}`);
+
+        // Start with the parent location itself
+        const locations = [parentLocationName];
+        const processedLocations = new Set(); // To prevent infinite recursion
+
+        // Find parent location document
+        const parentLocation = await Location.findOne({ location_name: parentLocationName });
+        if (!parentLocation) {
+            console.log(`Parent location document not found for: ${parentLocationName}`);
+            return locations;
+        }
+
+        // Define a recursive helper function to find all nested sublocations
+        async function findSublocationsRecursively(locationDoc) {
+            // Skip if we've already processed this location
+            const locationId = locationDoc._id.toString();
+            if (processedLocations.has(locationId)) {
+                return;
+            }
+
+            // Mark this location as processed
+            processedLocations.add(locationId);
+
+            try {
+                // Find all direct children of this location using its ID
+                const children = await Location.find({ parent_location: locationDoc._id.toString() });
+                console.log(`Found ${children.length} direct children for location: ${locationDoc.location_name}`);
+
+                // Process each child
+                for (const child of children) {
+                    // Add the child location to our list if not already included
+                    if (!locations.includes(child.location_name)) {
+                        locations.push(child.location_name);
+                        console.log(`Added sublocation: ${child.location_name}`);
+                    }
+
+                    // Recursively process this child's children
+                    await findSublocationsRecursively(child);
+                }
+            } catch (err) {
+                console.error(`Error finding children for location ${locationDoc.location_name}:`, err);
+            }
+        }
+
+        // Start the recursive search from the parent location
+        await findSublocationsRecursively(parentLocation);
+
+        console.log(`Found total ${locations.length} locations in hierarchy for ${parentLocationName}`);
+        return locations;
+    } catch (error) {
+        console.error(`Error finding sublocations for ${parentLocationName}:`, error);
+        return [parentLocationName];
+    }
+}
+
 // Get all users with role 'User' or 'Admin'
 router.get('/users', authMiddleware, async (req, res) => {
     try {
-        const users = await User.find({ role: { $in: ['User', 'Admin'] } });
+        // Get current admin's location
+        const adminLocation = req.user.location;
+
+        console.log(`Admin location: ${adminLocation}`);
+
+        // Find all sublocations (including the admin's location)
+        const validLocations = await findAllSublocations(adminLocation);
+
+        console.log(`Found ${validLocations.length} locations in hierarchy, including: ${validLocations.slice(0, 5).join(', ')}${validLocations.length > 5 ? '...' : ''}`);
+
+        // Use direct MongoDB query to find matching users
+        const users = await User.find({
+            role: { $in: ['User', 'Admin'] },
+            location: { $in: validLocations }
+        });
+
+        console.log(`Found ${users.length} users in the location hierarchy`);
+
+        // Log sample of users and their locations
+        if (users.length > 0) {
+            console.log("Sample of users found (up to 5):");
+            users.slice(0, 5).forEach(user => {
+                console.log(`- User: ${user.first_name} ${user.last_name}, Location: "${user.location}"`);
+            });
+
+            // Count users by location
+            const locationCounts = {};
+            for (const user of users) {
+                locationCounts[user.location] = (locationCounts[user.location] || 0) + 1;
+            }
+
+            console.log("User counts by location:");
+            Object.entries(locationCounts)
+                .sort((a, b) => b[1] - a[1])  // Sort by count, descending
+                .slice(0, 10)  // Take top 10
+                .forEach(([location, count]) => {
+                    console.log(`- ${location}: ${count} users`);
+                });
+        }
+
         res.status(200).json(users);
     } catch (error) {
         console.error('Error fetching users:', error);
@@ -252,21 +350,40 @@ router.get('/get_user_projects/:id', authMiddleware, async (req, res) => {
 router.get('/users/search', authMiddleware, async (req, res) => {
     try {
         const { query } = req.query;
-        let searchQuery = {};
+        // Get current admin's location
+        const adminLocation = req.user.location;
 
-        if (query) {
-            searchQuery = {
-                $or: [
-                    { first_name: { $regex: query, $options: 'i' } },
-                    { last_name: { $regex: query, $options: 'i' } },
-                    { email: { $regex: query, $options: 'i' } }
-                ]
-            };
+        console.log(`Admin location for search: ${adminLocation}`);
+        console.log(`Search query: "${query}"`);
+
+        // Find all sublocations (including the admin's location)
+        const validLocations = await findAllSublocations(adminLocation);
+
+        console.log(`Found ${validLocations.length} locations in hierarchy for admin location: ${adminLocation}`);
+
+        // Get all users
+        let searchConditions = {
+            location: { $in: validLocations }
+        };
+
+        // Add search query filter if provided
+        if (query && query.trim() !== '') {
+            searchConditions.$or = [
+                { first_name: { $regex: query, $options: 'i' } },
+                { last_name: { $regex: query, $options: 'i' } },
+                { email: { $regex: query, $options: 'i' } }
+            ];
         }
 
-        const users = await User.find(searchQuery).select('first_name last_name email role');
-        res.json(users);
+        // Find users with the built query
+        const filteredUsers = await User.find(searchConditions)
+            .select('first_name last_name email role location');
+
+        console.log(`Found ${filteredUsers.length} users matching both location hierarchy and search criteria`);
+
+        res.json(filteredUsers);
     } catch (error) {
+        console.error('Error searching users:', error);
         res.status(500).json({ message: 'Error fetching users', error: error.message });
     }
 });
@@ -318,11 +435,58 @@ router.post('/:projectId/participants', authMiddleware, async (req, res) => {
     try {
         const { projectId } = req.params;
         const { userIds } = req.body; // Array of user IDs to add
+        const adminLocation = req.user.location;
+
+        console.log(`Admin location for participants: ${adminLocation}`);
+        console.log(`User IDs to add: ${JSON.stringify(userIds)}`);
+
+        // Find all sublocations (including the admin's location)
+        const validLocations = await findAllSublocations(adminLocation);
+        console.log(`Found ${validLocations.length} valid locations in hierarchy for admin`);
 
         // Validate project exists
         const project = await Project.findById(projectId);
         if (!project) {
             return res.status(404).json({ message: 'Project not found' });
+        }
+
+        // Find all users from the list that match admin's location hierarchy
+        const validUsers = await User.find({
+            _id: { $in: userIds },
+            location: { $in: validLocations }
+        });
+
+        console.log(`Found ${validUsers.length} valid users out of ${userIds.length} requested`);
+
+        // Debug: Let's see what users we found and what locations they have
+        console.log("Valid users:");
+        for (const user of validUsers) {
+            console.log(`- Valid user: ${user.first_name} ${user.last_name}, Location: "${user.location}"`);
+        }
+
+        // Debug: Check if any users weren't found and print their locations
+        const validUserIds = validUsers.map(user => user._id.toString());
+        const invalidUserIds = userIds.filter(id => !validUserIds.includes(id));
+
+        if (invalidUserIds.length > 0) {
+            console.log(`Invalid user IDs: ${JSON.stringify(invalidUserIds)}`);
+
+            // Let's check the actual locations of these invalid users
+            const invalidUsers = await User.find({ _id: { $in: invalidUserIds } });
+
+            console.log("Invalid users with their locations:");
+            for (const user of invalidUsers) {
+                console.log(`- Invalid user: ${user.first_name} ${user.last_name}, Location: "${user.location}"`);
+            }
+        }
+
+        // If some users don't match location criteria, return error
+        if (validUserIds.length !== userIds.length) {
+            return res.status(400).json({
+                message: 'Some users cannot be added as they do not belong to your location hierarchy',
+                valid: validUserIds,
+                invalid: userIds.filter(id => !validUserIds.includes(id))
+            });
         }
 
         // Filter out users that are already in the project
@@ -348,127 +512,156 @@ router.post('/:projectId/participants', authMiddleware, async (req, res) => {
             skipped: userIds.length - newUserIds.length
         });
     } catch (error) {
+        console.error('Error adding participants:', error);
         res.status(500).json({ message: 'Error adding participants', error: error.message });
     }
 });
 
-//add asset to project
-router.post('/:projectId/assets', authMiddleware, async (req, res) => {
+// Diagnostic endpoint to check users by location
+router.get('/diagnostic/users-by-location', authMiddleware, async (req, res) => {
     try {
-        const { projectId } = req.params;
-        const { assetIds } = req.body; // Array of asset IDs to add
+        const adminLocation = req.user.location;
+        console.log(`Admin location for diagnostic: ${adminLocation}`);
 
-        // Validate project exists
-        const project = await Project.findById(projectId);
-        if (!project) {
-            return res.status(404).json({ message: 'Project not found' });
+        // Step 1: Get information about the current location
+        const currentLocationDoc = await Location.findOne({ location_name: adminLocation });
+
+        if (!currentLocationDoc) {
+            return res.status(404).json({
+                success: false,
+                message: `Admin location "${adminLocation}" not found in the database`
+            });
         }
 
-        // Filter out assets that are already in the project
-        const existingAssets = await AssetProject.find({
-            project_id: projectId,
-            asset_id: { $in: assetIds }
+        // Step 2: Get all locations using our recursive function
+        const allSubLocations = await findAllSublocations(adminLocation);
+
+        // Step 3: Get the full location documents for all sublocations
+        const locationDocs = await Location.find({
+            location_name: { $in: allSubLocations }
         });
 
-        const existingAssetIds = existingAssets.map(a => a.asset_id.toString());
-        const newAssetIds = assetIds.filter(id => !existingAssetIds.includes(id));
-
-        // Create new asset-project associations
-        const assetProjects = newAssetIds.map(assetId => ({
-            asset_id: assetId,
-            project_id: projectId
-        }));
-
-
-        await AssetProject.insertMany(assetProjects);
-        // Update all assigned assets to Unavailable status
-
-        console.log(newAssetIds);
-        await Asset.updateMany(
-            { _id: { $in: newAssetIds } },
-            {
-                $set: {
-                    status: 'Unavailable',
-                    assignment_status: true,
-                    Issued_to: projectId,
-                    Issued_to_type: 'Project',
-                    Issued_date: new Date()
-                }
+        // Step 4: Build a location hierarchy map
+        const locationMap = {};
+        for (const loc of locationDocs) {
+            // Determine parent ID - handle both ObjectId and string cases
+            let parentId = "root";
+            if (loc.parent_location && loc.parent_location !== "ROOT") {
+                // Convert to string if it's an ObjectId
+                parentId = typeof loc.parent_location === 'object' && loc.parent_location._id
+                    ? loc.parent_location._id.toString()
+                    : loc.parent_location.toString();
             }
+
+            locationMap[loc._id.toString()] = {
+                id: loc._id.toString(),
+                name: loc.location_name,
+                parent: parentId,
+                type: loc.location_type,
+                children: []
+            };
+        }
+
+        // Step 5: Build the hierarchy tree
+        for (const locId in locationMap) {
+            const loc = locationMap[locId];
+            if (loc.parent && loc.parent !== "root" && locationMap[loc.parent]) {
+                locationMap[loc.parent].children.push(locId);
+            }
+        }
+
+        // Step 6: Find all users in the database
+        const allUsers = await User.find({}).select('first_name last_name email role location');
+
+        // Step 7: Find users that match our valid locations
+        const matchingUsers = allUsers.filter(user =>
+            allSubLocations.includes(user.location)
         );
 
-
-        res.status(201).json({
-            message: 'Assets added successfully',
-            added: newAssetIds.length,
-            skipped: assetIds.length - newAssetIds.length
-        });
-    } catch (error) {
-        res.status(500).json({ message: 'Error adding assets', error: error.message });
-    }
-});
-
-// Remove participant from project
-router.delete('/:projectId/participants', authMiddleware, async (req, res) => {
-    try {
-        const { projectId } = req.params;
-        const { userIds } = req.body; // Array of user IDs to remove
-
-        // Validate project exists
-        const project = await Project.findById(projectId);
-        if (!project) {
-            return res.status(404).json({ message: 'Project not found' });
+        // Step 8: Count users by location
+        const usersByLocation = {};
+        for (const location of allSubLocations) {
+            usersByLocation[location] = allUsers.filter(user =>
+                user.location === location
+            ).length;
         }
 
-        // Delete the user-project associations
-        const result = await UserProject.deleteMany({
-            project_id: projectId,
-            user_id: { $in: userIds }
-        });
+        // Step 9: Count locations we found vs locations with users
+        const locationsWithUsers = Object.keys(usersByLocation).filter(loc =>
+            usersByLocation[loc] > 0
+        );
 
-        res.status(200).json({
-            message: 'Participants removed successfully',
-            removed: result.deletedCount
+        const diagnosticData = {
+            adminLocation,
+            currentLocationDetails: {
+                _id: currentLocationDoc._id.toString(),
+                name: currentLocationDoc.location_name,
+                type: currentLocationDoc.location_type,
+                parent: currentLocationDoc.parent_location === "ROOT"
+                    ? "ROOT"
+                    : currentLocationDoc.parent_location.toString()
+            },
+            allSubLocationsCount: allSubLocations.length,
+            allSubLocations,
+            locationHierarchy: locationMap,
+            totalUsers: allUsers.length,
+            matchingUsers: matchingUsers.length,
+            usersByLocation,
+            locationsWithUsers: locationsWithUsers.length,
+            locationsWithNoUsers: allSubLocations.length - locationsWithUsers.length,
+            // Top locations by user count
+            topLocations: Object.entries(usersByLocation)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+        };
+
+        res.json({
+            success: true,
+            diagnosticData
         });
     } catch (error) {
-        console.error('Error removing participants:', error);
-        res.status(500).json({ message: 'Error removing participants', error: error.message });
+        console.error('Error in diagnostic endpoint:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error running diagnostics',
+            error: error.message
+        });
     }
 });
 
-// Search projects by name
-router.get('/search', authMiddleware, async (req, res) => {
+// Get all available assets for projects
+router.get('/assets', authMiddleware, async (req, res) => {
     try {
-        const { query } = req.query;
-        console.log("Searching projects with query:", query);
+        const user = req.user;
+        const adminLocation = user.location;
 
-        let searchCondition = {};
+        // Get all locations in the hierarchy for admin
+        const validLocations = await findAllSublocations(adminLocation);
+        console.log(`Found ${validLocations.length} valid locations for asset filtering`);
 
-        // Add name search if query is provided
-        if (query && query.trim() !== '') {
-            searchCondition.Project_name = { $regex: query, $options: 'i' };
-        }
+        // Find assets that are available
+        let query = {
+            status: 'Available',
+            Office: { $in: validLocations }
+        };
 
-        const projects = await Project.find(searchCondition)
-            .populate('project_head', 'first_name last_name email')
-            .sort({ createdAt: -1 });
+        const assets = await Asset.find(query)
+            .populate({
+                path: 'category',
+                select: 'name'
+            })
+            .populate({
+                path: 'Issued_by',
+                select: 'first_name last_name email'
+            });
 
-        console.log(`Found ${projects.length} projects matching criteria`);
+        console.log(`Found ${assets.length} available assets for admin's location hierarchy`);
 
-        return res.status(200).json(projects);
+        res.status(200).json(assets);
     } catch (error) {
-        console.error("Error searching projects:", error);
-        res.status(500).json({ error: "Error searching projects" });
+        console.error('Error fetching assets:', error);
+        res.status(500).json({ message: 'Server error while fetching assets' });
     }
 });
-
-// Add this helper function at the end of the file, before module.exports
-function isValidDate(dateString) {
-    const date = new Date(dateString);
-    return date instanceof Date && !isNaN(date);
-}
 
 module.exports = router;
-
-
-

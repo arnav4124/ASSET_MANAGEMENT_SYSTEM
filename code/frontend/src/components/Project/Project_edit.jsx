@@ -150,12 +150,18 @@ const ProjectEdit = () => {
 
   const fetchAvailableAssets = async () => {
     try {
-      const response = await axios.get('http://localhost:3487/api/projects/assets/search', {
+      // Get all assets at once instead of using search endpoint
+      const response = await axios.get('http://localhost:3487/api/projects/assets', {
         headers: { token: localStorage.getItem('token') }
       });
       setAvailableAssets(response.data);
+      console.log(`Fetched ${response.data.length} available assets`);
+
+      // Initialize asset search results with all assets
+      setAssetSearchResults(response.data);
     } catch (error) {
       console.error('Error fetching assets:', error);
+      alert('Error loading assets. Please try again.');
     }
   };
 
@@ -210,56 +216,70 @@ const ProjectEdit = () => {
     }
   };
 
-  const handleUserSearch = async (query) => {
-    try {
-      const response = await axios.get(`http://localhost:3487/api/projects/users/search?query=${query}`, {
-        headers: { token: localStorage.getItem('token') }
-      });
-      setSearchResults(response.data);
-    } catch (error) {
-      console.error('Error searching users:', error);
-      // Fallback to local search if API fails
-      if (availableUsers.length > 0) {
-        const filteredUsers = availableUsers.filter(user =>
-          user.first_name.toLowerCase().includes(query.toLowerCase()) ||
-          user.last_name.toLowerCase().includes(query.toLowerCase()) ||
-          user.email.toLowerCase().includes(query.toLowerCase())
-        );
-        setSearchResults(filteredUsers);
-      }
+  const handleUserSearch = (query) => {
+    if (!query || query.trim() === '') {
+      // If query is empty, show all available users
+      setSearchResults(availableUsers);
+      return;
     }
+
+    // Filter users locally based on name or email
+    const lowercaseQuery = query.toLowerCase();
+    const filteredUsers = availableUsers.filter(user =>
+      user.first_name?.toLowerCase().includes(lowercaseQuery) ||
+      user.last_name?.toLowerCase().includes(lowercaseQuery) ||
+      user.email?.toLowerCase().includes(lowercaseQuery)
+    );
+
+    console.log(`Filtered ${filteredUsers.length} users from ${availableUsers.length} available users`);
+    setSearchResults(filteredUsers);
   };
 
-  const handleAssetSearch = async (query) => {
-    try {
-      const response = await axios.get(`http://localhost:3487/api/projects/assets/search?query=${query}`, {
-        headers: { token: localStorage.getItem('token') }
-      });
-      setAssetSearchResults(response.data);
-    } catch (error) {
-      console.error('Error searching assets:', error);
+  const handleAssetSearch = (query) => {
+    if (!query || query.trim() === '') {
+      // If query is empty, show all available assets
+      setAssetSearchResults(availableAssets);
+      return;
+    }
 
-      // More detailed error logging
-      if (error.response) {
-        console.error('Server error:', error.response.status, error.response.data);
-      } else if (error.request) {
-        console.error('Network error - no response received');
+    // Filter assets locally
+    const lowercaseQuery = query.toLowerCase();
+    const filteredAssets = availableAssets.filter(asset =>
+      asset.name?.toLowerCase().includes(lowercaseQuery) ||
+      asset.description?.toLowerCase().includes(lowercaseQuery) ||
+      asset.Office?.toLowerCase().includes(lowercaseQuery) ||
+      asset.category?.name?.toLowerCase().includes(lowercaseQuery)
+    );
+
+    console.log(`Filtered ${filteredAssets.length} assets from ${availableAssets.length} available assets`);
+    setAssetSearchResults(filteredAssets);
+  };
+
+  // Initialize search results when showing add participant form
+  useEffect(() => {
+    if (showAddParticipant) {
+      // Initialize with all available users if no query
+      if (!searchQuery || searchQuery.trim() === '') {
+        setSearchResults(availableUsers);
       } else {
-        console.error('Request setup error:', error.message);
-      }
-
-      // Fallback to local search if API fails
-      if (availableAssets.length > 0) {
-        const filteredAssets = availableAssets.filter(asset =>
-          asset.name?.toLowerCase().includes(query.toLowerCase()) ||
-          asset.description?.toLowerCase().includes(query.toLowerCase()) ||
-          asset.Office?.toLowerCase().includes(query.toLowerCase()) ||
-          asset.category?.name?.toLowerCase().includes(query.toLowerCase())
-        );
-        setAssetSearchResults(filteredAssets);
+        // Otherwise apply the current search
+        handleUserSearch(searchQuery);
       }
     }
-  };
+  }, [showAddParticipant, availableUsers]);
+
+  // Initialize asset search results when showing add asset form
+  useEffect(() => {
+    if (showAddAsset && availableAssets.length > 0) {
+      // Initialize with all available assets if no query
+      if (!assetSearchQuery || assetSearchQuery.trim() === '') {
+        setAssetSearchResults(availableAssets);
+      } else {
+        // Otherwise apply the current search
+        handleAssetSearch(assetSearchQuery);
+      }
+    }
+  }, [showAddAsset, availableAssets]);
 
   const handleAddParticipants = async () => {
     try {
@@ -320,7 +340,7 @@ const ProjectEdit = () => {
         setAssetSearchResults([]);
 
         alert('Assets added successfully!');
-        
+
         // Navigate to the assets view page
         navigate('/admin/projects/view');
       }
@@ -611,7 +631,13 @@ const ProjectEdit = () => {
                       </button>
                     </div>
 
-                    {assetSearchResults.length > 0 && (
+                    {/* Show search stats */}
+                    <div className="text-xs text-gray-500">
+                      Showing {assetSearchResults.length} out of {availableAssets.length} assets
+                      {assetSearchQuery && <span> matching "{assetSearchQuery}"</span>}
+                    </div>
+
+                    {assetSearchResults.length > 0 ? (
                       <div className="mt-2 border rounded-md max-h-60 overflow-y-auto">
                         {assetSearchResults.map((asset) => (
                           <div
@@ -638,6 +664,10 @@ const ProjectEdit = () => {
                             />
                           </div>
                         ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-md">
+                        No assets match your search criteria
                       </div>
                     )}
 
@@ -743,7 +773,13 @@ const ProjectEdit = () => {
                       </button>
                     </div>
 
-                    {searchResults.length > 0 && (
+                    {/* Show search stats */}
+                    <div className="text-xs text-gray-500">
+                      Showing {searchResults.length} out of {availableUsers.length} users
+                      {searchQuery && <span> matching "{searchQuery}"</span>}
+                    </div>
+
+                    {searchResults.length > 0 ? (
                       <div className="mt-2 border rounded-md max-h-60 overflow-y-auto">
                         {searchResults.map((user) => (
                           <div
@@ -753,6 +789,7 @@ const ProjectEdit = () => {
                             <div>
                               <p className="font-medium">{`${user.first_name} ${user.last_name}`}</p>
                               <p className="text-sm text-gray-500">{user.email}</p>
+                              {user.location && <p className="text-xs text-gray-400">Location: {user.location}</p>}
                             </div>
                             <input
                               type="checkbox"
@@ -768,6 +805,10 @@ const ProjectEdit = () => {
                             />
                           </div>
                         ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-md">
+                        No users match your search criteria
                       </div>
                     )}
 
