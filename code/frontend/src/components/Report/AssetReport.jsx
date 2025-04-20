@@ -16,61 +16,42 @@ const AssetReport = () => {
     const navigate = useNavigate();
     const calculateDepreciation = (purchaseDate, totalPrice, depreciationRate) => {
         if (!purchaseDate || !totalPrice || depreciationRate === undefined || depreciationRate === null) {
-            return 0;
+          return 0;
         }
-    
+        
         const purchase = new Date(purchaseDate);
         const current = new Date();
-    
-        const totalDaysInYear = 365;
-    
-        const daysBetween = (start, end) => (end - start) / (1000 * 60 * 60 * 24);
-    
+        
+        // Find first fiscal year end after purchase
+        let fiscalYearEnd = new Date(purchase.getFullYear(), 2, 31); // 31-Mar
+        if (purchase > fiscalYearEnd) {
+          fiscalYearEnd = new Date(purchase.getFullYear() + 1, 2, 31);
+        }
+        
+        // Count complete fiscal years from first fiscal year end to current date
+        const currentFiscalYearEnd = new Date(current.getFullYear(), 2, 31);
+        let completeYears = currentFiscalYearEnd.getFullYear() - fiscalYearEnd.getFullYear();
+        
+        // Adjust if current date is before fiscal year end of current year
+        if (current < currentFiscalYearEnd) {
+          completeYears--;
+        }
+        
+        // Ensure completeYears is not negative
+        completeYears = Math.max(0, completeYears);
+        
+        // Calculate depreciation for complete years only
         let remainingValue = totalPrice;
         let totalDepreciation = 0;
-    
-        // Find first fiscal year end after purchase
-        let firstFiscalYearEnd = new Date(purchase.getFullYear(), 2, 31); // 31-Mar
-        if (purchase > firstFiscalYearEnd) {
-            firstFiscalYearEnd = new Date(purchase.getFullYear() + 1, 2, 31);
+        
+        for (let i = 0; i < completeYears; i++) {
+          const yearDep = remainingValue * (depreciationRate / 100);
+          totalDepreciation += yearDep;
+          remainingValue -= yearDep;
         }
-    
-        // 1. First partial depreciation
-        if (purchase < firstFiscalYearEnd) {
-            const daysUsed = daysBetween(purchase, firstFiscalYearEnd);
-            const fraction = daysUsed / totalDaysInYear;
-    
-            const firstPartial = remainingValue * (depreciationRate / 100) * fraction;
-            totalDepreciation += firstPartial;
-            remainingValue -= firstPartial;
-        }
-    
-        // 2. Full fiscal years
-        let fiscalStart = new Date(firstFiscalYearEnd.getFullYear(), 3, 1); // 01-Apr
-        let lastFiscalYearEnd = new Date(current.getFullYear(), 2, 31); // 31-Mar current fiscal year
-    
-        while (fiscalStart <= lastFiscalYearEnd && remainingValue > 0) {
-            const yearDep = remainingValue * (depreciationRate / 100);
-            totalDepreciation += yearDep;
-            remainingValue -= yearDep;
-    
-            fiscalStart = new Date(fiscalStart.getFullYear() + 1, 3, 1); // Move to next fiscal year
-        }
-    
-        // 3. Final partial depreciation: from 1-Apr current fiscal year to today
-        const thisFiscalStart = new Date(current.getFullYear(), 3, 1); // 01-Apr
-        if (current > thisFiscalStart && remainingValue > 0) {
-            const daysUsed = daysBetween(thisFiscalStart, current);
-            const fraction = daysUsed / totalDaysInYear;
-    
-            const finalPartial = remainingValue * (depreciationRate / 100) * fraction;
-            totalDepreciation += finalPartial;
-            remainingValue -= finalPartial;
-        }
-    
+        
         return Math.min(Number(totalDepreciation.toFixed(2)), totalPrice);
-    };
-    
+      };
     
     // Calculate current value (total price - depreciation)
     const calculateCurrentValue = (totalPrice, depreciation) => {
