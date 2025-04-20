@@ -23,6 +23,8 @@ const Asset_add = () => {
     additionalPdf: null
   });
   const [generatedStickerSeq, setGeneratedStickerSeq] = useState('');
+  const [generatedStickerList, setGeneratedStickerList] = useState([]);
+  const [showStickerList, setShowStickerList] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedOffice, setSelectedOffice] = useState('');
   const [uniqueBrands, setUniqueBrands] = useState([]);
@@ -31,6 +33,7 @@ const Asset_add = () => {
   const [showVendorDropdown, setShowVendorDropdown] = useState(false);
   const [brandSearchQuery, setBrandSearchQuery] = useState('');
   const [vendorSearchQuery, setVendorSearchQuery] = useState('');
+  const [editingStickerIndex, setEditingStickerIndex] = useState(-1);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -155,12 +158,36 @@ const Asset_add = () => {
     const now = new Date();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const year = String(now.getFullYear()).slice(-2);
-    const randomDigits = Math.floor(1000 + Math.random() * 9000);
-
-    const stickerSeq = `EKL/${selectedOffice || 'CENT'}/${selectedCategory || 'CAT'}/${month}/${year}/${randomDigits}`;
-    setGeneratedStickerSeq(stickerSeq);
-    setValue("stickerSeq", stickerSeq);
-    return stickerSeq;
+    
+    if (quantity > 1) {
+      // Generate multiple sticker sequences for quantity > 1
+      const stickerList = [];
+      for (let i = 0; i < quantity; i++) {
+        // Generate a unique 4-digit number for each sticker
+        const randomDigits = Math.floor(1000 + Math.random() * 9000);
+        const stickerSeq = `EKL/${selectedOffice || 'CENT'}/${selectedCategory || 'CAT'}/${month}/${year}/${randomDigits}`;
+        stickerList.push(stickerSeq);
+      }
+      
+      // Set the first sticker as the main sticker sequence
+      setGeneratedStickerSeq(stickerList[0]);
+      setValue("stickerSeq", stickerList[0]);
+      
+      // Store all stickers in the list
+      setGeneratedStickerList(stickerList);
+      setShowStickerList(true);
+      
+      return stickerList[0];
+    } else {
+      // Original behavior for quantity = 1
+      const randomDigits = Math.floor(1000 + Math.random() * 9000);
+      const stickerSeq = `EKL/${selectedOffice || 'CENT'}/${selectedCategory || 'CAT'}/${month}/${year}/${randomDigits}`;
+      setGeneratedStickerSeq(stickerSeq);
+      setValue("stickerSeq", stickerSeq);
+      setGeneratedStickerList([stickerSeq]);
+      setShowStickerList(false);
+      return stickerSeq;
+    }
   };
 
   const handleQuantityChange = (e) => {
@@ -228,6 +255,26 @@ const Asset_add = () => {
     setValue("vendor_name", e.target.value);
     setVendorSearchQuery(e.target.value);
     setShowVendorDropdown(true);
+  };
+
+  const handleStickerEdit = (index, value) => {
+    const updatedStickers = [...generatedStickerList];
+    updatedStickers[index] = value;
+    setGeneratedStickerList(updatedStickers);
+    
+    // If editing the first sticker, update the main sticker sequence too
+    if (index === 0) {
+      setGeneratedStickerSeq(value);
+      setValue("stickerSeq", value);
+    }
+  };
+
+  const startEditingSticker = (index) => {
+    setEditingStickerIndex(index);
+  };
+
+  const finishEditingSticker = () => {
+    setEditingStickerIndex(-1);
   };
 
   const onSubmit = async (data) => {
@@ -686,6 +733,28 @@ const Asset_add = () => {
                       className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
                       placeholder={`Enter serial number ${index + 1} (optional)`}
                     />
+                    {/* Display corresponding sticker sequence if available with edit functionality */}
+                    {generatedStickerList.length > index && (
+                      <div className="flex-1 p-1 bg-gray-50 border border-gray-200 rounded-md text-sm">
+                        {editingStickerIndex === index ? (
+                          <input
+                            type="text"
+                            value={generatedStickerList[index]}
+                            onChange={(e) => handleStickerEdit(index, e.target.value)}
+                            onBlur={finishEditingSticker}
+                            className="w-full p-2 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                          />
+                        ) : (
+                          <div 
+                            className="p-2 text-gray-700 flex justify-between items-center cursor-pointer"
+                            onClick={() => startEditingSticker(index)}
+                          >
+                            <span className="truncate">{generatedStickerList[index]}</span>
+                            <span className="text-blue-500 text-xs ml-2 whitespace-nowrap">(Click to edit)</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {index === serialNumbers.length - 1 && (
                       <button
                         type="button"
@@ -704,6 +773,12 @@ const Asset_add = () => {
                         onClick={() => {
                           setQuantity(prev => prev - 1);
                           setSerialNumbers(prev => prev.filter((_, i) => i !== index));
+                          // Also remove the corresponding sticker sequence
+                          if (generatedStickerList.length > index) {
+                            const updatedStickers = [...generatedStickerList];
+                            updatedStickers.splice(index, 1);
+                            setGeneratedStickerList(updatedStickers);
+                          }
                         }}
                         className="p-3 text-red-500 hover:text-red-600 transition-colors duration-200"
                       >
@@ -713,7 +788,13 @@ const Asset_add = () => {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-2">Serial numbers are optional. You can leave these fields blank if not available.</p>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="w-4 h-4 bg-gray-50 border border-gray-200 rounded-sm"></div>
+                <p className="text-xs text-gray-500">Serial numbers are optional. Click on a sticker sequence to edit it.</p>
+              </div>
+              {generatedStickerList.length === 0 && (
+                <p className="text-xs text-blue-500 mt-1">Generate sticker sequence to see it next to each serial number.</p>
+              )}
             </div>
 
             {/* Asset Type and Status */}
@@ -1051,6 +1132,7 @@ const Asset_add = () => {
                 </div>
               </div>
             </div>
+
           </div>
           {/* Form Actions */}
           <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-4 border-t">
