@@ -20,7 +20,7 @@ const View_admin = () => {
                     token: token
                 }
             });
-            
+
             if (response.data.admins) {
                 setAdmins(response.data.admins);
                 setFilteredAdmins(response.data.admins);
@@ -35,31 +35,47 @@ const View_admin = () => {
         }
     };
 
+    const handleRemoveAdmin = async (userId) => {
+        if (!window.confirm('Are you sure you want to remove this admin?')) return;
+        try {
+          const token = localStorage.getItem('token');
+          await axios.put(
+            `http://localhost:3487/api/superuser/remove_admin/`,
+            { userId },
+            { headers: { token : localStorage.getItem("token") }, withCredentials: true }
+          );
+          fetchAdmins();
+        } catch (err) {
+          console.error('Error removing admin:', err);
+        }
+      };
+
     useEffect(() => {
+        console.log('View_admin component mounted');
         try {
             const token = localStorage.getItem('token');
             if (!token) {
                 navigate('/login');
                 return;
             }
-            
+
             const userString = localStorage.getItem('user');
             if (!userString) {
                 console.error('No user data found in localStorage');
                 navigate('/login');
                 return;
             }
-            
+
             try {
                 const userData = JSON.parse(userString);
                 console.log('User role:', userData.role);
-                
+
                 if (!userData.role || userData.role !== 'Superuser') {
                     console.log('User is not a Superuser:', userData.role);
                     navigate('/login');
                     return;
                 }
-                
+
                 // Only fetch admins if all checks pass
                 fetchAdmins();
             } catch (parseError) {
@@ -110,13 +126,13 @@ const View_admin = () => {
         <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-6xl mx-auto">
                 {/* Header with Add Admin button */}
-                <div className="bg-white rounded-lg shadow-md mb-8 p-6 border-l-4 border-blue-500 flex justify-between items-center">
+                <div className="bg-white rou+nded-lg shadow-md mb-8 p-6 border-l-4 border-blue-500 flex justify-between items-center">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800">View Administrators</h1>
                         <p className="text-gray-500 mt-1">Manage and view all administrators in the system</p>
                     </div>
                     <button
-                        onClick={() => navigate('/superuser/assign_admin')}          
+                        onClick={() => navigate('/superuser/assign_admin')}
                         className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2"
                     >
                         <UserPlus size={20} />
@@ -180,6 +196,14 @@ const View_admin = () => {
                                                 <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                                                     {admin.role || 'Admin'}
                                                 </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <button
+                                                    onClick={() => handleRemoveAdmin(admin._id)}
+                                                    className="px-3 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200 text-xs font-semibold"
+                                                >
+                                                    Remove
+                                                </button>
                                             </td>
                                         </tr>
                                     ))
