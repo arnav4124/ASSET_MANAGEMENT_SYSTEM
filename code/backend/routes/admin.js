@@ -272,6 +272,15 @@ admin_router.put('/edit_user/:userId', authMiddleware, async (req, res) => {
                     // Update the asset's location to match the user's new location
                     asset.Office = newLocation;
                     await asset.save();
+                    // Create a history record for the asset
+                    await createAssetHistory({
+                        asset_id: assetId,
+                        performed_by: req.body.admin_id,
+                        operation_type: 'Transferred',
+                        issued_to: userId,
+                        assignment_type: 'Individual',
+                        operation_time: Date.now()
+                    });
                 } else {
                     // Unassign the asset but keep it at its original location
                     asset.Issued_to = null;
@@ -287,6 +296,16 @@ admin_router.put('/edit_user/:userId', authMiddleware, async (req, res) => {
 
                     // Remove the user-asset relationship
                     await UserAsset.findByIdAndDelete(userAsset._id);
+                    // Create a history record for the asset
+                    await createAssetHistory({
+                        asset_id: assetId,
+                        performed_by: req.body.admin_id,
+                        operation_type: 'Unassigned',
+                        issued_to: null,
+                        assignment_type: 'Individual',
+                        operation_time: Date.now()
+
+                    });
                 }
             }
         }

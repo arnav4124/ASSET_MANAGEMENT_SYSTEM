@@ -12,6 +12,8 @@ const authMiddleware = require('../middleware/auth');
 const Invoice = require('../models/invoice')
 const History = require('../models/history')
 const User = require('../models/user')
+// maintenance model
+const Maintenance = require('../models/maintenace')
 const createAssetHistory = async (params) => {
   try {
     // Check for required fields
@@ -794,6 +796,152 @@ router.get('/vendors/unique', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch unique vendors',
+      message: error.message
+    });
+  }
+});
+
+// Get asset history including maintenance history
+router.get('/:id/history', authMiddleware, async (req, res) => {
+  try {
+    const assetId = req.params.id;
+
+    // Get asset details
+    const asset = await Asset.findById(assetId);
+    if (!asset) {
+      return res.status(404).json({
+        success: false,
+        error: 'Asset not found'
+      });
+    }
+
+    // Get history records without populating issued_to yet
+    const historyRecords = await History.find({ asset_id: assetId })
+      .populate('performed_by', 'first_name last_name email')
+      .sort({ operation_time: -1 });
+
+    // Manually handle the issued_to population based on assignment_type
+    const populatedHistoryRecords = await Promise.all(historyRecords.map(async (record) => {
+      const recordObj = record.toObject();
+
+      // Only attempt to populate if issued_to exists
+      if (record.issued_to) {
+        try {
+          if (record.assignment_type === 'Project') {
+            // If it's a project, fetch from Project model
+            const Project = require('../models/project');
+            const project = await Project.findById(record.issued_to);
+            if (project) {
+              recordObj.issued_to = {
+                _id: project._id,
+                Project_name: project.Project_name
+              };
+            } else {
+              console.log(`Project with ID ${record.issued_to} not found for history record ${record._id}`);
+              recordObj.issued_to = { Project_name: 'Unknown Project' };
+            }
+          } else if (record.assignment_type === 'Individual') {
+            // If it's an individual user, fetch from User model
+            const user = await User.findById(record.issued_to);
+            if (user) {
+              recordObj.issued_to = {
+                _id: user._id,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                email: user.email
+              };
+            } else {
+              console.log(`User with ID ${record.issued_to} not found for history record ${record._id}`);
+              recordObj.issued_to = { first_name: 'Unknown', last_name: 'User' };
+            }
+          } else {
+            console.log(`Unknown assignment_type "${record.assignment_type}" for history record ${record._id}`);
+          }
+        } catch (err) {
+          console.error(`Error populating issued_to for record ${record._id}:`, err);
+          // Provide default values to prevent frontend errors
+          if (record.assignment_type === 'Project') {
+            recordObj.issued_to = { Project_name: 'Unknown Project' };
+          } else {
+            recordObj.issued_to = { first_name: 'Unknown', last_name: 'User' };
+          }
+        }
+      } else if (record.operation_type === 'Assigned') {
+        // For assigned operations without an issued_to, provide default values
+        if (record.assignment_type === 'Project') {
+          recordObj.issued_to = { Project_name: 'Unknown Project' };
+        } else {
+          recordObj.issued_to = { first_name: 'Unknown', last_name: 'User' };
+        }
+      }
+
+      return recordObj;
+    }));
+
+    // Get maintenance records
+    const maintenanceRecords = await Maintenance.find({ asset_id: assetId })
+      .sort({ date_of_sending: -1 });
+
+    // Transform maintenance records to match history format for easy integration
+    const formattedMaintenanceRecords = maintenanceRecords.map(record => {
+      // For maintenance, create two records if completed (sent and returned)
+      const records = [];
+
+      // Record for sending to maintenance
+      records.push({
+        _id: `maintenance_send_${record._id}`,
+        asset_id: record.asset_id,
+        operation_type: 'Maintenance_Sent',
+        operation_time: record.date_of_sending,
+        maintenance_type: record.maintenance_type,
+        vendor_name: record.vendor_name,
+        vendor_email: record.vendor_email,
+        expected_return_date: record.expected_date_of_return,
+        maintenance_cost: record.maintenance_cost,
+        maintenance_id: record._id,
+        description: record.description,
+        comments: `Asset sent for ${record.maintenance_type.toLowerCase()} to ${record.vendor_name}`
+      });
+
+      // If maintenance is completed, add a record for return
+      if (record.status === 'Completed') {
+        records.push({
+          _id: `maintenance_return_${record._id}`,
+          asset_id: record.asset_id,
+          operation_type: 'Maintenance_Completed',
+          operation_time: record.date_of_return,
+          maintenance_type: record.maintenance_type,
+          vendor_name: record.vendor_name,
+          vendor_email: record.vendor_email,
+          maintenance_cost: record.maintenance_cost,
+          maintenance_id: record._id,
+          description: record.description,
+          comments: `Asset returned from ${record.maintenance_type.toLowerCase()} by ${record.vendor_name}`
+        });
+      }
+
+      return records;
+    }).flat();
+
+    // Combine and sort all records by date (newest first)
+    const allRecords = [...populatedHistoryRecords, ...formattedMaintenanceRecords]
+      .sort((a, b) => new Date(b.operation_time) - new Date(a.operation_time));
+
+    res.status(200).json({
+      success: true,
+      asset: {
+        _id: asset._id,
+        name: asset.name,
+        Serial_number: asset.Serial_number,
+        Sticker_seq: asset.Sticker_seq
+      },
+      history: allRecords
+    });
+  } catch (error) {
+    console.error('Error fetching asset history:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch asset history',
       message: error.message
     });
   }

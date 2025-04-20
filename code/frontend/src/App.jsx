@@ -39,7 +39,7 @@ import Edit_maintenance from './components/Asset/Edit_maintenance.jsx'
 import ViewPendingMaintenance from './components/Dashboard/ViewAll/ViewPendingMaintenance.jsx'
 import ViewApproachingWarranty from './components/Dashboard/ViewAll/ViewApproachingWarranty.jsx'
 import ViewApproachingInsurance from './components/Dashboard/ViewAll/ViewApproachingInsurance.jsx'
-
+import Asset_history from './components/Asset/Asset_history.jsx'
 function Layout({ children }) {
   const location = useLocation();
   const hideNavbarPaths = ['/', '/login']; // Paths where Navbar should be hidden
@@ -94,6 +94,7 @@ function App() {
             <Route path="/user/assets/view/" element={<View_asset_for_user />} />
             <Route path="/user/projects/view/" element={<View_your_project />} />
             <Route path="/admin/report" element={< AssetReport />} />
+            <Route path="/admin/assets/history/:id" element={<Asset_history />} />
             <Route path="/admin/view-pending-maintenance" element={<ViewPendingMaintenance />} />
             <Route path="/admin/view-approaching-warranty" element={<ViewApproachingWarranty />} />
             <Route path="/admin/view-approaching-insurance" element={<ViewApproachingInsurance />} />

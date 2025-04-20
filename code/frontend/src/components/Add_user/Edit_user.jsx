@@ -199,7 +199,9 @@ const EditUser = () => {
             console.log("Selected assets:", assetSelections);
             const response = await axios.put(`http://localhost:3487/api/admin/edit_user/${userId}`, {
                 location: newLocation,
-                assetSelections
+                assetSelections,
+                // send admin id
+                admin_id: userData._id
             }, {
                 headers: {
                     token: localStorage.getItem("token")
