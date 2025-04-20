@@ -32,6 +32,14 @@ const historySchema = new Schema({
    comments:{
       type:String,
       default:''
+   },
+   old_location:{
+      type:String,
+      default:''
+   },
+   new_location:{
+      type:String,
+      default:''
    }
 })
 

@@ -288,7 +288,9 @@ admin_router.put('/edit_user/:userId', authMiddleware, async (req, res) => {
                         operation_type: 'Transferred',
                         issued_to: userId,
                         assignment_type: 'Individual',
-                        operation_time: Date.now()
+                        operation_time: Date.now(),
+                        old_location: oldLocation,
+                        new_location: newLocation
                     });
                 } else {
                     // Unassign the asset but keep it at its original location

@@ -4,7 +4,8 @@ import axios from "axios";
 import {
     ChevronLeft, Clock, User, Wrench, CheckCircle, Package, ClipboardEdit, BarChart4,
     TagIcon, UserMinus, ArrowDownCircle, HardDrive, ShieldAlert,
-    AlertTriangle, Truck, CircleDashed, MapPin
+    AlertTriangle, Truck, CircleDashed, MapPin, MoveRight, ArrowRightLeft,
+    Calendar, Building
 } from "lucide-react";
 
 const Asset_history = () => {
@@ -109,7 +110,7 @@ const Asset_history = () => {
                 };
             case 'Maintenance_Sent':
                 return {
-                    icon: <Truck size={18} className="text-white" />,
+                    icon: <Wrench size={18} className="text-white" />,
                     color: "bg-yellow-500",
                     title: `Sent for ${record.maintenance_type?.toLowerCase() || 'maintenance'}`
                 };
@@ -145,9 +146,15 @@ const Asset_history = () => {
                 };
             case 'Location_Changed':
                 return {
-                    icon: <MapPin size={18} className="text-white" />,
+                    icon: <Building size={18} className="text-white" />,
                     color: "bg-blue-400",
                     title: "Location Changed"
+                };
+            case 'Transferred':
+                return {
+                    icon: <ArrowRightLeft size={18} className="text-white" />,
+                    color: "bg-indigo-500",
+                    title: "Asset Transferred"
                 };
             default:
                 return {
@@ -267,7 +274,7 @@ const Asset_history = () => {
                                                             </div>
                                                         )}
 
-                                                        {record.operation_type.includes('Maintenance') && (
+                                                        {(record.operation_type === 'Maintenance_Sent' || record.operation_type === 'Maintenance_Completed') && (
                                                             <div className="flex flex-col space-y-1">
                                                                 <div className="flex items-center text-sm">
                                                                     <span className="text-gray-500 mr-2">Vendor:</span>
@@ -289,6 +296,17 @@ const Asset_history = () => {
                                                                         <span className="font-medium text-gray-700">
                                                                             {formatDate(record.expected_return_date)}
                                                                         </span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {record.operation_type === 'Location_Changed' && (
+                                                            <div className="flex flex-col space-y-1">
+                                                                {/* Display previous and new location if available */}
+                                                                {record.comments && record.comments.includes('from') && (
+                                                                    <div className="flex items-center text-sm">
+                                                                        <span className="text-gray-700">{record.comments}</span>
                                                                     </div>
                                                                 )}
                                                             </div>

@@ -40,7 +40,8 @@ const createAssetHistory = async (params) => {
       issued_to: params.issued_to,
       // operation_time will default to current time if not provided
       operation_time: params.operation_time || Date.now(),
-      comments: comment
+      comments: comment,
+      
     });
 
     // Save the history record
@@ -711,7 +712,9 @@ router.put('/:id', authMiddleware, upload.fields([
         operation_type: 'Location_Changed',
         assignment_type: null,
         issued_to: null,
-        comments: `Asset location changed from ${previousLocation} to ${newLocation}`
+        comments: `Asset location changed from ${previousLocation} to ${newLocation}`,
+        old_location: previousLocation,
+        new_location: newLocation
       });
 
       console.log(`Asset unassigned and location changed: ${previousLocation} -> ${newLocation}`);
