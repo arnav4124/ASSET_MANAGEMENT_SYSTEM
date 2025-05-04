@@ -7,6 +7,10 @@ const invoiceSchema = new Schema({
     },
     pdf_file: {
         type: Buffer,
+        //required: true
+    },
+    pdf_url: {
+        type: String,
         required: true
     },
     filename: {

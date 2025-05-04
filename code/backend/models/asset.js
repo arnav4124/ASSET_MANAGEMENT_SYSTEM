@@ -52,6 +52,10 @@ const assetSchema = new mongoose.Schema({
         type: Buffer,
     },
 
+    Img_url: {
+        type: String
+    },
+
     description: {
         type: String,
         required: true
@@ -116,6 +120,11 @@ const assetSchema = new mongoose.Schema({
     },
     additional_files: {
         type: Buffer,
+        // required:true
+    },
+
+    additional_files_url: {
+        type: String,
         // required:true
     },
     brand: {
