@@ -120,9 +120,21 @@ location_router.get("/admin-locations", authMiddleware, async (req, res) => {
 
         // 4) Fetch child locations whose parent_location matches the parent's _id
         const childLocations = await Location.find({ parent_location: parentLocationDoc.id });
-        console.log(childLocations)
-        // 5) Return the filtered locations
-        res.status(200).json(childLocations);
+        console.log(childLocations);
+        
+        // 5) Fetch grandchild locations (locations whose parent is one of the childLocations)
+        let allGrandchildLocations = [];
+        
+        // For each child location, find its children
+        for (const childLocation of childLocations) {
+            const grandchildLocations = await Location.find({ parent_location: childLocation.id });
+            allGrandchildLocations = [...allGrandchildLocations, ...grandchildLocations];
+        }
+        
+        // 6) Return both the child locations and grandchild locations
+        const combinedLocations = [...childLocations, ...allGrandchildLocations];
+        
+        res.status(200).json(combinedLocations);
     } catch (error) {
         console.error("Error fetching child locations:", error);
         res.status(500).json({ message: "Server error", error: error.message });
