@@ -1,47 +1,41 @@
 [
   {
-    "_id": "maintenance_return_6817514745f3ca8cb9aeb16f",
-    "asset_id": "681750977ac0dc335ab30e2f",
-    "operation_type": "Maintenance_Completed",
-    "operation_time": "2025-05-04T13:05:21.139Z",
-    "maintenance_type": "Repair",
-    "vendor_name": "v",
-    "vendor_email": "jc@gmail.com",
-    "maintenance_cost": 342,
-    "maintenance_id": "6817514745f3ca8cb9aeb16f",
-    "description": "vefd",
-    "comments": "Asset returned from repair by v"
-  },
-  {
-    "_id": "681750977ac0dc335ab30e32",
-    "asset_id": "681750977ac0dc335ab30e2f",
+    "_id": "681767fe4467503f5ac29f6f",
+    "asset_id": "68174108fbad800ac2f98773",
     "performed_by": {
-      "_id": "6817066ecbd9fc7c49b4e20d",
-      "first_name": "jain",
-      "last_name": "nidhish",
-      "email": "jainnidhish31@gmail.com"
+      "_id": "68051ee7142ef33c18fd78f2",
+      "first_name": "Admin",
+      "last_name": "First",
+      "email": "admin@gmail.com"
     },
-    "assignment_type": null,
-    "issued_to": null,
-    "operation_type": "Added",
-    "operation_time": "2025-05-04T11:33:43.316Z",
-    "comments": "Asset added by admin jain nidhish",
+    "assignment_type": "Project",
+    "issued_to": {
+      "_id": "68176557ba2c84724bf1ab9b",
+      "Project_name": "BhavyaP"
+    },
+    "operation_type": "Assigned",
+    "operation_time": "2025-05-04T13:13:34.530Z",
+    "comments": "Asset assigned to project BhavyaP",
     "old_location": "",
     "new_location": "",
     "__v": 0
   },
   {
-    "_id": "maintenance_send_6817514745f3ca8cb9aeb16f",
-    "asset_id": "681750977ac0dc335ab30e2f",
-    "operation_type": "Maintenance_Sent",
-    "operation_time": "2025-05-04T00:00:00.000Z",
-    "maintenance_type": "Repair",
-    "vendor_name": "v",
-    "vendor_email": "jc@gmail.com",
-    "expected_return_date": "2025-05-19T00:00:00.000Z",
-    "maintenance_cost": 342,
-    "maintenance_id": "6817514745f3ca8cb9aeb16f",
-    "description": "vefd",
-    "comments": "Asset sent for repair to v"
+    "_id": "68174108fbad800ac2f98776",
+    "asset_id": "68174108fbad800ac2f98773",
+    "performed_by": {
+      "_id": "68051ee7142ef33c18fd78f2",
+      "first_name": "Admin",
+      "last_name": "First",
+      "email": "admin@gmail.com"
+    },
+    "assignment_type": null,
+    "issued_to": null,
+    "operation_type": "Added",
+    "operation_time": "2025-05-04T10:27:20.325Z",
+    "comments": "Asset added by admin Admin First",
+    "old_location": "",
+    "new_location": "",
+    "__v": 0
   }
 ]

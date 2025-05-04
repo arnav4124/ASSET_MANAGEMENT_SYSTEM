@@ -485,35 +485,51 @@ router.post("/assign_asset/:assetId", async (req, res) => {
 
 router.put('/:id/unassign', authMiddleware, async (req, res) => {
   try {
-    const { admin } = req.body; // Get admin from request body
-    const user_id = await UserAsset.findOne({ asset_id: req.params.id });
-    console.log("User ID:", user_id);
-    if (!user_id) {
-      return res.status(404).json({ message: "User not found for this asset" });
+    const { admin } = req.body; // Admin performing the unassignment
+    // Fetch the asset first to check its assignment type
+    const asset = await Asset.findById(req.params.id);
+    if (!asset) {
+      return res.status(404).json({ message: "Asset not found" });
     }
-    const user = await User.findById(user_id.user_email);
-    const user_name = user.first_name + user.last_name;
-    console.log("User:", user);
-    // const user_name = user.first_name+user.last_name
-    const asset = await Asset.findByIdAndUpdate(
-      req.params.id,
-      {
-        Issued_to: null,
-        status: "Available",
-        assignment_status: false
-      },
-      { new: true }
-    ).populate('Issued_by', 'first_name last_name').populate('Issued_to', 'first_name last_name');
 
-    console.log("Unassigned asset:", asset);
+    let assigneeName = "";
 
+    // Check the current assignment type and remove the corresponding relationship
+    if (asset.Issued_to_type === "User") {
+      // Remove entry from UserAsset collection
+      const userAsset = await UserAsset.findOneAndDelete({ asset_id: req.params.id });
+      if (!userAsset) {
+        return res.status(404).json({ message: "User not found for this asset" });
+      }
+      const user = await User.findById(userAsset.user_email);
+      assigneeName = user ? `${user.first_name} ${user.last_name}` : "Unknown User";
+    } else if (asset.Issued_to_type === "Project") {
+      // Remove entry from AssetProject collection
+      const projectAsset = await AssetProject.findOneAndDelete({ asset_id: req.params.id });
+      if (!projectAsset) {
+        return res.status(404).json({ message: "Project not found for this asset" });
+      }
+      const project = await Project.findById(projectAsset.project_id);
+      assigneeName = project ? project.Project_name : "Unknown Project";
+    } else {
+      return res.status(400).json({ message: "Asset is not currently assigned" });
+    }
+
+    // Update asset fields to reflect unassignment
+    asset.Issued_to = null;
+    asset.assignment_status = false;
+    asset.status = "Available";
+    asset.Issued_date = null; // Optionally clear the issued date
+    await asset.save();
+
+    // Record unassignment in asset history
     await createAssetHistory({
       asset_id: req.params.id,
       performed_by: admin,
       operation_type: 'Unassigned',
       assignment_type: null,
       issued_to: null,
-      comments: `Asset unassigned from ${user_name}`
+      comments: `Asset unassigned from ${assigneeName}`
     });
 
     res.status(200).json(asset);
