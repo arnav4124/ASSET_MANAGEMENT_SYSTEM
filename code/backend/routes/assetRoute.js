@@ -256,7 +256,7 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
       }
 
       console.log("Img URL:", imgUrl);
-      console.log("invoice url:", req.files.invoicePdf[0].path);
+      // console.log("invoice url:", req.files.invoicePdf[0].path);
       // set invoice URL if available
 
 
