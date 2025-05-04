@@ -61,7 +61,11 @@ const AdminDashboard = () => {
       try {
         const token = localStorage.getItem("token");
         const headers = { token };
-
+        
+        // Get current admin's location
+        const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+        const adminLocation = currentUser.location;
+        
         const [
           projRes,
           userRes,
@@ -71,8 +75,8 @@ const AdminDashboard = () => {
           locationAssetRes
         ] = await Promise.all([
           axios.get("http://localhost:3487/api/projects", { headers }),
-          axios.get("http://localhost:3487/api/user", { headers }),
-          axios.get("http://localhost:3487/api/assets", { headers }),
+          axios.get(`http://localhost:3487/api/user?adminLocation=${encodeURIComponent(adminLocation)}`, { headers }),
+          axios.get(`http://localhost:3487/api/assets?adminLocation=${encodeURIComponent(adminLocation)}`, { headers }),
           axios.get("http://localhost:3487/api/admin/graph/location-users", { headers }),
           axios.get("http://localhost:3487/api/admin/graph/project-assets", { headers }),
           axios.get("http://localhost:3487/api/admin/graph/location-assets", { headers })
