@@ -9,6 +9,13 @@ const AssetProject = require('../models/asset_project');
 const Asset = require('../models/asset');
 const mongoose = require('mongoose');
 
+// Helper function to validate date format
+function isValidDate(dateString) {
+    // Check if the string is a valid date
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
+}
+
 // Improved function to find all sublocations in the hierarchy
 async function findAllSublocations(parentLocationName) {
     try {
@@ -204,10 +211,28 @@ router.post('/', authMiddleware, async (req, res) => {
 // Get all projects
 router.get('/', authMiddleware, async (req, res) => {
     try {
+        // Get current admin's location
+        const adminLocation = req.user.location;
+        console.log(`Admin location for projects: ${adminLocation}`);
+
+        // Find all sublocations (including the admin's location)
+        const validLocations = await findAllSublocations(adminLocation);
+        console.log(`Found ${validLocations.length} locations in hierarchy for projects`);
+
+        // Find all projects where at least one location matches the admin's location hierarchy
         const projects = await Project.find()
-            .populate('project_head', 'name email')
+            .populate('project_head', 'first_name last_name email')
             .sort({ createdAt: -1 });
-        res.status(200).json(projects);
+        
+        // Filter projects to only include those with at least one location in the admin's hierarchy
+        const filteredProjects = projects.filter(project => {
+            // Check if any of the project's locations are in the admin's location hierarchy
+            return project.location.some(loc => validLocations.includes(loc));
+        });
+
+        console.log(`Found ${filteredProjects.length} projects within admin's location hierarchy out of ${projects.length} total projects`);
+        
+        res.status(200).json(filteredProjects);
     } catch (error) {
         console.error('Error fetching projects:', error);
         res.status(500).json({ message: error.message });
@@ -398,7 +423,6 @@ router.post('/:projectId/assets', authMiddleware, async (req, res) => {
 
 // Get project assets
 router.get('/:id/assets', authMiddleware, async (req, res) => {
-    console.log("Fetching project assets for ID:", req.params.id);
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return res.status(400).json({ message: "Invalid project ID format" });
@@ -721,5 +745,63 @@ router.get('/diagnostic/users-by-location', authMiddleware, async (req, res) => 
     }
 });
 
+// Get all available assets for projects
+router.get('/assets', authMiddleware, async (req, res) => {
+    try {
+        const user = req.user;
+        const adminLocation = user.location;
+
+        // Get all locations in the hierarchy for admin
+        const validLocations = await findAllSublocations(adminLocation);
+        console.log(`Found ${validLocations.length} valid locations for asset filtering`);
+
+        // Find assets that are available
+        let query = {
+            status: 'Available',
+            Office: { $in: validLocations }
+        };
+
+        const assets = await Asset.find(query)
+            .populate({
+                path: 'category',
+                select: 'name'
+            })
+            .populate({
+                path: 'Issued_by',
+                select: 'first_name last_name email'
+            });
+
+        console.log(`Found ${assets.length} available assets for admin's location hierarchy`);
+
+        res.status(200).json(assets);
+    } catch (error) {
+        console.error('Error fetching assets:', error);
+        res.status(500).json({ message: 'Server error while fetching assets' });
+    }
+});
+
+// Get locations within admin's hierarchy for project creation
+router.get('/locations/admin-hierarchy', authMiddleware, async (req, res) => {
+    try {
+        // Get current admin's location
+        const adminLocation = req.user.location;
+        console.log(`Admin location for location hierarchy: ${adminLocation}`);
+
+        // Find all sublocations (including the admin's location)
+        const validLocationNames = await findAllSublocations(adminLocation);
+        console.log(`Found ${validLocationNames.length} locations in hierarchy`);
+
+        // Get the full location documents for these location names
+        const locations = await Location.find({
+            location_name: { $in: validLocationNames }
+        });
+
+        console.log(`Returning ${locations.length} location documents`);
+        res.status(200).json(locations);
+    } catch (error) {
+        console.error('Error fetching admin location hierarchy:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
 
 module.exports = router;
