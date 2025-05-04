@@ -1,0 +1,29 @@
+[
+  {
+    "_id": "68054f97de804ee4c88ac3d0",
+    "name": "Laptop",
+    "description": "Laptop is essential",
+    "sticker_short_seq": "LAP",
+    "lifespan": 4,
+    "depreciation_rate": 5,
+    "__v": 0
+  },
+  {
+    "_id": "68054fb9de804ee4c88ac3d3",
+    "name": "Furniture",
+    "description": "Table ,chair",
+    "sticker_short_seq": "FUR",
+    "lifespan": 10,
+    "depreciation_rate": 5,
+    "__v": 0
+  },
+  {
+    "_id": "6805509bde804ee4c88ac3f0",
+    "name": "Electronics",
+    "description": "Mobile.Wobilw",
+    "sticker_short_seq": "ELE",
+    "lifespan": 7,
+    "depreciation_rate": 9,
+    "__v": 0
+  }
+]

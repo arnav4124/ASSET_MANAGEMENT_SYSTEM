@@ -1,0 +1,72 @@
+[
+  {
+    "_id": "68051d49b70173cc17fd99d8",
+    "location_name": "Bhopal_HQ",
+    "parent_location": "ROOT",
+    "location_type": "office",
+    "sticker_short_seq": "BHQ",
+    "address": "123, Bhopal Nagar , Bhopal_HQ",
+    "pincode": 415151,
+    "__v": 0
+  },
+  {
+    "_id": "680521064c0370195ed1b09e",
+    "location_name": "Demo1",
+    "parent_location": "68051d49b70173cc17fd99d8",
+    "location_type": "center",
+    "sticker_short_seq": "DEM",
+    "address": "This is demo location",
+    "pincode": 231231,
+    "__v": 0
+  },
+  {
+    "_id": "680522ce4c0370195ed1b0d2",
+    "location_name": "Bhopal",
+    "parent_location": "68051d49b70173cc17fd99d8",
+    "location_type": "center",
+    "sticker_short_seq": "BHP",
+    "address": "Jamnalal Bajaj Parisar,\nNear Fortune Kasturi, Jatkhedi\nBhopal\nMadhya Pradesh\n",
+    "pincode": 462026,
+    "__v": 0
+  },
+  {
+    "_id": "6805556fe5c384ee146460ce",
+    "location_name": "Mandla",
+    "parent_location": "680522ce4c0370195ed1b0d2",
+    "location_type": "center",
+    "sticker_short_seq": "MND",
+    "address": "Near Malll",
+    "pincode": 481661,
+    "__v": 0
+  },
+  {
+    "_id": "68055807f5d793fcc3858939",
+    "location_name": "Patna",
+    "parent_location": "680522ce4c0370195ed1b0d2",
+    "location_type": "center",
+    "sticker_short_seq": "PAT",
+    "address": "32jhbe32rn n43r4r4",
+    "pincode": 696969,
+    "__v": 0
+  },
+  {
+    "_id": "68055851f5d793fcc3858944",
+    "location_name": "Hoshangabad_HQ",
+    "parent_location": "ROOT",
+    "location_type": "office",
+    "sticker_short_seq": "HBQ",
+    "address": " dwend nmw fbjvv dfjfbr",
+    "pincode": 969696,
+    "__v": 0
+  },
+  {
+    "_id": "6805587ff5d793fcc3858951",
+    "location_name": "Hoshangabad ",
+    "parent_location": "68055851f5d793fcc3858944",
+    "location_type": "center",
+    "sticker_short_seq": "HBD",
+    "address": "jwhbd ncnfkjwefm djfc dnmb e",
+    "pincode": 999999,
+    "__v": 0
+  }
+]

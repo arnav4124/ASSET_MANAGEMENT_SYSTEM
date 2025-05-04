@@ -1,0 +1,12 @@
+_id,location_name,parent_location,location_type,sticker_short_seq,address,pincode,__v
+"""68051d49b70173cc17fd99d8""","Bhopal_HQ","ROOT","office","BHQ","123, Bhopal Nagar , Bhopal_HQ","415151","0"
+"""680521064c0370195ed1b09e""","Demo1","68051d49b70173cc17fd99d8","center","DEM","This is demo location","231231","0"
+"""680522ce4c0370195ed1b0d2""","Bhopal","68051d49b70173cc17fd99d8","center","BHP","Jamnalal Bajaj Parisar,
+Near Fortune Kasturi, Jatkhedi
+Bhopal
+Madhya Pradesh
+","462026","0"
+"""6805556fe5c384ee146460ce""","Mandla","680522ce4c0370195ed1b0d2","center","MND","Near Malll","481661","0"
+"""68055807f5d793fcc3858939""","Patna","680522ce4c0370195ed1b0d2","center","PAT","32jhbe32rn n43r4r4","696969","0"
+"""68055851f5d793fcc3858944""","Hoshangabad_HQ","ROOT","office","HBQ"," dwend nmw fbjvv dfjfbr","969696","0"
+"""6805587ff5d793fcc3858951""","Hoshangabad ","68055851f5d793fcc3858944","center","HBD","jwhbd ncnfkjwefm djfc dnmb e","999999","0"
