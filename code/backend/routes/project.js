@@ -12,45 +12,38 @@ const History = require('../models/history');
 
 // createAssetHistory helper function for tracking asset changes
 const createAssetHistory = async (params) => {
-    try {
-        // Check for required fields
-        if (!params.asset_id) throw new Error('Asset ID is required');
-        if (!params.performed_by) throw new Error('Performed by (admin ID) is required');
-        if (!params.operation_type) throw new Error('Operation type is required');
-        let comment = params.comments || '';
+  try {
+    // Check for required fields
+    if (!params.asset_id) throw new Error('Asset ID is required');
+    if (!params.performed_by) throw new Error('Performed by (admin ID) is required');
+    if (!params.operation_type) throw new Error('Operation type is required');
+    let comment = params.comments || '';
 
-        // Create new history object with all provided fields
-        const historyEntry = new History({
-            asset_id: params.asset_id,
-            performed_by: params.performed_by,
-            operation_type: params.operation_type,
-            // Optional fields
-            assignment_type: params.assignment_type,
-            issued_to: params.issued_to,
-            // operation_time will default to current time if not provided
-            operation_time: params.operation_time || Date.now(),
-            comments: comment,
-            // Add old_location and new_location fields if provided
-            old_location: params.old_location || '',
-            new_location: params.new_location || ''
-        });
+    // Create new history object with all provided fields
+    const historyEntry = new History({
+      asset_id: params.asset_id,
+      performed_by: params.performed_by,
+      operation_type: params.operation_type,
+      // Optional fields
+      assignment_type: params.assignment_type,
+      issued_to: params.issued_to,
+      // operation_time will default to current time if not provided
+      operation_time: params.operation_time || Date.now(),
+      comments: comment,
+      // Add old_location and new_location fields if provided
+      old_location: params.old_location || '',
+      new_location: params.new_location || ''
+    });
 
-        // Save the history record
-        await historyEntry.save();
-        console.log('Asset history recorded successfully');
-        return historyEntry;
-    } catch (error) {
-        console.error('Failed to record asset history:', error);
-        throw error;
-    }
+    // Save the history record
+    await historyEntry.save();
+    console.log('Asset history recorded successfully');
+    return historyEntry;
+  } catch (error) {
+    console.error('Failed to record asset history:', error);
+    throw error;
+  }
 };
-
-// Helper function to validate date format
-function isValidDate(dateString) {
-    // Check if the string is a valid date
-    const date = new Date(dateString);
-    return !isNaN(date.getTime());
-}
 
 // Improved function to find all sublocations in the hierarchy
 async function findAllSublocations(parentLocationName) {
@@ -247,28 +240,10 @@ router.post('/', authMiddleware, async (req, res) => {
 // Get all projects
 router.get('/', authMiddleware, async (req, res) => {
     try {
-        // Get current admin's location
-        const adminLocation = req.user.location;
-        console.log(`Admin location for projects: ${adminLocation}`);
-
-        // Find all sublocations (including the admin's location)
-        const validLocations = await findAllSublocations(adminLocation);
-        console.log(`Found ${validLocations.length} locations in hierarchy for projects`);
-
-        // Find all projects where at least one location matches the admin's location hierarchy
         const projects = await Project.find()
-            .populate('project_head', 'first_name last_name email')
+            .populate('project_head', 'name email')
             .sort({ createdAt: -1 });
-        
-        // Filter projects to only include those with at least one location in the admin's hierarchy
-        const filteredProjects = projects.filter(project => {
-            // Check if any of the project's locations are in the admin's location hierarchy
-            return project.location.some(loc => validLocations.includes(loc));
-        });
-
-        console.log(`Found ${filteredProjects.length} projects within admin's location hierarchy out of ${projects.length} total projects`);
-        
-        res.status(200).json(filteredProjects);
+        res.status(200).json(projects);
     } catch (error) {
         console.error('Error fetching projects:', error);
         res.status(500).json({ message: error.message });
@@ -479,7 +454,7 @@ router.post('/:projectId/assets', authMiddleware, async (req, res) => {
 router.delete('/:projectId/assets/:assetId', authMiddleware, async (req, res) => {
     try {
         const { projectId, assetId } = req.params;
-
+        
         // Validate IDs
         if (!mongoose.Types.ObjectId.isValid(projectId) || !mongoose.Types.ObjectId.isValid(assetId)) {
             return res.status(400).json({ message: "Invalid ID format" });
@@ -537,6 +512,7 @@ router.delete('/:projectId/assets/:assetId', authMiddleware, async (req, res) =>
 
 // Get project assets
 router.get('/:id/assets', authMiddleware, async (req, res) => {
+    console.log("Fetching project assets for ID:", req.params.id);
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return res.status(400).json({ message: "Invalid project ID format" });
@@ -859,63 +835,5 @@ router.get('/diagnostic/users-by-location', authMiddleware, async (req, res) => 
     }
 });
 
-// Get all available assets for projects
-router.get('/assets', authMiddleware, async (req, res) => {
-    try {
-        const user = req.user;
-        const adminLocation = user.location;
-
-        // Get all locations in the hierarchy for admin
-        const validLocations = await findAllSublocations(adminLocation);
-        console.log(`Found ${validLocations.length} valid locations for asset filtering`);
-
-        // Find assets that are available
-        let query = {
-            status: 'Available',
-            Office: { $in: validLocations }
-        };
-
-        const assets = await Asset.find(query)
-            .populate({
-                path: 'category',
-                select: 'name'
-            })
-            .populate({
-                path: 'Issued_by',
-                select: 'first_name last_name email'
-            });
-
-        console.log(`Found ${assets.length} available assets for admin's location hierarchy`);
-
-        res.status(200).json(assets);
-    } catch (error) {
-        console.error('Error fetching assets:', error);
-        res.status(500).json({ message: 'Server error while fetching assets' });
-    }
-});
-
-// Get locations within admin's hierarchy for project creation
-router.get('/locations/admin-hierarchy', authMiddleware, async (req, res) => {
-    try {
-        // Get current admin's location
-        const adminLocation = req.user.location;
-        console.log(`Admin location for location hierarchy: ${adminLocation}`);
-
-        // Find all sublocations (including the admin's location)
-        const validLocationNames = await findAllSublocations(adminLocation);
-        console.log(`Found ${validLocationNames.length} locations in hierarchy`);
-
-        // Get the full location documents for these location names
-        const locations = await Location.find({
-            location_name: { $in: validLocationNames }
-        });
-
-        console.log(`Returning ${locations.length} location documents`);
-        res.status(200).json(locations);
-    } catch (error) {
-        console.error('Error fetching admin location hierarchy:', error);
-        res.status(500).json({ message: error.message });
-    }
-});
 
 module.exports = router;

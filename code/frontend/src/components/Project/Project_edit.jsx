@@ -159,7 +159,7 @@ const ProjectEdit = () => {
     catch (error) {
       console.error('Error fetching assets:', error);
       alert('Error fetching assets');
-    }   
+    }
   };
 
   useEffect(() => {
@@ -220,7 +220,7 @@ const ProjectEdit = () => {
       setAssetSearchResults(filteredAssets);
       return;
     }
-  
+
     // Filter assets locally based on name, description, category, or location
     const lowercaseQuery = query.toLowerCase();
     const filteredAssets = availableAssets.filter(asset =>
@@ -232,11 +232,11 @@ const ProjectEdit = () => {
         asset.category?.name?.toLowerCase().includes(lowercaseQuery)
       )
     );
-  
+
     console.log(`Filtered ${filteredAssets.length} assets from ${availableAssets.length} available assets`);
     setAssetSearchResults(filteredAssets);
   };
-  
+
 
   // Initialize search results when showing add participant form
   useEffect(() => {
@@ -324,8 +324,8 @@ const ProjectEdit = () => {
 
         alert('Assets added successfully!');
 
-        // Navigate to the assets view page
-        navigate('/admin/projects/view');
+        // Removed the navigation to projects view page 
+        // as it was causing the user to leave the edit screen unexpectedly
       }
     } catch (error) {
       console.error('Error adding assets:', error);
