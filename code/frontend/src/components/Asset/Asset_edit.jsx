@@ -65,7 +65,7 @@ const Asset_edit = () => {
                 setCategories(categoriesRes.data);
 
                 // Fetch office locations
-                const officesRes = await axios.get("http://localhost:3487/api/locations?type=office", {
+                const officesRes = await axios.get("http://localhost:3487/api/locations", {
                     headers: { token }
                 });
                 setOffices(officesRes.data);
