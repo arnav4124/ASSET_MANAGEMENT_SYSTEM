@@ -8,13 +8,38 @@ const AssetDetails = () => {
   const navigate = useNavigate();
 
   // Helper to convert image data to base64 URL
+  // const getImageUrl = (imgData) => {
+  //   if (!imgData) return null;
+  //   // if already a string, assume it's base64 encoded without data prefix
+  //   if (typeof imgData === "string") {
+  //     return `data:image/jpeg;base64,${imgData}`;
+  //   }
+  //   // if imgData is an object with a "data" property then convert
+  //   if (imgData.data) {
+  //     let binary = "";
+  //     imgData.data.forEach((byte) => {
+  //       binary += String.fromCharCode(byte);
+  //     });
+  //     const base64 = window.btoa(binary);
+  //     return `data:image/jpeg;base64,${base64}`;
+  //   }
+  //   return null;
+  // };
+
   const getImageUrl = (imgData) => {
     if (!imgData) return null;
-    // if already a string, assume it's base64 encoded without data prefix
+  
+    // If already a URL (Cloudinary), return as-is
+    if (typeof imgData === "string" && imgData.startsWith("http")) {
+      return imgData;
+    }
+  
+    // fallback for base64 (if still supported temporarily)
     if (typeof imgData === "string") {
       return `data:image/jpeg;base64,${imgData}`;
     }
-    // if imgData is an object with a "data" property then convert
+  
+    // fallback for old Buffer-style object
     if (imgData.data) {
       let binary = "";
       imgData.data.forEach((byte) => {
@@ -23,8 +48,10 @@ const AssetDetails = () => {
       const base64 = window.btoa(binary);
       return `data:image/jpeg;base64,${base64}`;
     }
+  
     return null;
   };
+  
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -63,7 +90,7 @@ const AssetDetails = () => {
   console.log(asset);
 
   // Compute the image URL (if available) from the asset.Img field
-  const imageUrl = asset.Img ? getImageUrl(asset.Img) : null;
+  const imageUrl = asset.Img ? getImageUrl(asset.Img_url) : null;
 
   // If populated, asset.Issued_by and asset.Issued_to will have first_name and last_name
   const issuedBy =
@@ -147,9 +174,9 @@ const AssetDetails = () => {
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               {/* Asset Image */}
               <div className="relative">
-                {imageUrl ? (
+                {asset.Img_url ? (
                   <img
-                    src={imageUrl}
+                    src={asset.Img_url}
                     alt={asset.name}
                     className="w-full h-60 object-cover"
                   />
@@ -458,15 +485,15 @@ const AssetDetails = () => {
                     <p className="text-sm font-medium text-gray-500">Invoice ID</p>
                     <p className="text-gray-700">{invoiceId ? invoiceId : "No invoice available"}</p>
                   </div>
-                  {asset.Invoice_id && (
-                    <button
-                      onClick={() => {
-                        window.open(`http://localhost:3487/api/assets/${invoiceId}/download`, '_blank');
-                      }}
-                      className="bg-blue-100 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-200 transition-colors"
-                    >
-                      Download Invoice
-                    </button>
+                  {asset.Invoice_id && asset.Invoice_id.pdf_url && (
+                    <a
+                    href={asset.Invoice_id.pdf_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-blue-100 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-200 transition-colors"
+                  >
+                    View/Download Invoice
+                  </a>
                   )}
                 </div>
               </div>

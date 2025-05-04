@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
-
+const upload = require('../middleware/multer');
+const cloudinary = require('../utils/cloudinary');
 // Import necessary models
 const Asset = require('../models/asset');
 const UserAsset = require('../models/user_asset');
@@ -90,7 +90,7 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
       voucher_number,
       grouping,
       warranty_date,
-      insurance_date
+      insurance_date,
     } = req.body;
 
     // Validate required fields
@@ -120,9 +120,12 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
 
     const assignmentStatusBoolean = assignment_status === 'true';
     let imgBuffer = null;
+    let imgUrl = null;
     if (req.files && req.files.Img) {
       imgBuffer = req.files.Img[0].buffer;
+      imgUrl = req.files.Img[0].path;
     }
+
 
     let additionalFilesBuffer = null;
     if (req.files && req.files.additionalPdf) {
@@ -151,15 +154,21 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
     console.log("Invoice ID set in backend", invoiceId);
     if (req.files && req.files.invoicePdf) {
       const pdfBuffer = req.files.invoicePdf[0].buffer;
+      const pdfUrl = req.files.invoicePdf[0].path;
       const pdfFilename = req.files.invoicePdf[0].originalname;
+      console.log("PDF Buffer:", pdfBuffer);
 
       const newInvoice = new Invoice({
         invoice_id: invoiceId,
         pdf_file: pdfBuffer,
+        pdf_url: pdfUrl,
         filename: pdfFilename,
         uploadDate: new Date()
       });
       await newInvoice.save();
+
+      // log url
+      console.log("Invoice URL:", pdfUrl);
 
       invObject = newInvoice._id;
     }
@@ -241,9 +250,24 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
       if (imgBuffer) {
         newAsset.Img = imgBuffer;
       }
+
+      if(imgUrl) {
+        newAsset.Img_url = imgUrl;
+      }
+
+      console.log("Img URL:", imgUrl);
+      console.log("invoice url:", req.files.invoicePdf[0].path);
+      // set invoice URL if available
+        
+
+      
       // set additional files buffer if available
       if (additionalFilesBuffer) {
         newAsset.additional_files = additionalFilesBuffer;
+      }
+      // set additional files URL if available
+      if (req.files && req.files.additionalPdf) {
+        newAsset.additional_files_url = req.files.additionalPdf[0].path;
       }
 
       return newAsset.save();
@@ -377,7 +401,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
       .populate('Issued_by', 'first_name last_name email')
       .populate('Issued_to', 'first_name last_name email Project_name')
       .populate('category', 'name')
-      .populate('Invoice_id', 'invoice_id pdf_file filename uploadDate');
+      .populate('Invoice_id', 'invoice_id pdf_file pdf_url filename uploadDate');
     console.log("Asset:", asset);
     if (!asset) {
       return res.status(404).json({ error: 'Asset not found' });
