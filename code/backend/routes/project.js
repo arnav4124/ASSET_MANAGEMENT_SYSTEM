@@ -8,6 +8,42 @@ const UserProject = require('../models/user_project');
 const AssetProject = require('../models/asset_project');
 const Asset = require('../models/asset');
 const mongoose = require('mongoose');
+const History = require('../models/history');
+
+// createAssetHistory helper function for tracking asset changes
+const createAssetHistory = async (params) => {
+    try {
+        // Check for required fields
+        if (!params.asset_id) throw new Error('Asset ID is required');
+        if (!params.performed_by) throw new Error('Performed by (admin ID) is required');
+        if (!params.operation_type) throw new Error('Operation type is required');
+        let comment = params.comments || '';
+
+        // Create new history object with all provided fields
+        const historyEntry = new History({
+            asset_id: params.asset_id,
+            performed_by: params.performed_by,
+            operation_type: params.operation_type,
+            // Optional fields
+            assignment_type: params.assignment_type,
+            issued_to: params.issued_to,
+            // operation_time will default to current time if not provided
+            operation_time: params.operation_time || Date.now(),
+            comments: comment,
+            // Add old_location and new_location fields if provided
+            old_location: params.old_location || '',
+            new_location: params.new_location || ''
+        });
+
+        // Save the history record
+        await historyEntry.save();
+        console.log('Asset history recorded successfully');
+        return historyEntry;
+    } catch (error) {
+        console.error('Failed to record asset history:', error);
+        throw error;
+    }
+};
 
 // Improved function to find all sublocations in the hierarchy
 async function findAllSublocations(parentLocationName) {
@@ -375,13 +411,31 @@ router.post('/:projectId/assets', authMiddleware, async (req, res) => {
         if (assetProjects.length > 0) {
             await AssetProject.insertMany(assetProjects);
 
-            // Update the status of added assets to 'Unavailable'
-            await Asset.updateMany(
-                { _id: { $in: newAssetIds } },
-                { $set: { status: 'Unavailable' } }
-            );
+            // Update all assigned assets with project information
+            for (const assetId of newAssetIds) {
+                await Asset.findByIdAndUpdate(
+                    assetId,
+                    {
+                        status: 'Unavailable',
+                        assignment_status: true,
+                        Issued_to: projectId,
+                        Issued_to_type: 'Project',
+                        Issued_date: new Date()
+                    }
+                );
 
-            console.log(`Updated status to 'Unavailable' for ${newAssetIds.length} assets`);
+                // Create history record for the assignment
+                await createAssetHistory({
+                    asset_id: assetId,
+                    performed_by: req.user._id,
+                    operation_type: 'Assigned',
+                    assignment_type: 'Project',
+                    issued_to: projectId,
+                    comments: `Asset assigned to project: ${project.Project_name}`
+                });
+            }
+
+            console.log(`Updated ${newAssetIds.length} assets with assignment to project ${projectId}`);
         }
 
         res.status(201).json({
@@ -393,6 +447,66 @@ router.post('/:projectId/assets', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('Error adding assets:', error);
         res.status(500).json({ message: 'Error adding assets', error: error.message });
+    }
+});
+
+// Remove asset from project
+router.delete('/:projectId/assets/:assetId', authMiddleware, async (req, res) => {
+    try {
+        const { projectId, assetId } = req.params;
+
+        // Validate IDs
+        if (!mongoose.Types.ObjectId.isValid(projectId) || !mongoose.Types.ObjectId.isValid(assetId)) {
+            return res.status(400).json({ message: "Invalid ID format" });
+        }
+
+        // Check if project exists
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
+
+        // Check if the asset-project association exists
+        const assetProject = await AssetProject.findOne({
+            project_id: projectId,
+            asset_id: assetId
+        });
+
+        if (!assetProject) {
+            return res.status(404).json({ message: 'Asset not assigned to this project' });
+        }
+
+        // Delete the asset-project association
+        await AssetProject.findByIdAndDelete(assetProject._id);
+
+        // Update the asset status to available and remove project assignment
+        const asset = await Asset.findByIdAndUpdate(
+            assetId,
+            {
+                status: 'Available',
+                assignment_status: false,
+                Issued_to: null,
+                Issued_to_type: null
+            },
+            { new: true }
+        );
+
+        // Create history record for the unassignment
+        await createAssetHistory({
+            asset_id: assetId,
+            performed_by: req.user._id,
+            operation_type: 'Unassigned',
+            assignment_type: 'Project',
+            issued_to: null,
+            comments: `Asset removed from project: ${project.Project_name}`
+        });
+
+        res.status(200).json({
+            message: 'Asset removed from project successfully'
+        });
+    } catch (error) {
+        console.error('Error removing asset from project:', error);
+        res.status(500).json({ message: 'Error removing asset from project', error: error.message });
     }
 });
 
