@@ -9,13 +9,6 @@ const AssetProject = require('../models/asset_project');
 const Asset = require('../models/asset');
 const mongoose = require('mongoose');
 
-// Helper function to validate date format
-function isValidDate(dateString) {
-    // Check if the string is a valid date
-    const date = new Date(dateString);
-    return !isNaN(date.getTime());
-}
-
 // Improved function to find all sublocations in the hierarchy
 async function findAllSublocations(parentLocationName) {
     try {
@@ -211,28 +204,10 @@ router.post('/', authMiddleware, async (req, res) => {
 // Get all projects
 router.get('/', authMiddleware, async (req, res) => {
     try {
-        // Get current admin's location
-        const adminLocation = req.user.location;
-        console.log(`Admin location for projects: ${adminLocation}`);
-
-        // Find all sublocations (including the admin's location)
-        const validLocations = await findAllSublocations(adminLocation);
-        console.log(`Found ${validLocations.length} locations in hierarchy for projects`);
-
-        // Find all projects where at least one location matches the admin's location hierarchy
         const projects = await Project.find()
-            .populate('project_head', 'first_name last_name email')
+            .populate('project_head', 'name email')
             .sort({ createdAt: -1 });
-        
-        // Filter projects to only include those with at least one location in the admin's hierarchy
-        const filteredProjects = projects.filter(project => {
-            // Check if any of the project's locations are in the admin's location hierarchy
-            return project.location.some(loc => validLocations.includes(loc));
-        });
-
-        console.log(`Found ${filteredProjects.length} projects within admin's location hierarchy out of ${projects.length} total projects`);
-        
-        res.status(200).json(filteredProjects);
+        res.status(200).json(projects);
     } catch (error) {
         console.error('Error fetching projects:', error);
         res.status(500).json({ message: error.message });
@@ -330,8 +305,100 @@ router.get('/:id/participants', authMiddleware, async (req, res) => {
     }
 });
 
+// Add assets to project
+router.post('/:projectId/assets', authMiddleware, async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const { assetIds } = req.body; // Array of asset IDs to add
+        const adminLocation = req.user.location;
+
+        console.log(`Admin location for assets: ${adminLocation}`);
+        console.log(`Asset IDs to add: ${JSON.stringify(assetIds)}`);
+
+        // Validate project exists
+        if (!mongoose.Types.ObjectId.isValid(projectId)) {
+            return res.status(400).json({ message: "Invalid project ID format" });
+        }
+
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
+
+        // Validate asset IDs
+        if (!Array.isArray(assetIds) || assetIds.length === 0) {
+            return res.status(400).json({ message: "No asset IDs provided" });
+        }
+
+        // Find all sublocations (including the admin's location)
+        const validLocations = await findAllSublocations(adminLocation);
+        console.log(`Found ${validLocations.length} valid locations in hierarchy for admin`);
+
+        // Find all assets from the list that match admin's location hierarchy and are available
+        const validAssets = await Asset.find({
+            _id: { $in: assetIds },
+            Office: { $in: validLocations },
+            status: 'Available'
+        });
+
+        console.log(`Found ${validAssets.length} valid assets out of ${assetIds.length} requested`);
+
+        // Debug: Let's see what assets we found and their locations
+        console.log("Valid assets:");
+        for (const asset of validAssets) {
+            console.log(`- Valid asset: ${asset.name}, Location: "${asset.Office}"`);
+        }
+
+        // Debug: Check if any assets weren't found or are unavailable
+        const validAssetIds = validAssets.map(asset => asset._id.toString());
+        const invalidAssetIds = assetIds.filter(id => !validAssetIds.includes(id));
+
+        if (invalidAssetIds.length > 0) {
+            console.log(`Invalid or unavailable asset IDs: ${JSON.stringify(invalidAssetIds)}`);
+        }
+
+        // Filter out assets that are already in the project
+        const existingAssets = await AssetProject.find({
+            project_id: projectId,
+            asset_id: { $in: assetIds }
+        });
+
+        const existingAssetIds = existingAssets.map(ap => ap.asset_id.toString());
+        const newAssetIds = validAssetIds.filter(id => !existingAssetIds.includes(id));
+
+        // Create new asset-project associations
+        const assetProjects = newAssetIds.map(assetId => ({
+            asset_id: assetId,
+            project_id: projectId
+        }));
+
+        if (assetProjects.length > 0) {
+            await AssetProject.insertMany(assetProjects);
+
+            // Update the status of added assets to 'Unavailable'
+            await Asset.updateMany(
+                { _id: { $in: newAssetIds } },
+                { $set: { status: 'Unavailable' } }
+            );
+
+            console.log(`Updated status to 'Unavailable' for ${newAssetIds.length} assets`);
+        }
+
+        res.status(201).json({
+            message: 'Assets added successfully',
+            added: newAssetIds.length,
+            skipped: assetIds.length - newAssetIds.length,
+            invalid: invalidAssetIds
+        });
+    } catch (error) {
+        console.error('Error adding assets:', error);
+        res.status(500).json({ message: 'Error adding assets', error: error.message });
+    }
+});
+
 // Get project assets
 router.get('/:id/assets', authMiddleware, async (req, res) => {
+    console.log("Fetching project assets for ID:", req.params.id);
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return res.status(400).json({ message: "Invalid project ID format" });
@@ -654,63 +721,5 @@ router.get('/diagnostic/users-by-location', authMiddleware, async (req, res) => 
     }
 });
 
-// Get all available assets for projects
-router.get('/assets', authMiddleware, async (req, res) => {
-    try {
-        const user = req.user;
-        const adminLocation = user.location;
-
-        // Get all locations in the hierarchy for admin
-        const validLocations = await findAllSublocations(adminLocation);
-        console.log(`Found ${validLocations.length} valid locations for asset filtering`);
-
-        // Find assets that are available
-        let query = {
-            status: 'Available',
-            Office: { $in: validLocations }
-        };
-
-        const assets = await Asset.find(query)
-            .populate({
-                path: 'category',
-                select: 'name'
-            })
-            .populate({
-                path: 'Issued_by',
-                select: 'first_name last_name email'
-            });
-
-        console.log(`Found ${assets.length} available assets for admin's location hierarchy`);
-
-        res.status(200).json(assets);
-    } catch (error) {
-        console.error('Error fetching assets:', error);
-        res.status(500).json({ message: 'Server error while fetching assets' });
-    }
-});
-
-// Get locations within admin's hierarchy for project creation
-router.get('/locations/admin-hierarchy', authMiddleware, async (req, res) => {
-    try {
-        // Get current admin's location
-        const adminLocation = req.user.location;
-        console.log(`Admin location for location hierarchy: ${adminLocation}`);
-
-        // Find all sublocations (including the admin's location)
-        const validLocationNames = await findAllSublocations(adminLocation);
-        console.log(`Found ${validLocationNames.length} locations in hierarchy`);
-
-        // Get the full location documents for these location names
-        const locations = await Location.find({
-            location_name: { $in: validLocationNames }
-        });
-
-        console.log(`Returning ${locations.length} location documents`);
-        res.status(200).json(locations);
-    } catch (error) {
-        console.error('Error fetching admin location hierarchy:', error);
-        res.status(500).json({ message: error.message });
-    }
-});
 
 module.exports = router;
