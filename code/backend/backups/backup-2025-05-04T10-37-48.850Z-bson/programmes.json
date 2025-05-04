@@ -1,0 +1,23 @@
+[
+  {
+    "_id": "6817365df442dd96b83e677b",
+    "name": "CEE",
+    "programme_type": "community",
+    "programmes_description": "Community Engagement & Education",
+    "__v": 0
+  },
+  {
+    "_id": "6817367bf442dd96b83e6782",
+    "name": "TEOA",
+    "programme_type": "education",
+    "programmes_description": "Teacher Education Outreach & Advocacy",
+    "__v": 0
+  },
+  {
+    "_id": "6817368ef442dd96b83e6789",
+    "name": "Publication",
+    "programme_type": "innovation",
+    "programmes_description": "We Publish Books nice",
+    "__v": 0
+  }
+]

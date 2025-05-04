@@ -7,6 +7,10 @@ const Location = require('../models/location');
 const User = require('../models/user');
 const Programme = require('../models/programme');
 const Project = require('../models/project');
+const fs = require('fs');
+const path = require('path');
+const { exec } = require('child_process');
+const mongoose = require('mongoose');
 
 // Add a new category
 router.post('/add_category', authMiddleware, async (req, res) => {
@@ -527,6 +531,346 @@ router.put('/remove_admin', authMiddleware, async (req, res) => {
         console.error('Error removing admin role:', error);
         return res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
-  });
+});
+
+// Database backup endpoint
+router.post('/database-backup', authMiddleware, async (req, res) => {
+    try {
+        const { format } = req.body;
+
+        if (!format || !['csv', 'bson', 'json'].includes(format)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid format. Supported formats: csv, bson, json'
+            });
+        }
+
+        // Create timestamp for unique filename
+        const timestamp = new Date().toISOString().replace(/:/g, '-');
+        const backupDir = path.join(__dirname, '../backups');
+        const backupFilename = `backup-${timestamp}`;
+
+        // Ensure backup directory exists
+        if (!fs.existsSync(backupDir)) {
+            fs.mkdirSync(backupDir, { recursive: true });
+        }
+
+        // Get all models data
+        const models = [
+            { name: 'assets', model: Asset },
+            { name: 'users', model: User },
+            { name: 'locations', model: Location },
+            { name: 'categories', model: Category },
+            { name: 'programmes', model: Programme },
+            { name: 'projects', model: Project }
+        ];
+
+        // Collect data from all models upfront for any format
+        const collectionsData = {};
+        await Promise.all(models.map(async (modelInfo) => {
+            try {
+                const data = await modelInfo.model.find({}).lean();
+                collectionsData[modelInfo.name] = data;
+            } catch (err) {
+                console.error(`Error fetching ${modelInfo.name}:`, err);
+                collectionsData[modelInfo.name] = [];
+            }
+        }));
+
+        if (format === 'json') {
+            // JSON backup
+            const filePath = path.join(backupDir, `${backupFilename}.json`);
+            fs.writeFileSync(filePath, JSON.stringify(collectionsData, null, 2));
+
+            return res.download(filePath, `${backupFilename}.json`, (err) => {
+                if (err) {
+                    console.error(`Download error: ${err}`);
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Error downloading JSON backup',
+                        error: err.message
+                    });
+                }
+
+                // Clean up after sending
+                setTimeout(() => {
+                    try {
+                        fs.unlinkSync(filePath);
+                    } catch (cleanupErr) {
+                        console.error(`Cleanup error: ${cleanupErr}`);
+                    }
+                }, 60000);
+            });
+        }
+        else if (format === 'csv') {
+            // Create directory for CSV files
+            const csvDir = path.join(backupDir, `${backupFilename}-csv`);
+            fs.mkdirSync(csvDir, { recursive: true });
+
+            // Generate CSV files
+            for (const [modelName, data] of Object.entries(collectionsData)) {
+                if (data.length > 0) {
+                    try {
+                        // Get headers
+                        const headers = Object.keys(data[0]);
+
+                        // Generate CSV rows
+                        const csvRows = [headers.join(',')]; // Add header row
+
+                        data.forEach(item => {
+                            const values = headers.map(header => {
+                                const value = item[header];
+                                if (value === null || value === undefined) return '';
+                                if (typeof value === 'object') {
+                                    return `"${JSON.stringify(value).replace(/"/g, '""')}"`;
+                                }
+                                return `"${String(value).replace(/"/g, '""')}"`;
+                            });
+                            csvRows.push(values.join(','));
+                        });
+
+                        // Write the CSV file
+                        fs.writeFileSync(
+                            path.join(csvDir, `${modelName}.csv`),
+                            csvRows.join('\n')
+                        );
+                    } catch (csvErr) {
+                        console.error(`Error creating CSV file for ${modelName}:`, csvErr);
+                    }
+                }
+            }
+
+            // Generate a zip file with all CSV files
+            const zipFilePath = path.join(backupDir, `${backupFilename}-csv.zip`);
+
+            // Check if archiver is available
+            try {
+                const archiver = require('archiver');
+
+                const output = fs.createWriteStream(zipFilePath);
+                const archive = archiver('zip', {
+                    zlib: { level: 9 } // Maximum compression
+                });
+
+                // Listen for events
+                output.on('close', () => {
+                    console.log(`CSV Archive created: ${archive.pointer()} bytes`);
+
+                    // Send the zip file
+                    res.download(zipFilePath, `database-backup-csv-${timestamp}.zip`, (err) => {
+                        if (err) {
+                            console.error(`Download error: ${err}`);
+                            return res.status(500).json({
+                                success: false,
+                                message: 'Error downloading CSV backup',
+                                error: err.message
+                            });
+                        }
+
+                        // Clean up files after sending
+                        setTimeout(() => {
+                            try {
+                                fs.unlinkSync(zipFilePath);
+                                fs.rmSync(csvDir, { recursive: true, force: true });
+                            } catch (cleanupErr) {
+                                console.error(`Cleanup error: ${cleanupErr}`);
+                            }
+                        }, 60000);
+                    });
+                });
+
+                archive.on('error', (err) => {
+                    throw err;
+                });
+
+                // Pipe archive to the output stream
+                archive.pipe(output);
+
+                // Add files from directory
+                archive.directory(csvDir, false);
+
+                // Finalize archive
+                archive.finalize();
+
+                return; // Exit here since we're handling response in event callbacks
+            } catch (archiverErr) {
+                console.error('Error using archiver:', archiverErr);
+
+                // Fallback: Create and send a combined CSV file
+                const combinedCsvPath = path.join(backupDir, `${backupFilename}-combined.csv`);
+                let combinedContent = '';
+
+                // Combine all CSVs into one file
+                for (const [modelName, data] of Object.entries(collectionsData)) {
+                    if (data.length > 0) {
+                        if (combinedContent) combinedContent += '\n\n';
+
+                        combinedContent += `# ${modelName}\n`;
+
+                        // Get headers
+                        const headers = Object.keys(data[0]);
+                        combinedContent += headers.join(',') + '\n';
+
+                        // Add data rows
+                        data.forEach(item => {
+                            const values = headers.map(header => {
+                                const value = item[header];
+                                if (value === null || value === undefined) return '';
+                                if (typeof value === 'object') {
+                                    return `"${JSON.stringify(value).replace(/"/g, '""')}"`;
+                                }
+                                return `"${String(value).replace(/"/g, '""')}"`;
+                            });
+                            combinedContent += values.join(',') + '\n';
+                        });
+                    }
+                }
+
+                fs.writeFileSync(combinedCsvPath, combinedContent);
+
+                return res.download(combinedCsvPath, `database-backup-combined-${timestamp}.csv`, (err) => {
+                    if (err) {
+                        console.error(`Download error: ${err}`);
+                        return res.status(500).json({
+                            success: false,
+                            message: 'Error downloading CSV backup',
+                            error: err.message
+                        });
+                    }
+
+                    // Clean up
+                    setTimeout(() => {
+                        try {
+                            fs.unlinkSync(combinedCsvPath);
+                            fs.rmSync(csvDir, { recursive: true, force: true });
+                        } catch (cleanupErr) {
+                            console.error(`Cleanup error: ${cleanupErr}`);
+                        }
+                    }, 60000);
+                });
+            }
+        }
+        else if (format === 'bson') {
+            // Since mongodump isn't available, create a JSON file with BSON extension
+            console.log('Creating BSON-format backup (JSON data)');
+
+            // Save each collection to its own file
+            const bsonDir = path.join(backupDir, `${backupFilename}-bson`);
+            fs.mkdirSync(bsonDir, { recursive: true });
+
+            // Write each collection to a separate file
+            for (const [modelName, data] of Object.entries(collectionsData)) {
+                const collectionPath = path.join(bsonDir, `${modelName}.json`);
+                fs.writeFileSync(collectionPath, JSON.stringify(data, null, 2));
+            }
+
+            // Create a metadata file
+            const metadataPath = path.join(bsonDir, 'metadata.json');
+            fs.writeFileSync(metadataPath, JSON.stringify({
+                timestamp: new Date().toISOString(),
+                database: mongoose.connection.db.databaseName,
+                collections: Object.keys(collectionsData),
+                counts: Object.entries(collectionsData).reduce((acc, [name, data]) => {
+                    acc[name] = data.length;
+                    return acc;
+                }, {})
+            }, null, 2));
+
+            // Create a zip archive with all the files (using archiver instead of JSZip)
+            try {
+                const archiver = require('archiver');
+                const zipPath = path.join(backupDir, `${backupFilename}-bson.zip`);
+                const output = fs.createWriteStream(zipPath);
+                const archive = archiver('zip', {
+                    zlib: { level: 9 } // Maximum compression
+                });
+
+                // Listen for archive events
+                output.on('close', () => {
+                    console.log(`BSON Archive created: ${archive.pointer()} bytes`);
+
+                    // Send the zip file
+                    res.download(zipPath, `database-backup-bson-${timestamp}.zip`, (err) => {
+                        if (err) {
+                            console.error(`Download error: ${err}`);
+                            return res.status(500).json({
+                                success: false,
+                                message: 'Error downloading BSON backup',
+                                error: err.message
+                            });
+                        }
+
+                        // Clean up after sending
+                        setTimeout(() => {
+                            try {
+                                fs.unlinkSync(zipPath);
+                                fs.rmSync(bsonDir, { recursive: true, force: true });
+                            } catch (cleanupErr) {
+                                console.error(`Cleanup error: ${cleanupErr}`);
+                            }
+                        }, 60000);
+                    });
+                });
+
+                archive.on('error', (err) => {
+                    console.error('Archive error:', err);
+                    throw err;
+                });
+
+                // Pipe archive data to the output file
+                archive.pipe(output);
+
+                // Add all files from the BSON directory to the archive
+                archive.directory(bsonDir, false);
+
+                // Finalize the archive
+                archive.finalize();
+
+                return; // Exit here since we're handling the response in the event callbacks
+            } catch (archiverErr) {
+                console.error('Error using archiver for BSON backup:', archiverErr);
+
+                // Fallback to sending individual files as a single JSON
+                return createJsonBackupAlternative();
+            }
+        }
+
+        // Helper function to create JSON backup as alternative
+        async function createJsonBackupAlternative() {
+            console.log('Falling back to JSON backup format');
+
+            const jsonFilePath = path.join(backupDir, `${backupFilename}.json`);
+            fs.writeFileSync(jsonFilePath, JSON.stringify(collectionsData, null, 2));
+
+            res.download(jsonFilePath, `database-backup-${timestamp}.json`, (err) => {
+                if (err) {
+                    console.error(`Download error: ${err}`);
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Error downloading backup',
+                        error: err.message
+                    });
+                }
+
+                // Clean up
+                setTimeout(() => {
+                    try {
+                        fs.unlinkSync(jsonFilePath);
+                    } catch (cleanupErr) {
+                        console.error(`Cleanup error: ${cleanupErr}`);
+                    }
+                }, 60000);
+            });
+        }
+
+    } catch (error) {
+        console.error('Error creating database backup:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error creating database backup',
+            error: error.message
+        });
+    }
+});
 
 module.exports = router;

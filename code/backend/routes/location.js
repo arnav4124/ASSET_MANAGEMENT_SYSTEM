@@ -11,13 +11,13 @@ location_router.get('/get_cities', authMiddleware, async (req, res) => {
         // fetch all location with parent_location = "ROOT"
 
         var locations = await Location.find({ parent_location: "ROOT" })
-        console.log("Sexy ass",locations)
+        // console.log("Sexy ass",locations)
         var sub_hq=[]
         // find locations with parent locations as elements of locations
         for (let i = 0; i < locations.length; i++) {
             const location = locations[i];
             const r2 = await Location.find({ parent_location: location._id.toString() });
-            console.log("Wet pussy",r2)
+            // console.log("Wet pussy",r2)
             // console.log(sub_hq)
             for (let j = 0; j < r2.length; j++) {
                 sub_hq.push(r2[j]);

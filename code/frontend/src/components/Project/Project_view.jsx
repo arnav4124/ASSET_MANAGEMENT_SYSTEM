@@ -212,7 +212,11 @@ const ViewProject = () => {
                           onClick={() => handleRowClick(proj._id)}
                         >
                           <div className="text-sm text-gray-500">
-                            {proj.project_head && proj.project_head.name ? proj.project_head.name : "N/A"}
+                            {proj.project_head ? 
+                              (proj.project_head.first_name && proj.project_head.last_name ? 
+                                `${proj.project_head.first_name} ${proj.project_head.last_name}` : 
+                                (proj.project_head.name || 'N/A')
+                              ) : 'N/A'}
                           </div>
                         </td>
                         <td

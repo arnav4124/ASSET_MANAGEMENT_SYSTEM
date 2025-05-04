@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-05-04T10:37:49.281Z",
+  "database": "AMS-revised",
+  "collections": [
+    "categories",
+    "locations",
+    "users",
+    "programmes",
+    "projects",
+    "assets"
+  ],
+  "counts": {
+    "categories": 3,
+    "locations": 7,
+    "users": 5,
+    "programmes": 3,
+    "projects": 3,
+    "assets": 18
+  }
+}

@@ -13,6 +13,7 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
+import { Database, X, Download, HardDrive, FileJson, FileText } from 'lucide-react';
 
 ChartJS.register(
   CategoryScale,
@@ -34,6 +35,13 @@ const SuperUserDashboard = () => {
   const [programmeProjectsData, setProgrammeProjectsData] = useState(null);
   const [locationAssetsData, setLocationAssetsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Backup related states
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [backupFormat, setBackupFormat] = useState('json');
+  const [backupInProgress, setBackupInProgress] = useState(false);
+  const [backupError, setBackupError] = useState(null);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -102,6 +110,54 @@ const SuperUserDashboard = () => {
     fetchData();
   }, []);
 
+  // Handle backup creation and download
+  const handleBackup = async () => {
+    setBackupInProgress(true);
+    setBackupError(null);
+
+    try {
+      const response = await axios({
+        method: 'post',
+        url: 'http://localhost:3487/api/superuser/database-backup',
+        data: { format: backupFormat },
+        headers: {
+          token: localStorage.getItem("token"),
+          'Content-Type': 'application/json'
+        },
+        responseType: 'blob', // Important for handling file download
+      });
+
+      // Create a blob link to download the file
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+
+      // Set filename based on format
+      const timestamp = new Date().toISOString().split('T')[0];
+      let extension;
+
+      if (backupFormat === 'json') {
+        extension = 'json';
+      } else {
+        // Both CSV and BSON formats are delivered as ZIP files
+        extension = 'zip';
+      }
+
+      link.setAttribute('download', `database-backup-${timestamp}.${extension}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      // Close modal after successful download
+      setShowBackupModal(false);
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      setBackupError('Failed to create backup. Please try again.');
+    } finally {
+      setBackupInProgress(false);
+    }
+  };
+
   // Generate vibrant colors for charts
   const generateColors = (count) => {
     const colorPalettes = [
@@ -111,14 +167,14 @@ const SuperUserDashboard = () => {
       ['#EF4444', '#F87171', '#FCA5A5', '#FECACA', '#FEE2E2'],  // Red
       ['#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE', '#EDE9FE'],  // Purple
     ];
-    
+
     const colors = [];
     for (let i = 0; i < count; i++) {
       const paletteIndex = i % colorPalettes.length;
       const colorIndex = Math.floor(i / colorPalettes.length) % colorPalettes[paletteIndex].length;
       colors.push(colorPalettes[paletteIndex][colorIndex]);
     }
-    
+
     return {
       backgroundColor: colors.map(c => `${c}99`),
       borderColor: colors,
@@ -307,48 +363,145 @@ const SuperUserDashboard = () => {
     </Link>
   );
 
+  // Backup Modal Component
+  const BackupModal = () => (
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 transition-opacity">
+      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-0 overflow-hidden transition-all transform">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <Database className="text-white" size={20} />
+            <h2 className="text-xl font-bold text-white">Database Backup</h2>
+          </div>
+          <button
+            className="text-white hover:text-gray-200 focus:outline-none"
+            onClick={() => setShowBackupModal(false)}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          <p className="text-gray-600 mb-4">
+            Create a backup of the entire database. Choose your preferred format below:
+          </p>
+
+          {/* Format selection */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            {/* JSON Option */}
+            <div
+              onClick={() => setBackupFormat('json')}
+              className={`border p-4 rounded-lg text-center cursor-pointer hover:bg-blue-50 transition-all ${backupFormat === 'json' ? 'bg-blue-100 border-blue-500 shadow-md' : 'border-gray-200'
+                }`}
+            >
+              <div className="flex justify-center mb-2">
+                <FileJson size={32} className={backupFormat === 'json' ? 'text-blue-600' : 'text-gray-500'} />
+              </div>
+              <p className={`font-medium ${backupFormat === 'json' ? 'text-blue-700' : 'text-gray-700'}`}>
+                JSON
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Standard data format</p>
+            </div>
+
+            {/* CSV Option */}
+            <div
+              onClick={() => setBackupFormat('csv')}
+              className={`border p-4 rounded-lg text-center cursor-pointer hover:bg-blue-50 transition-all ${backupFormat === 'csv' ? 'bg-blue-100 border-blue-500 shadow-md' : 'border-gray-200'
+                }`}
+            >
+              <div className="flex justify-center mb-2">
+                <FileText size={32} className={backupFormat === 'csv' ? 'text-blue-600' : 'text-gray-500'} />
+              </div>
+              <p className={`font-medium ${backupFormat === 'csv' ? 'text-blue-700' : 'text-gray-700'}`}>
+                CSV
+              </p>
+              <p className="text-xs text-gray-500 mt-1">For spreadsheet apps</p>
+            </div>
+          </div>
+
+          {/* Error message if any */}
+          {backupError && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+              <p className="text-red-700 text-sm">{backupError}</p>
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-3 mt-4">
+            <button
+              type="button"
+              onClick={() => setShowBackupModal(false)}
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              disabled={backupInProgress}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleBackup}
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center"
+              disabled={backupInProgress}
+            >
+              {backupInProgress ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                  Creating backup...
+                </>
+              ) : (
+                <>
+                  <Download size={16} className="mr-2" />
+                  Download Backup
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatCard 
-            title="Locations" 
-            count={locationCount} 
-            color="blue" 
-            icon="📍" 
-            to="/superuser/view_location" 
-          />
-          
-          <StatCard 
-            title="Programs" 
-            count={programCount} 
-            color="green" 
-            icon="📊" 
-            to="/superuser/view_programme" 
-          />
-          
-          <StatCard 
-            title="Categories" 
-            count={categoryCount} 
-            color="red" 
-            icon="📁" 
-            to="/superuser/view_category" 
+          <StatCard
+            title="Locations"
+            count={locationCount}
+            color="blue"
+            icon="📍"
+            to="/superuser/view_location"
           />
 
-          <StatCard 
-            title="Admins" 
-            count={adminCount} 
-            color="purple" 
-            icon="👥" 
-            to="/superuser/view_admin" 
+          <StatCard
+            title="Programs"
+            count={programCount}
+            color="green"
+            icon="📊"
+            to="/superuser/view_programme"
+          />
+
+          <StatCard
+            title="Categories"
+            count={categoryCount}
+            color="red"
+            icon="📁"
+            to="/superuser/view_category"
+          />
+
+          <StatCard
+            title="Admins"
+            count={adminCount}
+            color="purple"
+            icon="👥"
+            to="/superuser/view_admin"
           />
         </div>
-        
+
         {/* Charts Section */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Analytics Overview</h2>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* First row charts */}
             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
@@ -363,7 +516,7 @@ const SuperUserDashboard = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
               <h3 className="text-xl font-semibold text-gray-800 mb-4">Assets by Category</h3>
               {isLoading ? (
@@ -407,33 +560,46 @@ const SuperUserDashboard = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Quick Actions Section */}
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
             <Link to="/superuser/assign_admin" className="bg-blue-50 hover:bg-blue-100 p-4 rounded-lg flex flex-col items-center justify-center text-center transition-colors duration-200">
               <span className="text-blue-600 text-2xl mb-2">👤</span>
               <span className="font-medium text-gray-800">Add Admin</span>
             </Link>
-            
+
             <Link to="/superuser/add_category" className="bg-green-50 hover:bg-green-100 p-4 rounded-lg flex flex-col items-center justify-center text-center transition-colors duration-200">
               <span className="text-green-600 text-2xl mb-2">📁</span>
               <span className="font-medium text-gray-800">Add Category</span>
             </Link>
-            
+
             <Link to="/superuser/add_location" className="bg-red-50 hover:bg-red-100 p-4 rounded-lg flex flex-col items-center justify-center text-center transition-colors duration-200">
               <span className="text-red-600 text-2xl mb-2">📍</span>
               <span className="font-medium text-gray-800">Add Location</span>
             </Link>
-            
+
             <Link to="/superuser/add_programme" className="bg-purple-50 hover:bg-purple-100 p-4 rounded-lg flex flex-col items-center justify-center text-center transition-colors duration-200">
               <span className="text-purple-600 text-2xl mb-2">📊</span>
               <span className="font-medium text-gray-800">Add Programme</span>
             </Link>
+
+            <button
+              onClick={() => setShowBackupModal(true)}
+              className="bg-indigo-50 hover:bg-indigo-100 p-4 rounded-lg flex flex-col items-center justify-center text-center transition-colors duration-200"
+            >
+              <span className="text-indigo-600 text-2xl mb-2">
+                <Database size={24} />
+              </span>
+              <span className="font-medium text-gray-800">Backup Database</span>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Backup Modal */}
+      {showBackupModal && <BackupModal />}
     </div>
   );
 };

@@ -19,20 +19,33 @@ const AddEmployee = () => {
   const [managers, setManagers] = useState([]);
   const [message, setMessage] = useState(null);
   const [locations, setLocations] = useState([]);
+  const [isHRAdmin, setIsHRAdmin] = useState(false);
+
   useEffect(() => {
     const token_st = localStorage.getItem("token")
     const token = localStorage.getItem('token')
     if (!token) {
       navigate('/login')
+      return;
     }
-    else {
-      const role = JSON.parse(localStorage.getItem('user')).role
-      console.log(role)
-
-      if (role !== 'Admin') {
-        navigate('/login')
-      }
+    
+    const userData = JSON.parse(localStorage.getItem('user'));
+    if (userData.role !== 'Admin') {
+      navigate('/login');
+      return;
     }
+    
+    // Check if admin location ends with HQ to determine if they are HR admin
+    const isHR = userData.location && userData.location.endsWith("HQ");
+    setIsHRAdmin(isHR);
+    
+    // If not an HR admin, redirect to dashboard
+    if (!isHR) {
+      navigate('/admin/dashboard');
+      return;
+    }
+    
+    // If we get here, user is authenticated as HR admin
     if (!token_st) {
       alert("unauthorized_access")
       navigate("/login")

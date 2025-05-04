@@ -1,0 +1,6 @@
+_id,first_name,last_name,email,password,location,role,phone,active
+"""68051bd6a9a54d9586eb5537""","super","user","superuser@gmail.com","$2a$10$OBkve9avmMf8HzEhb1fffePWh8uv433WbXRKX.GVQXEzgnvJN3Quy","Bhopal_HQ","Superuser","9876543210","true"
+"""68051ee7142ef33c18fd78f2""","Admin","First","admin@gmail.com","$2a$10$M9TUjjt8r5./DYPgRtW0x.WNOipw6kH4gviBjlj5YHZ66IfVGdP0a","Bhopal_HQ","Admin","998654321","true"
+"""6805219a64de578e8f60e26e""","Bhavya","Ahuja","bhavya1511ahuja@gmail.com","$2b$10$3bEapRPaJgFtKb5BL5ZzSOCx263Mggb2Hin16sFDuTjqQjikMFiju","Demo1","User",,"true"
+"""680521b764de578e8f60e271""","Apeksha","Chandak","apeksha@mail.com","$2b$10$eQsot76gxQtoof1gU9weUeOSPCX1pGToeie1ii72PEze7d6Zc.C.m","Bhopal_HQ","User",,"true"
+"""6817066ecbd9fc7c49b4e20d""","jain","nidhish","jainnidhish31@gmail.com","$2a$10$BOtHrIiXctIheninIEUWouPhuseMNkKyNOp/vWI4PQkszb.z9U7hq","Mandla","Admin",,"true"

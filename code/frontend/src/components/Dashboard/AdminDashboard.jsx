@@ -43,6 +43,7 @@ const AdminDashboard = () => {
   const [approachingInsurance, setApproachingInsurance] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [tablesLoading, setTablesLoading] = useState(true);
+  const [isHRAdmin, setIsHRAdmin] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -54,6 +55,11 @@ const AdminDashboard = () => {
       if (user.role !== "Admin") {
         navigate("/login");
       }
+      
+      // Check if admin location ends with HQ to determine if they are HR admin
+      if (user.location && typeof user.location === 'string') {
+        setIsHRAdmin(user.location.endsWith("HQ"));
+      }
     }
 
     const fetchData = async () => {
@@ -61,7 +67,11 @@ const AdminDashboard = () => {
       try {
         const token = localStorage.getItem("token");
         const headers = { token };
-
+        
+        // Get current admin's location
+        const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+        const adminLocation = currentUser.location;
+        
         const [
           projRes,
           userRes,
@@ -71,8 +81,8 @@ const AdminDashboard = () => {
           locationAssetRes
         ] = await Promise.all([
           axios.get("http://localhost:3487/api/projects", { headers }),
-          axios.get("http://localhost:3487/api/user", { headers }),
-          axios.get("http://localhost:3487/api/assets", { headers }),
+          axios.get(`http://localhost:3487/api/user?adminLocation=${encodeURIComponent(adminLocation)}`, { headers }),
+          axios.get(`http://localhost:3487/api/assets?adminLocation=${encodeURIComponent(adminLocation)}`, { headers }),
           axios.get("http://localhost:3487/api/admin/graph/location-users", { headers }),
           axios.get("http://localhost:3487/api/admin/graph/project-assets", { headers }),
           axios.get("http://localhost:3487/api/admin/graph/location-assets", { headers })
@@ -639,10 +649,12 @@ const AdminDashboard = () => {
               <span className="font-medium text-gray-800">New Project</span>
             </Link>
 
-            <Link to="/admin/add_user" className="bg-green-50 hover:bg-green-100 p-4 rounded-lg flex flex-col items-center justify-center text-center transition-colors duration-200">
-              <span className="text-green-600 text-2xl mb-2">👤</span>
-              <span className="font-medium text-gray-800">Add User</span>
-            </Link>
+            {isHRAdmin && (
+              <Link to="/admin/add_user" className="bg-green-50 hover:bg-green-100 p-4 rounded-lg flex flex-col items-center justify-center text-center transition-colors duration-200">
+                <span className="text-green-600 text-2xl mb-2">👤</span>
+                <span className="font-medium text-gray-800">Add User</span>
+              </Link>
+            )}
 
             <Link to="/admin/asset/add" className="bg-red-50 hover:bg-red-100 p-4 rounded-lg flex flex-col items-center justify-center text-center transition-colors duration-200">
               <span className="text-red-600 text-2xl mb-2">➕</span>

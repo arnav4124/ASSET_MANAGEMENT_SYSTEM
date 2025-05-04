@@ -838,6 +838,9 @@ const Asset_add = () => {
                 <select
                   {...register("status", { required: "Status is required" })}
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 outline-none"
+                  disabled={true}
+                  defaultValue={"Available"}
+
                 >
                   <option value="">Select Status</option>
                   <option value="Available">Available</option>

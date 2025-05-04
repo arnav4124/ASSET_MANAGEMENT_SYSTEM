@@ -185,6 +185,7 @@ const EditUser = () => {
             setLoading(false);
             setIsSubmitting(false);
         }
+        
     }
 
     const updateUserLocation = async (newLocation, assetSelections = selectedAssets) => {

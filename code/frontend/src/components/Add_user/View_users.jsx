@@ -12,6 +12,7 @@ const ViewUsers = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedLocations, setSelectedLocations] = useState([]);
     const [locations, setLocations] = useState([]);
+    const [isHRAdmin, setIsHRAdmin] = useState(false);
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
     const usersPerPage = 10;
@@ -22,15 +23,21 @@ const ViewUsers = () => {
             const token = localStorage.getItem('token')
             if (!token) {
                 navigate('/login')
-            } else {
-                const role = JSON.parse(localStorage.getItem('user')).role
-                console.log(role)
-                setLocations(JSON.parse(localStorage.getItem('locations')))
-                if (role !== 'Admin') {
-                    navigate('/login')
-                }
+                return;
+            } 
+            
+            const userData = JSON.parse(localStorage.getItem('user'));
+            if (userData.role !== 'Admin') {
+                navigate('/login');
+                return;
             }
-
+            
+            // Check if admin location ends with HQ to determine if they are HR admin
+            const isHR = userData.location && userData.location.endsWith("HQ");
+            setIsHRAdmin(isHR);
+            
+            setLocations(JSON.parse(localStorage.getItem('locations')))
+            
             try {
                 const token_string = localStorage.getItem('token');
                 console.log(token_string)
@@ -265,13 +272,15 @@ const ViewUsers = () => {
                             <h1 className="text-2xl font-bold text-gray-800">View Users</h1>
                             <p className="text-gray-500 mt-1">Manage and view all users in your location</p>
                         </div>
-                        <button
-                            onClick={() => navigate('/admin/add_user')}
-                            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2"
-                        >
-                            <UserPlus size={20} />
-                            Add User
-                        </button>
+                        {isHRAdmin && (
+                            <button
+                                onClick={() => navigate('/admin/add_user')}
+                                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2"
+                            >
+                                <UserPlus size={20} />
+                                Add User
+                            </button>
+                        )}
                     </div>
 
                     {/* Search Bar */}
