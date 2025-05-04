@@ -260,7 +260,8 @@ admin_router.put('/edit_user/:userId', authMiddleware, async (req, res) => {
 
         const oldLocation = user.location;
         const newLocation = location;
-
+       console.log("old location",oldLocation)
+       console.log("new location",newLocation)
         // Update the user's location
         user.location = newLocation;
         await user.save();
@@ -494,7 +495,9 @@ const createAssetHistory = async (params) => {
             assignment_type: params.assignment_type,
             issued_to: params.issued_to,
             // operation_time will default to current time if not provided
-            operation_time: params.operation_time || Date.now()
+            operation_time: params.operation_time || Date.now(),
+            old_location: params.old_location,
+            new_location: params.new_location
         });
 
         // Save the history record
@@ -526,7 +529,7 @@ admin_router.post('/assets/maintenance', authMiddleware, async (req, res) => {
 
         // Get admin ID from token or from request body
         const adminId = req.user?._id || req.body.admin_id;
-
+        console.log("date of sending",date_of_sending)
         if (!adminId) {
             return res.status(400).json({
                 success: false,

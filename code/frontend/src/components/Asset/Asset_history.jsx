@@ -37,6 +37,47 @@ const Asset_history = () => {
 
                 setAssetHistory(response.data);
                 setLoading(false);
+
+                // Process history records to populate user details if needed
+                if (response.data && response.data.history && response.data.history.length > 0) {
+                    const processedHistory = await Promise.all(response.data.history.map(async (record) => {
+                        // If the record is a transfer and issued_to is an ID, try to fetch user details
+                        if (record.operation_type === 'Transferred' && record.issued_to && typeof record.issued_to === 'string') {
+                            try {
+                                const userResponse = await axios.get(`http://localhost:3487/api/users/${record.issued_to}`, {
+                                    headers: { token: localStorage.getItem("token") }
+                                });
+                                if (userResponse.data) {
+                                    record.issued_to = userResponse.data;
+                                }
+                            } catch (err) {
+                                console.error("Error fetching user details:", err);
+                            }
+                        }
+
+                        // If performed_by is an ID, try to fetch user details
+                        if (record.performed_by && typeof record.performed_by === 'string') {
+                            try {
+                                const adminResponse = await axios.get(`http://localhost:3487/api/users/${record.performed_by}`, {
+                                    headers: { token: localStorage.getItem("token") }
+                                });
+                                if (adminResponse.data) {
+                                    record.performed_by = adminResponse.data;
+                                }
+                            } catch (err) {
+                                console.error("Error fetching admin details:", err);
+                            }
+                        }
+
+                        return record;
+                    }));
+
+                    // Update history with populated user details
+                    setAssetHistory({
+                        ...response.data,
+                        history: processedHistory
+                    });
+                }
             } catch (error) {
                 console.error("Error fetching asset history:", error);
                 setError("Failed to load asset history. Please try again later.");
@@ -73,6 +114,25 @@ const Asset_history = () => {
             const lastName = record.issued_to.last_name || 'User';
             return `${firstName} ${lastName}`;
         }
+    };
+
+    // Helper function to get transfer recipient name
+    const getTransferRecipientName = (record) => {
+        if (!record.issued_to) {
+            return 'Unknown User';
+        }
+
+        // Check if issued_to is populated as an object with user details
+        if (typeof record.issued_to === 'object' && record.issued_to !== null) {
+            if (record.issued_to.first_name && record.issued_to.last_name) {
+                return `${record.issued_to.first_name} ${record.issued_to.last_name}`;
+            } else if (record.issued_to.email) {
+                return record.issued_to.email;
+            }
+        }
+
+        // If it's just an ID or other value
+        return 'User ID: ' + record.issued_to;
     };
 
     // Helper function to get operation details
@@ -274,6 +334,49 @@ const Asset_history = () => {
                                                             </div>
                                                         )}
 
+                                                        {record.operation_type === 'Transferred' && (
+                                                            <div className="flex flex-col space-y-1">
+                                                                {record.issued_to && (
+                                                                    <div className="flex items-center text-sm">
+                                                                        <span className="text-gray-500 mr-2">Transferred to:</span>
+                                                                        <span className="font-medium text-gray-700">
+                                                                            {getTransferRecipientName(record)}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex items-center text-sm">
+                                                                    <span className="text-gray-500 mr-2">Transfer Type:</span>
+                                                                    <span className="font-medium text-gray-700">
+                                                                        {record.assignment_type || 'Individual'}
+                                                                    </span>
+                                                                </div>
+                                                                {record.old_location && (
+                                                                    <div className="flex items-center text-sm">
+                                                                        <span className="text-gray-500 mr-2">From Location:</span>
+                                                                        <span className="font-medium text-blue-600">
+                                                                            {record.old_location}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                {record.new_location && (
+                                                                    <div className="flex items-center text-sm">
+                                                                        <span className="text-gray-500 mr-2">To Location:</span>
+                                                                        <span className="font-medium text-green-600">
+                                                                            {record.new_location}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                {record.old_location && record.new_location && (
+                                                                    <div className="mt-1 bg-gray-50 p-2 rounded flex items-center text-sm">
+                                                                        <MapPin size={14} className="text-blue-500 mr-1" />
+                                                                        <span className="text-blue-600 font-medium">{record.old_location}</span>
+                                                                        <MoveRight size={14} className="mx-2 text-gray-400" />
+                                                                        <span className="text-green-600 font-medium">{record.new_location}</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
                                                         {(record.operation_type === 'Maintenance_Sent' || record.operation_type === 'Maintenance_Completed') && (
                                                             <div className="flex flex-col space-y-1">
                                                                 <div className="flex items-center text-sm">
@@ -317,7 +420,10 @@ const Asset_history = () => {
                                                             <div className="flex items-center text-sm mt-2">
                                                                 <span className="text-gray-500 mr-2">Done by:</span>
                                                                 <span className="font-medium text-gray-700">
-                                                                    {record.performed_by.first_name} {record.performed_by.last_name}
+                                                                    {typeof record.performed_by === 'object' && record.performed_by !== null ?
+                                                                        `${record.performed_by.first_name || ''} ${record.performed_by.last_name || ''}`.trim() || 'Unknown Admin' :
+                                                                        `Admin ID: ${record.performed_by}`
+                                                                    }
                                                                 </span>
                                                             </div>
                                                         )}

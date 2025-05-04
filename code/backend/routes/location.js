@@ -6,8 +6,26 @@ const User = require('../models/user')
 
 location_router.get('/get_cities', authMiddleware, async (req, res) => {
     console.log("CHECKKK")
+
     try {
-        const locations = await Location.find({ parent_location: "ROOT" })
+        // fetch all location with parent_location = "ROOT"
+
+        var locations = await Location.find({ parent_location: "ROOT" })
+        console.log("Sexy ass",locations)
+        var sub_hq=[]
+        // find locations with parent locations as elements of locations
+        for (let i = 0; i < locations.length; i++) {
+            const location = locations[i];
+            const r2 = await Location.find({ parent_location: location._id.toString() });
+            console.log("Wet pussy",r2)
+            // console.log(sub_hq)
+            for (let j = 0; j < r2.length; j++) {
+                sub_hq.push(r2[j]);
+            }
+        }
+        for (let i=0;i<sub_hq.length;i++){
+            locations.push(sub_hq[i])
+        }
         const response = [
             {
                 _id: "ROOT",
@@ -16,7 +34,10 @@ location_router.get('/get_cities', authMiddleware, async (req, res) => {
             },
             ...locations
         ]
-        console.log(response)
+        // for (let i=0;i<sub_hq.length;i++){
+        //     response.push(sub_hq[i])
+        // }
+        // console.log(response)
         return res.status(200).json(response)
     }
     catch (error) {

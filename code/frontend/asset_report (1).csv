@@ -1,0 +1,7 @@
+﻿"Asset Name","Serial No","Description","Status","Assigned","Location","Category","Vendor","Voucher Number","Invoice ID","Quantity","Price","Total Price","Depreciation Rate (%)","Total Depreciation","Current Value","Date of Purchase","Issued By","Issued To"
+"testasset2","3","","Available","Not Issued","Test_Location2","Furniture","vhehehe","","","1","0","0","5.67","0","0","21/04/2025","",""
+"testasset2","2","","Available","Not Issued","Test_Location2","Furniture","vhehehe","","","1","0","0","5.67","0","0","21/04/2025","",""
+"testasset2","1","","Available","Not Issued","Test_Location2","Furniture","vhehehe","","","1","0","0","5.67","0","0","21/04/2025","",""
+"TestAsset6","2323232","","Available","Not Issued","Test_Location2","Laptop","vendor","","","1","0","0","4","0","0","21/04/2025","",""
+"qpp","1241","","Available","Not Issued","Test_Location2","demo_category","Bhupender Retails ","121212","","1","0","0","0","0","0","16/04/2025","Dimple",""
+"qpp","1243","","Available","Not Issued","Test_Location2","Furniture","Bhupender Retails ","","","1","0","0","5.67","0","0","21/04/2025","Dimple",""

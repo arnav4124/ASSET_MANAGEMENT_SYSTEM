@@ -197,11 +197,13 @@ const EditUser = () => {
             setIsSubmitting(true);
             console.log("Updating user location to:", newLocation);
             console.log("Selected assets:", assetSelections);
+            const user = JSON.parse(localStorage.getItem('user'));
+            const admin_id = user._id;
             const response = await axios.put(`http://localhost:3487/api/admin/edit_user/${userId}`, {
                 location: newLocation,
                 assetSelections,
                 // send admin id
-                admin_id: userData._id
+                admin_id: admin_id
             }, {
                 headers: {
                     token: localStorage.getItem("token")

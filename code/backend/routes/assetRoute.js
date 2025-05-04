@@ -24,11 +24,13 @@ const createAssetHistory = async (params) => {
 
     // For specific operations, generate automatic comments if not provided
     if (params.operation_type === 'Location_Changed' && !params.comments) {
-      comment = `Location changed from ${params.details?.previous_location || 'unknown'} to ${params.details?.new_location || 'unknown'}`;
+      comment = `Location changed from ${params.old_location || 'unknown'} to ${params.new_location || 'unknown'}`;
     } else if (params.operation_type === 'Assigned' && !params.comments) {
       comment = `Asset assigned to ${params.assignment_type === 'Project' ? 'project' : 'individual user'}`;
     } else if (params.operation_type === 'Unassigned' && !params.comments) {
       comment = params.details?.reason || 'Asset unassigned';
+    } else if (params.operation_type === 'Transferred' && !params.comments) {
+      comment = `Asset transferred${params.old_location && params.new_location ? ` from ${params.old_location} to ${params.new_location}` : ''}`;
     }
     // Create new history object with all provided fields
     const historyEntry = new History({
@@ -41,7 +43,9 @@ const createAssetHistory = async (params) => {
       // operation_time will default to current time if not provided
       operation_time: params.operation_time || Date.now(),
       comments: comment,
-      
+      // Add old_location and new_location fields if provided
+      old_location: params.old_location || '',
+      new_location: params.new_location || ''
     });
 
     // Save the history record
@@ -712,9 +716,9 @@ router.put('/:id', authMiddleware, upload.fields([
         operation_type: 'Location_Changed',
         assignment_type: null,
         issued_to: null,
-        comments: `Asset location changed from ${previousLocation} to ${newLocation}`,
         old_location: previousLocation,
-        new_location: newLocation
+        new_location: newLocation,
+        comments: `Asset location changed from ${previousLocation} to ${newLocation}`
       });
 
       console.log(`Asset unassigned and location changed: ${previousLocation} -> ${newLocation}`);
@@ -727,10 +731,8 @@ router.put('/:id', authMiddleware, upload.fields([
         operation_type: 'Location_Changed',
         assignment_type: null,
         issued_to: null,
-        // details: {
-        //   previous_location: previousLocation,
-        //   new_location: newLocation
-        // }
+        old_location: previousLocation,
+        new_location: newLocation,
         comments: `Asset location changed from ${previousLocation} to ${newLocation}`
       });
       console.log(`Location change recorded in history: ${previousLocation} -> ${newLocation}`);
@@ -929,7 +931,13 @@ router.get('/:id/history', authMiddleware, async (req, res) => {
     // Combine and sort all records by date (newest first)
     const allRecords = [...populatedHistoryRecords, ...formattedMaintenanceRecords]
       .sort((a, b) => new Date(b.operation_time) - new Date(a.operation_time));
-
+    // console.log("allRecords is NIdhish dancin",allRecords)
+    // write allRecords to a file
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = path.join(__dirname, 'allRecords.json');
+    
+    fs.writeFileSync('allRecords.json', JSON.stringify(allRecords, null, 2)); 
     res.status(200).json({
       success: true,
       asset: {
@@ -940,12 +948,126 @@ router.get('/:id/history', authMiddleware, async (req, res) => {
       },
       history: allRecords
     });
+
   } catch (error) {
     console.error('Error fetching asset history:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch asset history',
       message: error.message
+    });
+  }
+});
+
+// Transfer asset between locations
+router.post('/:id/transfer', authMiddleware, async (req, res) => {
+  try {
+    const assetId = req.params.id;
+    const {
+      admin,
+      newLocation,
+      oldLocation,
+      keepAssignment, // boolean to indicate if we should keep the current assignment
+      transferReason
+    } = req.body;
+
+    if (!admin || !newLocation || !oldLocation) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: admin ID, new location, and old location are required'
+      });
+    }
+
+    // Find the asset
+    const asset = await Asset.findById(assetId);
+    if (!asset) {
+      return res.status(404).json({
+        success: false,
+        error: 'Asset not found'
+      });
+    }
+
+    // Update the asset location
+    asset.Office = newLocation;
+
+    // Handle assignment based on the request
+    let assignmentChanged = false;
+    let previousAssignee = null;
+
+    if (!keepAssignment && asset.Issued_to) {
+      // If we need to unassign the asset
+      previousAssignee = asset.Issued_to;
+      asset.Issued_to = null;
+      asset.Issued_to_type = null;
+      asset.assignment_status = false;
+      asset.status = "Available";
+      assignmentChanged = true;
+
+      // Remove user-asset relationship if it exists
+      if (asset.Issued_to_type === "User") {
+        await UserAsset.findOneAndDelete({ asset_id: assetId, user_email: previousAssignee });
+      } else if (asset.Issued_to_type === "Project") {
+        await AssetProject.findOneAndDelete({ asset_id: assetId, project_id: previousAssignee });
+      }
+    }
+
+    // Save the asset changes
+    await asset.save();
+
+    // Create history record for the transfer
+    await createAssetHistory({
+      asset_id: assetId,
+      performed_by: admin,
+      operation_type: 'Transferred',
+      issued_to: keepAssignment ? asset.Issued_to : null,
+      assignment_type: keepAssignment && asset.Issued_to_type === "Project" ? "Project" : "Individual",
+      old_location: oldLocation,
+      new_location: newLocation,
+      comments: transferReason || `Asset transferred from ${oldLocation} to ${newLocation}`
+    });
+
+    // If assignment was changed, create an additional unassignment record
+    if (assignmentChanged && previousAssignee) {
+      let previousAssigneeName = "Unknown";
+
+      // Try to get the name of the previous assignee
+      try {
+        if (asset.Issued_to_type === "User") {
+          const user = await User.findById(previousAssignee);
+          if (user) {
+            previousAssigneeName = `${user.first_name} ${user.last_name}`;
+          }
+        } else if (asset.Issued_to_type === "Project") {
+          const project = await Project.findById(previousAssignee);
+          if (project) {
+            previousAssigneeName = project.Project_name;
+          }
+        }
+      } catch (error) {
+        console.error("Error getting previous assignee details:", error);
+      }
+
+      await createAssetHistory({
+        asset_id: assetId,
+        performed_by: admin,
+        operation_type: 'Unassigned',
+        issued_to: null,
+        assignment_type: null,
+        comments: `Asset unassigned from ${previousAssigneeName} due to location transfer`
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Asset transferred successfully',
+      asset
+    });
+  } catch (error) {
+    console.error('Error transferring asset:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error transferring asset',
+      details: error.message
     });
   }
 });

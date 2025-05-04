@@ -2,7 +2,7 @@ require("dotenv").config(); // this loads .env file if you need any env variable
 
 const bcrypt = require("bcryptjs");
 
-const plainPassword = "Admin123"; // change this to your desired password
+const plainPassword = "max22"; // change this to your desired password
 
 const saltRounds = 10;
 
