@@ -260,8 +260,8 @@ admin_router.put('/edit_user/:userId', authMiddleware, async (req, res) => {
 
         const oldLocation = user.location;
         const newLocation = location;
-       console.log("old location",oldLocation)
-       console.log("new location",newLocation)
+        console.log("old location", oldLocation)
+        console.log("new location", newLocation)
         // Update the user's location
         user.location = newLocation;
         await user.save();
@@ -529,7 +529,7 @@ admin_router.post('/assets/maintenance', authMiddleware, async (req, res) => {
 
         // Get admin ID from token or from request body
         const adminId = req.user?._id || req.body.admin_id;
-        console.log("date of sending",date_of_sending)
+        console.log("date of sending", date_of_sending)
         if (!adminId) {
             return res.status(400).json({
                 success: false,
@@ -799,7 +799,64 @@ admin_router.delete('/assets/maintenance/:id', authMiddleware, async (req, res) 
 // Get assets with pending maintenance
 admin_router.get('/assets/pending-maintenance', authMiddleware, async (req, res) => {
     try {
-        // Find pending maintenance records
+        // Get current admin's location from the token
+        const adminLocation = req.user.location;
+        console.log("Admin location for pending maintenance:", adminLocation);
+
+        // Get the location document for the admin's location
+        const adminLocationDoc = await Location.findOne({ location_name: adminLocation });
+
+        if (!adminLocationDoc) {
+            console.log(`Admin location document not found for ${adminLocation}`);
+            return res.status(404).json({
+                success: false,
+                message: "Admin location not found"
+            });
+        }
+
+        // Try different query methods to ensure we capture all child locations
+        const childLocationsObjectId = await Location.find({ parent_location: adminLocationDoc._id });
+        const childLocationsString = await Location.find({ parent_location: adminLocationDoc._id.toString() });
+
+        // Combine and deduplicate by ID
+        const childLocationsMap = new Map();
+        [...childLocationsObjectId, ...childLocationsString].forEach(loc => {
+            if (!childLocationsMap.has(loc._id.toString())) {
+                childLocationsMap.set(loc._id.toString(), loc);
+            }
+        });
+
+        const childLocations = Array.from(childLocationsMap.values());
+        console.log(`Found ${childLocations.length} child locations`);
+
+        // Get grandchild locations with the same approach
+        let allGrandchildLocationsMap = new Map();
+
+        for (const childLocation of childLocations) {
+            // Try both ObjectId and string approaches for grandchildren too
+            const grandchildObjectId = await Location.find({ parent_location: childLocation._id });
+            const grandchildString = await Location.find({ parent_location: childLocation._id.toString() });
+
+            // Merge both results, deduplicate
+            [...grandchildObjectId, ...grandchildString].forEach(loc => {
+                if (!allGrandchildLocationsMap.has(loc._id.toString())) {
+                    allGrandchildLocationsMap.set(loc._id.toString(), loc);
+                }
+            });
+        }
+
+        const allGrandchildLocations = Array.from(allGrandchildLocationsMap.values());
+
+        // Collect all location names for the query
+        const locationNames = [
+            adminLocation,
+            ...childLocations.map(loc => loc.location_name),
+            ...allGrandchildLocations.map(loc => loc.location_name)
+        ];
+
+        console.log(`Filtering maintenance records for locations: ${locationNames.join(', ')}`);
+
+        // Find pending maintenance records for assets in admin's location hierarchy
         const maintenanceRecords = await Maintenance.find({ status: 'Pending' })
             .populate({
                 path: 'asset_id',
@@ -807,8 +864,15 @@ admin_router.get('/assets/pending-maintenance', authMiddleware, async (req, res)
             })
             .sort({ expected_date_of_return: 1 });
 
+        // Filter records to only include assets within admin's location hierarchy
+        const filteredRecords = maintenanceRecords.filter(record =>
+            record.asset_id && locationNames.includes(record.asset_id.Office)
+        );
+
+        console.log(`Found ${filteredRecords.length} maintenance records in the filtered locations`);
+
         // Format the response
-        const formattedRecords = maintenanceRecords.map(record => ({
+        const formattedRecords = filteredRecords.map(record => ({
             maintenance_id: record._id,
             asset_id: record.asset_id?._id || null,
             asset_name: record.asset_id?.name || 'Unknown Asset',
@@ -839,16 +903,72 @@ admin_router.get('/assets/pending-maintenance', authMiddleware, async (req, res)
 // Get assets with warranty dates approaching in 5 days or already expired
 admin_router.get('/assets/approaching-warranty', authMiddleware, async (req, res) => {
     try {
+        // Get current admin's location from the token
+        const adminLocation = req.user.location;
+        console.log("Admin location for warranty check:", adminLocation);
+
+        // Get the location document for the admin's location
+        const adminLocationDoc = await Location.findOne({ location_name: adminLocation });
+
+        if (!adminLocationDoc) {
+            console.log(`Admin location document not found for ${adminLocation}`);
+            return res.status(404).json({
+                success: false,
+                message: "Admin location not found"
+            });
+        }
+
+        // Try different query methods to ensure we capture all child locations
+        const childLocationsObjectId = await Location.find({ parent_location: adminLocationDoc._id });
+        const childLocationsString = await Location.find({ parent_location: adminLocationDoc._id.toString() });
+
+        // Combine and deduplicate by ID
+        const childLocationsMap = new Map();
+        [...childLocationsObjectId, ...childLocationsString].forEach(loc => {
+            if (!childLocationsMap.has(loc._id.toString())) {
+                childLocationsMap.set(loc._id.toString(), loc);
+            }
+        });
+
+        const childLocations = Array.from(childLocationsMap.values());
+
+        // Get grandchild locations with the same approach
+        let allGrandchildLocationsMap = new Map();
+
+        for (const childLocation of childLocations) {
+            // Try both ObjectId and string approaches for grandchildren too
+            const grandchildObjectId = await Location.find({ parent_location: childLocation._id });
+            const grandchildString = await Location.find({ parent_location: childLocation._id.toString() });
+
+            // Merge both results, deduplicate
+            [...grandchildObjectId, ...grandchildString].forEach(loc => {
+                if (!allGrandchildLocationsMap.has(loc._id.toString())) {
+                    allGrandchildLocationsMap.set(loc._id.toString(), loc);
+                }
+            });
+        }
+
+        const allGrandchildLocations = Array.from(allGrandchildLocationsMap.values());
+
+        // Collect all location names for the query
+        const locationNames = [
+            adminLocation,
+            ...childLocations.map(loc => loc.location_name),
+            ...allGrandchildLocations.map(loc => loc.location_name)
+        ];
+
         const today = new Date();
         const fiveDaysLater = new Date();
-        fiveDaysLater.setDate(today.getDate() + 5);
+        fiveDaysLater.setDate(today.getDate() + 30);
 
-        // Find assets where warranty date is expired or within the next 5 days
+        // Find assets where warranty date is expired or within the next 30 days
+        // AND asset's Office is in the admin's location hierarchy
         const assets = await Asset.find({
-            warranty_date: {
-                $lte: fiveDaysLater
-            }
+            warranty_date: { $lte: fiveDaysLater },
+            Office: { $in: locationNames }
         }).select('name Serial_number Office price Sticker_seq warranty_date status');
+
+        console.log(`Found ${assets.length} assets with approaching warranty in the admin's locations`);
 
         // Format the response
         const formattedAssets = assets.map(asset => ({
@@ -881,16 +1001,72 @@ admin_router.get('/assets/approaching-warranty', authMiddleware, async (req, res
 // Get assets with insurance dates approaching in 5 days or already expired
 admin_router.get('/assets/approaching-insurance', authMiddleware, async (req, res) => {
     try {
+        // Get current admin's location from the token
+        const adminLocation = req.user.location;
+        console.log("Admin location for insurance check:", adminLocation);
+
+        // Get the location document for the admin's location
+        const adminLocationDoc = await Location.findOne({ location_name: adminLocation });
+
+        if (!adminLocationDoc) {
+            console.log(`Admin location document not found for ${adminLocation}`);
+            return res.status(404).json({
+                success: false,
+                message: "Admin location not found"
+            });
+        }
+
+        // Try different query methods to ensure we capture all child locations
+        const childLocationsObjectId = await Location.find({ parent_location: adminLocationDoc._id });
+        const childLocationsString = await Location.find({ parent_location: adminLocationDoc._id.toString() });
+
+        // Combine and deduplicate by ID
+        const childLocationsMap = new Map();
+        [...childLocationsObjectId, ...childLocationsString].forEach(loc => {
+            if (!childLocationsMap.has(loc._id.toString())) {
+                childLocationsMap.set(loc._id.toString(), loc);
+            }
+        });
+
+        const childLocations = Array.from(childLocationsMap.values());
+
+        // Get grandchild locations with the same approach
+        let allGrandchildLocationsMap = new Map();
+
+        for (const childLocation of childLocations) {
+            // Try both ObjectId and string approaches for grandchildren too
+            const grandchildObjectId = await Location.find({ parent_location: childLocation._id });
+            const grandchildString = await Location.find({ parent_location: childLocation._id.toString() });
+
+            // Merge both results, deduplicate
+            [...grandchildObjectId, ...grandchildString].forEach(loc => {
+                if (!allGrandchildLocationsMap.has(loc._id.toString())) {
+                    allGrandchildLocationsMap.set(loc._id.toString(), loc);
+                }
+            });
+        }
+
+        const allGrandchildLocations = Array.from(allGrandchildLocationsMap.values());
+
+        // Collect all location names for the query
+        const locationNames = [
+            adminLocation,
+            ...childLocations.map(loc => loc.location_name),
+            ...allGrandchildLocations.map(loc => loc.location_name)
+        ];
+
         const today = new Date();
         const fiveDaysLater = new Date();
-        fiveDaysLater.setDate(today.getDate() + 5);
+        fiveDaysLater.setDate(today.getDate() + 30);
 
-        // Find assets where insurance date is expired or within the next 5 days
+        // Find assets where insurance date is expired or within the next 30 days
+        // AND asset's Office is in the admin's location hierarchy
         const assets = await Asset.find({
-            insurance_date: {
-                $lte: fiveDaysLater
-            }
+            insurance_date: { $lte: fiveDaysLater },
+            Office: { $in: locationNames }
         }).select('name Serial_number Office price Sticker_seq insurance_date status');
+
+        console.log(`Found ${assets.length} assets with approaching insurance in the admin's locations`);
 
         // Format the response
         const formattedAssets = assets.map(asset => ({
