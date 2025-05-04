@@ -12,6 +12,7 @@ const authMiddleware = require('../middleware/auth');
 const Invoice = require('../models/invoice')
 const History = require('../models/history')
 const User = require('../models/user')
+const Project = require('../models/project')
 // maintenance model
 const Maintenance = require('../models/maintenace')
 const createAssetHistory = async (params) => {
@@ -449,6 +450,7 @@ router.post("/assign_asset/:assetId", async (req, res) => {
       return res.status(200).json(newUserAsset);
     } else {
       // Get project name for history entry
+      console.log("assigning toproject")
       const project = await Project.findById(assignId);
       const projectName = project ? project.Project_name : assignId;
 
@@ -930,6 +932,7 @@ router.get('/vendors/unique', authMiddleware, async (req, res) => {
 router.get('/:id/history', authMiddleware, async (req, res) => {
   try {
     const assetId = req.params.id;
+    console.log("Asset ID for history:", assetId);
 
     // Get asset details
     const asset = await Asset.findById(assetId);
@@ -939,6 +942,7 @@ router.get('/:id/history', authMiddleware, async (req, res) => {
         error: 'Asset not found'
       });
     }
+    console.log("Asset found:", asset);
 
     // Get history records without populating issued_to yet
     const historyRecords = await History.find({ asset_id: assetId })
