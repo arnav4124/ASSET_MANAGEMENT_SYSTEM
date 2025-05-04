@@ -335,9 +335,11 @@ const Project_add = () => {
                   {managerSearchTerm && !selectedManager && (
                     <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
                       {users
-                        .filter(user =>
-                          user.email.toLowerCase().includes(managerSearchTerm.toLowerCase())
-                        )
+                        .filter(user => {
+                          const matchesEmail = user.email.toLowerCase().includes(managerSearchTerm.toLowerCase());
+                          const validLocation = selectedLocations.length === 0 || selectedLocations.includes(user.location);
+                          return matchesEmail && validLocation;
+                        })
                         .map((user, index) => (
                           <div
                             key={index}
@@ -377,10 +379,12 @@ const Project_add = () => {
                   {participantSearchTerm && (
                     <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
                       {users
-                        .filter(user =>
-                          user.email.toLowerCase().includes(participantSearchTerm.toLowerCase()) &&
-                          !selectedParticipants.some(p => p.email === user.email)
-                        )
+                        .filter(user => {
+                          const matchesEmail = user.email.toLowerCase().includes(participantSearchTerm.toLowerCase());
+                          const notAlreadySelected = !selectedParticipants.some(p => p.email.toLowerCase() === user.email.toLowerCase());
+                          const validLocation = selectedLocations.length === 0 || selectedLocations.includes(user.location);
+                          return matchesEmail && notAlreadySelected && validLocation;
+                        })
                         .map((user, index) => (
                           <div
                             key={index}

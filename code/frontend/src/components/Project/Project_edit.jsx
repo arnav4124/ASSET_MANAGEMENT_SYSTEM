@@ -213,25 +213,6 @@ const ProjectEdit = () => {
     }
   };
 
-  const handleUserSearch = (query) => {
-    if (!query || query.trim() === '') {
-      // If query is empty, show all available users
-      setSearchResults(availableUsers);
-      return;
-    }
-
-    // Filter users locally based on name or email
-    const lowercaseQuery = query.toLowerCase();
-    const filteredUsers = availableUsers.filter(user =>
-      user.first_name?.toLowerCase().includes(lowercaseQuery) ||
-      user.last_name?.toLowerCase().includes(lowercaseQuery) ||
-      user.email?.toLowerCase().includes(lowercaseQuery)
-    );
-
-    console.log(`Filtered ${filteredUsers.length} users from ${availableUsers.length} available users`);
-    setSearchResults(filteredUsers);
-  };
-
   const handleAssetSearch = (query) => {
     if (!query || query.trim() === '') {
       // If query is empty, show all available assets with status 'Available'
@@ -255,6 +236,7 @@ const ProjectEdit = () => {
     console.log(`Filtered ${filteredAssets.length} assets from ${availableAssets.length} available assets`);
     setAssetSearchResults(filteredAssets);
   };
+  
 
   // Initialize search results when showing add participant form
   useEffect(() => {
@@ -316,7 +298,6 @@ const ProjectEdit = () => {
   };
 
   const handleAddAssets = async () => {
-    //add selected assets to project
     try {
       const response = await axios.post(
         `http://localhost:3487/api/projects/${id}/assets`,
@@ -342,9 +323,11 @@ const ProjectEdit = () => {
         setAssetSearchResults([]);
 
         alert('Assets added successfully!');
+
+        // Navigate to the assets view page
+        navigate('/admin/projects/view');
       }
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Error adding assets:', error);
       alert('Error adding assets');
     }
