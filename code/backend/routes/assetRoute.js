@@ -275,13 +275,60 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
 // GET all assets with populated Issued_by and Issued_to fields
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const assets = await Asset.find({})
-      .populate('Issued_by', 'first_name last_name email')
-      .populate('Issued_to', 'first_name last_name email Project_name')
-      .populate('category', 'name');
+    const { adminLocation } = req.query;
+    let assets;
+    
+    // If adminLocation parameter is provided, filter assets by location hierarchy
+    if (adminLocation) {
+      // Get the location document for the admin's location
+      const Location = require('../models/location');
+      const adminLocationDoc = await Location.findOne({ location_name: adminLocation });
+      
+      if (!adminLocationDoc) {
+        // If admin location not found in the DB, return regular unfiltered results
+        assets = await Asset.find({})
+          .populate('Issued_by', 'first_name last_name email')
+          .populate('Issued_to', 'first_name last_name email Project_name')
+          .populate('category', 'name');
+          
+        return res.status(200).json(assets);
+      }
+
+      // Get child locations
+      const childLocations = await Location.find({ parent_location: adminLocationDoc._id });
+      
+      // Get grandchild locations
+      let allGrandchildLocations = [];
+      for (const childLocation of childLocations) {
+        const grandchildLocations = await Location.find({ parent_location: childLocation._id });
+        allGrandchildLocations = [...allGrandchildLocations, ...grandchildLocations];
+      }
+      
+      // Collect all location names for the query
+      const locationNames = [
+        adminLocation, 
+        ...childLocations.map(loc => loc.location_name),
+        ...allGrandchildLocations.map(loc => loc.location_name)
+      ];
+
+      console.log(`Filtering assets for locations: ${locationNames.join(', ')}`);
+      
+      // Find assets where Office is in the list of location names
+      assets = await Asset.find({ Office: { $in: locationNames } })
+        .populate('Issued_by', 'first_name last_name email')
+        .populate('Issued_to', 'first_name last_name email Project_name')
+        .populate('category', 'name');
+    } else {
+      // If no adminLocation parameter, return all assets (original behavior)
+      assets = await Asset.find({})
+        .populate('Issued_by', 'first_name last_name email')
+        .populate('Issued_to', 'first_name last_name email Project_name')
+        .populate('category', 'name');
+    }
+    
     res.status(200).json(assets);
-    //console.log('Assets:', assets);
   } catch (error) {
+    console.error('Error fetching assets:', error);
     res.status(500).json({ error: error.message });
   }
 });
