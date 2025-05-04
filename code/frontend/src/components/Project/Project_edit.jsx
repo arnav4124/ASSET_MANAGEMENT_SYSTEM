@@ -150,19 +150,16 @@ const ProjectEdit = () => {
 
   const fetchAvailableAssets = async () => {
     try {
-      // Get all assets at once instead of using search endpoint
-      const response = await axios.get('http://localhost:3487/api/projects/assets', {
+      const response = await axios.get(`http://localhost:3487/api/assets`, {
         headers: { token: localStorage.getItem('token') }
       });
       setAvailableAssets(response.data);
-      console.log(`Fetched ${response.data.length} available assets`);
-
-      // Initialize asset search results with all assets
       setAssetSearchResults(response.data);
-    } catch (error) {
-      console.error('Error fetching assets:', error);
-      alert('Error loading assets. Please try again.');
     }
+    catch (error) {
+      console.error('Error fetching assets:', error);
+      alert('Error fetching assets');
+    }   
   };
 
   useEffect(() => {
@@ -237,20 +234,24 @@ const ProjectEdit = () => {
 
   const handleAssetSearch = (query) => {
     if (!query || query.trim() === '') {
-      // If query is empty, show all available assets
-      setAssetSearchResults(availableAssets);
+      // If query is empty, show all available assets with status 'Available'
+      const filteredAssets = availableAssets.filter(asset => asset.status === 'Available');
+      setAssetSearchResults(filteredAssets);
       return;
     }
-
-    // Filter assets locally
+  
+    // Filter assets locally based on name, description, category, or location
     const lowercaseQuery = query.toLowerCase();
     const filteredAssets = availableAssets.filter(asset =>
-      asset.name?.toLowerCase().includes(lowercaseQuery) ||
-      asset.description?.toLowerCase().includes(lowercaseQuery) ||
-      asset.Office?.toLowerCase().includes(lowercaseQuery) ||
-      asset.category?.name?.toLowerCase().includes(lowercaseQuery)
+      asset.status === 'Available' && // Ensure only available assets are shown
+      (
+        asset.name?.toLowerCase().includes(lowercaseQuery) ||
+        asset.description?.toLowerCase().includes(lowercaseQuery) ||
+        asset.Office?.toLowerCase().includes(lowercaseQuery) ||
+        asset.category?.name?.toLowerCase().includes(lowercaseQuery)
+      )
     );
-
+  
     console.log(`Filtered ${filteredAssets.length} assets from ${availableAssets.length} available assets`);
     setAssetSearchResults(filteredAssets);
   };
@@ -315,6 +316,7 @@ const ProjectEdit = () => {
   };
 
   const handleAddAssets = async () => {
+    //add selected assets to project
     try {
       const response = await axios.post(
         `http://localhost:3487/api/projects/${id}/assets`,
@@ -340,11 +342,9 @@ const ProjectEdit = () => {
         setAssetSearchResults([]);
 
         alert('Assets added successfully!');
-
-        // Navigate to the assets view page
-        navigate('/admin/projects/view');
       }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error adding assets:', error);
       alert('Error adding assets');
     }
