@@ -251,16 +251,16 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
         newAsset.Img = imgBuffer;
       }
 
-      if(imgUrl) {
+      if (imgUrl) {
         newAsset.Img_url = imgUrl;
       }
 
       console.log("Img URL:", imgUrl);
       console.log("invoice url:", req.files.invoicePdf[0].path);
       // set invoice URL if available
-        
 
-      
+
+
       // set additional files buffer if available
       if (additionalFilesBuffer) {
         newAsset.additional_files = additionalFilesBuffer;
@@ -305,14 +305,14 @@ router.get('/', authMiddleware, async (req, res) => {
   try {
     const { adminLocation } = req.query;
     let assets;
-    
+
     // If adminLocation parameter is provided, filter assets by location hierarchy
     if (adminLocation) {
       // Get the location document for the admin's location
       console.log("Admin location:", adminLocation);
       const Location = require('../models/location');
       const adminLocationDoc = await Location.findOne({ location_name: adminLocation });
-      
+
       if (!adminLocationDoc) {
         console.log(`Admin location document not found for ${adminLocation}`);
         // If admin location not found in the DB, return regular unfiltered results
@@ -320,7 +320,7 @@ router.get('/', authMiddleware, async (req, res) => {
           .populate('Issued_by', 'first_name last_name email')
           .populate('Issued_to', 'first_name last_name email Project_name')
           .populate('category', 'name');
-          
+
         return res.status(200).json(assets);
       }
 
@@ -330,7 +330,7 @@ router.get('/', authMiddleware, async (req, res) => {
       // Some implementations store ObjectIds as strings, others as actual ObjectIds
       const childLocationsObjectId = await Location.find({ parent_location: adminLocationDoc._id });
       const childLocationsString = await Location.find({ parent_location: adminLocationDoc._id.toString() });
-      
+
       // Combine and deduplicate by ID
       const childLocationsMap = new Map();
       [...childLocationsObjectId, ...childLocationsString].forEach(loc => {
@@ -339,19 +339,19 @@ router.get('/', authMiddleware, async (req, res) => {
         }
       });
       const childLocations = Array.from(childLocationsMap.values());
-      
+
       console.log(`Found ${childLocations.length} child locations`);
-      
+
       // Get grandchild locations with the same approach
       let allGrandchildLocationsMap = new Map();
-      
+
       for (const childLocation of childLocations) {
         console.log(`Finding grandchildren for location: ${childLocation.location_name}, ID: ${childLocation._id}`);
-        
+
         // Try both ObjectId and string approaches for grandchildren too
         const grandchildObjectId = await Location.find({ parent_location: childLocation._id });
         const grandchildString = await Location.find({ parent_location: childLocation._id.toString() });
-        
+
         // Merge both results, deduplicate
         [...grandchildObjectId, ...grandchildString].forEach(loc => {
           if (!allGrandchildLocationsMap.has(loc._id.toString())) {
@@ -359,25 +359,25 @@ router.get('/', authMiddleware, async (req, res) => {
           }
         });
       }
-      
+
       const allGrandchildLocations = Array.from(allGrandchildLocationsMap.values());
       console.log(`Found ${allGrandchildLocations.length} grandchild locations`);
-      
+
       // Collect all location names for the query
       const locationNames = [
-        adminLocation, 
+        adminLocation,
         ...childLocations.map(loc => loc.location_name),
         ...allGrandchildLocations.map(loc => loc.location_name)
       ];
 
       console.log(`Filtering assets for locations: ${locationNames.join(', ')}`);
-      
+
       // Find assets where Office is in the list of location names
       assets = await Asset.find({ Office: { $in: locationNames } })
         .populate('Issued_by', 'first_name last_name email')
         .populate('Issued_to', 'first_name last_name email Project_name')
         .populate('category', 'name');
-        
+
       console.log(`Found ${assets.length} assets in the filtered locations`);
     } else {
       // If no adminLocation parameter, return all assets (original behavior)
@@ -386,7 +386,7 @@ router.get('/', authMiddleware, async (req, res) => {
         .populate('Issued_to', 'first_name last_name email Project_name')
         .populate('category', 'name');
     }
-    
+
     res.status(200).json(assets);
   } catch (error) {
     console.error('Error fetching assets:', error);
@@ -855,8 +855,20 @@ router.put('/:id', authMiddleware, upload.fields([
 // Get unique brand names from all assets
 router.get('/brands/unique', authMiddleware, async (req, res) => {
   try {
-    const uniqueBrands = await Asset.distinct('brand_name');
-    res.status(200).json({ success: true, brands: uniqueBrands.filter(brand => brand) });
+    // Get unique brand_name values
+    const brandNameValues = await Asset.distinct('brand_name');
+
+    // Get unique brand values (since some assets might use this field instead)
+    const brandValues = await Asset.distinct('brand');
+
+    // Combine both arrays, filter out empty values, and remove duplicates
+    const allBrands = [...brandNameValues, ...brandValues]
+      .filter(brand => brand) // Remove null, undefined, or empty strings
+      .filter((brand, index, self) => self.indexOf(brand) === index); // Remove duplicates
+
+    console.log('Found unique brands:', allBrands);
+
+    res.status(200).json({ success: true, brands: allBrands });
   } catch (error) {
     console.error('Error fetching unique brands:', error);
     res.status(500).json({
@@ -1040,8 +1052,8 @@ router.get('/:id/history', authMiddleware, async (req, res) => {
     const fs = require('fs');
     const path = require('path');
     const filePath = path.join(__dirname, 'allRecords.json');
-    
-    fs.writeFileSync('allRecords.json', JSON.stringify(allRecords, null, 2)); 
+
+    fs.writeFileSync('allRecords.json', JSON.stringify(allRecords, null, 2));
     res.status(200).json({
       success: true,
       asset: {
