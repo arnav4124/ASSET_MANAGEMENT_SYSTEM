@@ -1,34 +1,20 @@
 [
   {
-    "_id": "68171f82d0a25e4d3ba9e0a5",
-    "asset_id": "68171f82d0a25e4d3ba9e0a2",
+    "_id": "68175451ac4bfe9250d9cbb3",
+    "asset_id": "68175451ac4bfe9250d9cbac",
     "performed_by": {
-      "_id": "68051ee7142ef33c18fd78f2",
-      "first_name": "Admin",
-      "last_name": "First",
-      "email": "admin@gmail.com"
+      "_id": "6817066ecbd9fc7c49b4e20d",
+      "first_name": "jain",
+      "last_name": "nidhish",
+      "email": "jainnidhish31@gmail.com"
     },
     "assignment_type": null,
     "issued_to": null,
     "operation_type": "Added",
-    "operation_time": "2025-05-04T08:04:18.818Z",
-    "comments": "Asset added by admin Admin First",
+    "operation_time": "2025-05-04T11:49:37.134Z",
+    "comments": "Asset added by admin jain nidhish",
     "old_location": "",
     "new_location": "",
     "__v": 0
-  },
-  {
-    "_id": "maintenance_send_681748da232551606bc585ea",
-    "asset_id": "68171f82d0a25e4d3ba9e0a2",
-    "operation_type": "Maintenance_Sent",
-    "operation_time": "2025-05-04T00:00:00.000Z",
-    "maintenance_type": "Repair",
-    "vendor_name": "jc vale bhaiya",
-    "vendor_email": "jc@gmail.com",
-    "expected_return_date": "2025-05-13T00:00:00.000Z",
-    "maintenance_cost": 3,
-    "maintenance_id": "681748da232551606bc585ea",
-    "description": "fwefewf",
-    "comments": "Asset sent for repair to jc vale bhaiya"
   }
 ]
