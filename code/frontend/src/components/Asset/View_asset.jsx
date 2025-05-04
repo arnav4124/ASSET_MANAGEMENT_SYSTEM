@@ -31,12 +31,14 @@ const ViewAsset = () => {
 
     const fetchAssets = async () => {
       try {
-        const response = await fetch("http://localhost:3487/api/assets", {
+        // Send admin's location as a query parameter for location-based filtering
+        const adminLocation = currentUser.location;
+        const response = await fetch(`http://localhost:3487/api/assets?adminLocation=${encodeURIComponent(adminLocation)}`, {
           headers: { token }
         });
         const data = await response.json();
-        // Filter out inactive assets before setting state
         const activeAssets = data.filter(asset => asset.status !== "Inactive");
+        console.log("Fetched assets:", activeAssets);
         setAssets(activeAssets);
       } catch (err) {
         console.error(err);

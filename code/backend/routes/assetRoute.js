@@ -279,13 +279,93 @@ router.post('/add-asset', upload.fields([{ name: 'Img', maxCount: 1 }, { name: '
 // GET all assets with populated Issued_by and Issued_to fields
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const assets = await Asset.find({})
-      .populate('Issued_by', 'first_name last_name email')
-      .populate('Issued_to', 'first_name last_name email Project_name')
-      .populate('category', 'name');
+    const { adminLocation } = req.query;
+    let assets;
+    
+    // If adminLocation parameter is provided, filter assets by location hierarchy
+    if (adminLocation) {
+      // Get the location document for the admin's location
+      console.log("Admin location:", adminLocation);
+      const Location = require('../models/location');
+      const adminLocationDoc = await Location.findOne({ location_name: adminLocation });
+      
+      if (!adminLocationDoc) {
+        console.log(`Admin location document not found for ${adminLocation}`);
+        // If admin location not found in the DB, return regular unfiltered results
+        assets = await Asset.find({})
+          .populate('Issued_by', 'first_name last_name email')
+          .populate('Issued_to', 'first_name last_name email Project_name')
+          .populate('category', 'name');
+          
+        return res.status(200).json(assets);
+      }
+
+      console.log(`Admin location found: ${adminLocationDoc.location_name}, ID: ${adminLocationDoc._id}`);
+
+      // Try different query methods to ensure we capture all child locations
+      // Some implementations store ObjectIds as strings, others as actual ObjectIds
+      const childLocationsObjectId = await Location.find({ parent_location: adminLocationDoc._id });
+      const childLocationsString = await Location.find({ parent_location: adminLocationDoc._id.toString() });
+      
+      // Combine and deduplicate by ID
+      const childLocationsMap = new Map();
+      [...childLocationsObjectId, ...childLocationsString].forEach(loc => {
+        if (!childLocationsMap.has(loc._id.toString())) {
+          childLocationsMap.set(loc._id.toString(), loc);
+        }
+      });
+      const childLocations = Array.from(childLocationsMap.values());
+      
+      console.log(`Found ${childLocations.length} child locations`);
+      
+      // Get grandchild locations with the same approach
+      let allGrandchildLocationsMap = new Map();
+      
+      for (const childLocation of childLocations) {
+        console.log(`Finding grandchildren for location: ${childLocation.location_name}, ID: ${childLocation._id}`);
+        
+        // Try both ObjectId and string approaches for grandchildren too
+        const grandchildObjectId = await Location.find({ parent_location: childLocation._id });
+        const grandchildString = await Location.find({ parent_location: childLocation._id.toString() });
+        
+        // Merge both results, deduplicate
+        [...grandchildObjectId, ...grandchildString].forEach(loc => {
+          if (!allGrandchildLocationsMap.has(loc._id.toString())) {
+            allGrandchildLocationsMap.set(loc._id.toString(), loc);
+          }
+        });
+      }
+      
+      const allGrandchildLocations = Array.from(allGrandchildLocationsMap.values());
+      console.log(`Found ${allGrandchildLocations.length} grandchild locations`);
+      
+      // Collect all location names for the query
+      const locationNames = [
+        adminLocation, 
+        ...childLocations.map(loc => loc.location_name),
+        ...allGrandchildLocations.map(loc => loc.location_name)
+      ];
+
+      console.log(`Filtering assets for locations: ${locationNames.join(', ')}`);
+      
+      // Find assets where Office is in the list of location names
+      assets = await Asset.find({ Office: { $in: locationNames } })
+        .populate('Issued_by', 'first_name last_name email')
+        .populate('Issued_to', 'first_name last_name email Project_name')
+        .populate('category', 'name');
+        
+      console.log(`Found ${assets.length} assets in the filtered locations`);
+    } else {
+      // If no adminLocation parameter, return all assets (original behavior)
+      assets = await Asset.find({})
+        .populate('Issued_by', 'first_name last_name email')
+        .populate('Issued_to', 'first_name last_name email Project_name')
+        .populate('category', 'name');
+    }
+    
     res.status(200).json(assets);
-    //console.log('Assets:', assets);
   } catch (error) {
+    console.error('Error fetching assets:', error);
     res.status(500).json({ error: error.message });
   }
 });
