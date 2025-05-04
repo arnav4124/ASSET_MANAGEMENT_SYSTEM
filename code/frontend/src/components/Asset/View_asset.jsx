@@ -37,8 +37,8 @@ const ViewAsset = () => {
           headers: { token }
         });
         const data = await response.json();
-        // Filter out inactive assets before setting state
         const activeAssets = data.filter(asset => asset.status !== "Inactive");
+        console.log("Fetched assets:", activeAssets);
         setAssets(activeAssets);
       } catch (err) {
         console.error(err);

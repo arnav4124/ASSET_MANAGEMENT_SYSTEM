@@ -73,7 +73,8 @@ const Asset_add = () => {
         });
         setCategories(categoriesRes.data);
 
-        const officesRes = await axios.get("http://localhost:3487/api/locations?type=office", {
+        // Use the new admin-hierarchy endpoint to get admin's location and all locations in their hierarchy
+        const officesRes = await axios.get("http://localhost:3487/api/locations/admin-hierarchy", {
           withCredentials: true,
           headers: { token: localStorage.getItem("token") }
         });

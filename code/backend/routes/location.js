@@ -141,6 +141,101 @@ location_router.get("/admin-locations", authMiddleware, async (req, res) => {
     }
 });
 
+// New endpoint for Asset_Add.jsx that includes admin's location plus their hierarchy
+location_router.get("/admin-hierarchy", authMiddleware, async (req, res) => {
+    try {
+        // Find current user
+        const currentUser = await User.findById(req.user.id);
+        console.log("Current User:", currentUser);
+        
+        if (!currentUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Verify admin role
+        if (currentUser.role !== "Admin") {
+            return res.status(403).json({ message: "Forbidden. Only Admin can access this." });
+        }
+
+        console.log("Admin Location Name:", currentUser.location);
+
+        // Find admin's location document
+        const adminLocation = await Location.findOne({ location_name: currentUser.location });
+        console.log("Admin Location Document:", adminLocation);
+        
+        if (!adminLocation) {
+            return res.status(404).json({
+                message: `No matching location found for ${currentUser.location}`
+            });
+        }
+
+        // Get child locations - ensure we're using string comparison for parent_location
+        console.log("Looking for children with parent_location:", adminLocation._id.toString());
+        const childLocations = await Location.find({ 
+            parent_location: adminLocation._id.toString() 
+        });
+        console.log(`Found ${childLocations.length} child locations:`, childLocations);
+        
+        // If no children found, try alternate query formats
+        if (childLocations.length === 0) {
+            console.log("No children found with string ID, trying ObjectId...");
+            const childLocationsAlt = await Location.find({ 
+                parent_location: adminLocation._id 
+            });
+            console.log(`Found ${childLocationsAlt.length} child locations with ObjectId:`, childLocationsAlt);
+            
+            // Use whichever query returned results
+            const effectiveChildLocations = childLocationsAlt.length > 0 ? childLocationsAlt : childLocations;
+            
+            // Get grandchild locations
+            let allGrandchildLocations = [];
+            for (const childLocation of effectiveChildLocations) {
+                console.log("Looking for grandchildren of:", childLocation.location_name);
+                const grandchildLocations = await Location.find({ parent_location: childLocation._id.toString() });
+                if (grandchildLocations.length === 0) {
+                    console.log("Trying ObjectId for grandchildren...");
+                    const grandchildLocationsAlt = await Location.find({ parent_location: childLocation._id });
+                    allGrandchildLocations = [...allGrandchildLocations, ...grandchildLocationsAlt];
+                } else {
+                    allGrandchildLocations = [...allGrandchildLocations, ...grandchildLocations];
+                }
+            }
+            console.log(`Found ${allGrandchildLocations.length} grandchild locations`);
+            
+            // Return the admin location plus child and grandchild locations
+            const hierarchyLocations = [
+                adminLocation, 
+                ...effectiveChildLocations, 
+                ...allGrandchildLocations
+            ];
+            
+            console.log(`Returning ${hierarchyLocations.length} total locations`);
+            return res.status(200).json(hierarchyLocations);
+        }
+        
+        // Original flow if children were found with string ID
+        // Get grandchild locations
+        let allGrandchildLocations = [];
+        for (const childLocation of childLocations) {
+            const grandchildLocations = await Location.find({ parent_location: childLocation._id.toString() });
+            allGrandchildLocations = [...allGrandchildLocations, ...grandchildLocations];
+        }
+        
+        // Return the admin location plus child and grandchild locations
+        const hierarchyLocations = [
+            adminLocation, 
+            ...childLocations, 
+            ...allGrandchildLocations
+        ];
+        
+        console.log(`Returning ${hierarchyLocations.length} total locations`);
+        return res.status(200).json(hierarchyLocations);
+    } catch (error) {
+        console.error("Error fetching location hierarchy:", error);
+        return res.status(500).json({ message: "Server error", error: error.message });
+    }
+});
+
 location_router.get('/sticker-sequence/:locationName', authMiddleware, async (req, res) => {
     try {
         const { locationName } = req.params;
