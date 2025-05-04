@@ -750,17 +750,20 @@ router.put('/:id', authMiddleware, upload.fields([
     // Update image if provided
     if (req.files && req.files.Img) {
       updateData.Img = req.files.Img[0].buffer;
+      updateData.Img_url = req.files.Img[0].path;
     }
 
     // Handle invoice PDF update
     if (req.files && req.files.invoicePdf) {
       const pdfBuffer = req.files.invoicePdf[0].buffer;
       const pdfFilename = req.files.invoicePdf[0].originalname;
+      const pdfUrl = req.files.invoicePdf[0].path;
       const generatedInvoiceId = `INV-${Date.now()}`;
 
       const newInvoice = new Invoice({
         invoice_id: generatedInvoiceId,
         pdf_file: pdfBuffer,
+        pdf_url: pdfUrl,
         filename: pdfFilename,
         uploadDate: new Date()
       });
@@ -772,6 +775,7 @@ router.put('/:id', authMiddleware, upload.fields([
     // Handle additional PDF update
     if (req.files && req.files.additionalPdf) {
       updateData.additional_files = req.files.additionalPdf[0].buffer;
+      updateData.additional_files_url = req.files.additionalPdf[0].path;
     }
 
     console.log('Updating asset with data:', updateData);
