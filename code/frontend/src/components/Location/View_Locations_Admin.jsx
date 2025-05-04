@@ -100,6 +100,13 @@ const ViewLocationsAdmin = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
+                  {locations.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
+                        No locations found.
+                        </td>
+                        </tr>
+                        )}
                   {locations.map((loc) => (
                     <tr
                       key={loc._id}
