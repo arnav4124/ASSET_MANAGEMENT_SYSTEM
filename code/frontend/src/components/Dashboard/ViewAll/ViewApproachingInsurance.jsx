@@ -90,7 +90,7 @@ const ViewApproachingInsurance = () => {
                         />
                     </div>
                 </div>
-
+        
                 {/* Error Message */}
                 {error && (
                     <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">

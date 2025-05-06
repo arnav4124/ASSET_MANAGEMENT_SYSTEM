@@ -1,7 +1,25 @@
 [
   {
-    "_id": "681767fe4467503f5ac29f6f",
-    "asset_id": "68174108fbad800ac2f98773",
+    "_id": "68176b250efaa868c44607dd",
+    "asset_id": "6817681e6b556054bfef3e31",
+    "performed_by": {
+      "_id": "68051ee7142ef33c18fd78f2",
+      "first_name": "Admin",
+      "last_name": "First",
+      "email": "admin@gmail.com"
+    },
+    "assignment_type": null,
+    "issued_to": null,
+    "operation_type": "Unassigned",
+    "operation_time": "2025-05-04T13:27:01.245Z",
+    "comments": "Asset unassigned from ;lassi",
+    "old_location": "",
+    "new_location": "",
+    "__v": 0
+  },
+  {
+    "_id": "68176b180efaa868c44607ad",
+    "asset_id": "6817681e6b556054bfef3e31",
     "performed_by": {
       "_id": "68051ee7142ef33c18fd78f2",
       "first_name": "Admin",
@@ -10,19 +28,19 @@
     },
     "assignment_type": "Project",
     "issued_to": {
-      "_id": "68176557ba2c84724bf1ab9b",
-      "Project_name": "BhavyaP"
+      "_id": "6817616dd8f60b9e7d2bb363",
+      "Project_name": ";lassi"
     },
     "operation_type": "Assigned",
-    "operation_time": "2025-05-04T13:13:34.530Z",
-    "comments": "Asset assigned to project BhavyaP",
+    "operation_time": "2025-05-04T13:26:48.802Z",
+    "comments": "Asset assigned to project ;lassi",
     "old_location": "",
     "new_location": "",
     "__v": 0
   },
   {
-    "_id": "68174108fbad800ac2f98776",
-    "asset_id": "68174108fbad800ac2f98773",
+    "_id": "6817681e6b556054bfef3e34",
+    "asset_id": "6817681e6b556054bfef3e31",
     "performed_by": {
       "_id": "68051ee7142ef33c18fd78f2",
       "first_name": "Admin",
@@ -32,7 +50,7 @@
     "assignment_type": null,
     "issued_to": null,
     "operation_type": "Added",
-    "operation_time": "2025-05-04T10:27:20.325Z",
+    "operation_time": "2025-05-04T13:14:06.698Z",
     "comments": "Asset added by admin Admin First",
     "old_location": "",
     "new_location": "",

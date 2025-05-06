@@ -931,7 +931,7 @@ admin_router.get('/assets/approaching-warranty', authMiddleware, async (req, res
         });
 
         const childLocations = Array.from(childLocationsMap.values());
-
+        
         // Get grandchild locations with the same approach
         let allGrandchildLocationsMap = new Map();
 

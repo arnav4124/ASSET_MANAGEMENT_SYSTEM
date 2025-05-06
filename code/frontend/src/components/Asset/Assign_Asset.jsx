@@ -306,9 +306,9 @@ const AssignAsset = () => {
                                                                 ? `${item.first_name} ${item.last_name}`
                                                                 : item.Project_name}
                                                         </p>
-                                                        <p className="text-sm text-gray-500">
+                                                        {/* <p className="text-sm text-gray-500">
                                                             {assignType === "user" ? item.email : `Created: ${new Date(item.createdAt).toLocaleDateString()}`}
-                                                        </p>
+                                                        </p> */}
                                                     </div>
                                                 </div>
                                             </div>
